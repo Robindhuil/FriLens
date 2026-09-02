@@ -63,7 +63,12 @@ namespace FriLens
 
         IEnumerator Start()
         {
-            if (m_ArRig != null) m_ArRig.SetActive(false);
+            // The AR rig is deliberately left alone here. Switching it off even for the two frames
+            // the availability check takes also switches off ARCameraManager, and ARSession — a
+            // separate object — starts the session on the very first frame regardless. ARCore then
+            // comes up with no camera and never leaves SessionInitializing: black screen, no frames,
+            // and notTrackingReason stays None so nothing on screen says why. Only the preview path
+            // touches the rig, and only once the answer is known.
             if (m_PreviewRig != null) m_PreviewRig.SetActive(false);
 
             // In the editor, AR Foundation's XR Simulation answers the availability check with a
@@ -105,8 +110,9 @@ namespace FriLens
                 ? "AR ready after installing Google Play Services for AR."
                 : "AR ready.";
 
+            // The rig was never switched off on this path, so there is nothing to switch back on.
             if (m_PreviewRig != null) m_PreviewRig.SetActive(false);
-            if (m_ArRig != null) m_ArRig.SetActive(true);
+            if (m_ArRig != null && !m_ArRig.activeSelf) m_ArRig.SetActive(true);
             if (m_Session != null) m_Session.enabled = true;
 
             Debug.Log($"{nameof(SessionModeController)}: AR mode, session state {DecidedFrom}.", this);

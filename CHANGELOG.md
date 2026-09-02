@@ -10,11 +10,45 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [Unreleased]
 
+## [0.1.1-alpha] — 2026-09-03
+
+Opravné vydanie. Prvý beh 0.1.0-alpha na telefóne ukázal, že AR strana nefungovala vôbec;
+oboje spôsobili zmeny z fáz 2 a 5.
+
+### Fixed
+
+- **Kamera sa nikdy nehýbala.** V logoch z 0.1.0-alpha bola pozícia aj rotácia kamery presne
+  `0.0000` po celý čas, vo všetkých piatich behoch. `TrackedPoseDriver` na `Main Camera` berie
+  pózu cez `InputActionReference` do `XRI Default Input Actions`, a také akcie sa samy
+  nezapnú — zapínal ich `InputActionManager`, ktorý bol vo fáze 2 odstránený ako zvyšok po
+  tap-to-place. Bez neho by `walked_m` zostalo nulové aj po prejdení celej fakulty a celé
+  meranie by nemeralo nič. Komponent je späť.
+
+- **ARCore nikdy neopustil `SessionInitializing`.** `SessionModeController` vypínal celý AR
+  rig hneď v `Start()`, teda aj `ARCameraManager`, kým bežala kontrola dostupnosti. `ARSession`
+  je samostatný objekt a spustí session už v prvom snímku, takže ARCore naštartoval bez
+  kamery a späť sa nechytil: čierne pozadie, žiadne snímky a `notTrackingReason` zostalo
+  `None`, takže na obrazovke nebolo vidno dôvod. AR rig sa teraz nevypína vôbec; `PreviewRig`
+  je v scéne vypnutý rovno a zapne ho až Preview vetva.
+
 ### Changed
 
 - APK sa pomenúva `FriLens-<verzia>.apk` s pomlčkou namiesto medzery. GitHub premieňa medzeru
   v názve assetu na bodku, takže s pomlčkou sa adresa na stiahnutie dá odvodiť priamo
   z verzie a nemusí sa nikde opisovať.
+
+### Overené na 0.1.0-alpha
+
+Aj napriek tomu, že AR nefungovalo, prvý beh potvrdil:
+
+- **Redmi 14C ARCore podporuje** — `CheckAvailability()` prešlo, appka išla do AR režimu.
+  Predpoklad [ADR 004](docs/decisions/004-zariadenia-bez-arcore.md), že ho nepodporuje,
+  neplatil. Rozhodnutie o `AR Optional` a Preview režime zostáva v platnosti pre iné
+  zariadenia.
+- HUD sa vykresľuje správne na výšku, nič nie je odrezané a **zmenšená kópia panelu, ktorá
+  strašila v editorových snímkach, na telefóne nie je** — bol to artefakt `ScreenCapture`.
+- Orientácia je zamknutá, appka pýta povolenie na kameru, CSV sa píše a všetky tlačidlá
+  zapisujú udalosti (`mark-1`, `overlay-hidden`, `overlay-shown`, `realign-requested`).
 
 ## [0.1.0-alpha] — 2026-09-02
 

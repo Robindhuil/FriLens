@@ -2,10 +2,21 @@
 
 **Verzia:** 0.1.0-alpha · **Dátum:** 2026-09-02 · **Stav:** prijaté
 
+> **Oprava 2026-09-03:** predpoklad, na ktorom toto ADR stojí, **neplatil**. Build
+> 0.1.0-alpha na Redmi 14C nabehol do AR režimu — `CheckAvailability()` prešlo a session sa
+> spustila. Rozhodnutie sa napriek tomu nemení: `AR Optional` a Preview režim sú správne pre
+> zariadenia, ktoré ARCore naozaj nemajú, a Preview zostáva užitočný na ukážku bez budovy.
+> Zmenilo sa len to, že test v teréne už nečaká na iný telefón.
+>
+> Pozor pri čítaní výsledkov: ak Redmi 14C nie je v Googlom zozname certifikovaných
+> zariadení a ARCore na ňom beží len vďaka nainštalovaným Play Services for AR, potom
+> nemá overenú kalibráciu kamery a IMU. Namerané čísla môžu hovoriť o kalibrácii telefónu,
+> nie o modeli. Na záverečné čísla treba porovnanie s certifikovaným zariadením.
+
 ## Kontext
 
 Projekt bol postavený na predpoklade, že testovací telefón ARCore podporuje. Telefón, ktorý
-je k dispozícii — **Redmi 14C** — ho nepodporuje.
+je k dispozícii — **Redmi 14C** — ho podľa Googlovho zoznamu nepodporuje.
 
 Doterajšie nastavenie bolo `ARCore Requirement = Required`. To zapíše do manifestu
 `com.google.ar.core: required`, takže sa appka na nepodporovanom zariadení **ani

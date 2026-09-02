@@ -225,21 +225,21 @@ prekryv bude v AR otočený o 90° a nebude zjavné prečo.
 Toto je tvrdá podmienka testu a je celá pred nami. Pozri kroky 5–6 pôvodného dokumentu —
 tam sa nič nemení a nič sa nedá skrátiť.
 
-### K6 — Dostupný telefón nemá ARCore
+### K6 — Testovacie zariadenie — ✅ vyriešené 2026-09-03
 
-Overené 2026-09-02: **Redmi 14C ARCore nepodporuje.**
+Pôvodne sa zdalo, že Redmi 14C ARCore nepodporuje. Build 0.1.0-alpha na ňom **nabehol do AR
+režimu** — `CheckAvailability()` prešlo, session sa spustila, appka si vypýtala kameru.
+Zariadenie na test teda je.
 
-Tým je fáza 6 (test v teréne) a s ňou fázy 3a, 3b a 4 viazaná na zariadenie, ktoré zatiaľ
-nie je k dispozícii. Žiadne nastavenie ani náhradný režim to neobíde — meranie driftu
-potrebuje 6DoF tracking kamery a na Androide to nevie poskytnúť nič iné než ARCore.
+Zostáva jedna výhrada. Ak Redmi 14C nie je v
+[Googlom zozname podporovaných zariadení](https://developers.google.com/ar/devices)
+a ARCore na ňom beží len vďaka nainštalovaným **Google Play Services for AR**, nemá overenú
+kalibráciu kamery a IMU. Namerané čísla potom môžu hovoriť o kalibrácii telefónu, nie
+o modeli. Na prvý beh to stačí; na záverečné čísla treba porovnanie s certifikovaným
+zariadením.
 
-Aby sa aspoň všetko ostatné dalo overiť na telefóne, ktorý je po ruke, je appka prepnutá
-na `AR Optional` a má náhradný Preview režim — [ADR 004](decisions/004-zariadenia-bez-arcore.md).
-
-Zostáva zohnať telefón zo
-[zoznamu podporovaných ARCore zariadení](https://developers.google.com/ar/devices)
-so zapnutým USB ladením. Pozor aj na to, že zariadenie zo zoznamu potrebuje ešte
-samostatnú aplikáciu **Google Play Services for AR** z Play.
+Appka zostáva `AR Optional` s Preview režimom pre zariadenia, ktoré ARCore naozaj nemajú —
+[ADR 004](decisions/004-zariadenia-bez-arcore.md).
 
 ### K7 — Trasa na 100 m priamo neexistuje
 
