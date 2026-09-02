@@ -36,7 +36,7 @@ Build sa spúšťa cez menu **`FriLens > Build Android <verzia>`** a skončí v:
 
 ```
 Documents/Robin/unity/frilens/<verzia>/
-    FriLens <verzia>.apk
+    FriLens-<verzia>.apk
     build-info.txt      ← verzia, dátum, Unity, bundle id, min SDK, backend, ABI, scény
 ```
 
@@ -44,10 +44,35 @@ Nový build:
 
 1. zdvihnúť `Version` **aj** `VersionCode` v `AndroidBuilder.cs`,
 2. dopísať, čo sa zmenilo, do [`CHANGELOG.md`](../CHANGELOG.md),
-3. spustiť menu položku.
+3. spustiť menu položku,
+4. **vydať na GitHub Releases** (nižšie).
 
 Prvý IL2CPP build trvá aj desiatky minút a editor je počas neho nereagujúci. Ďalšie sú
 podstatne rýchlejšie.
+
+### Vydanie na GitHub Releases
+
+Každý build ide na releases, lebo odtiaľ ho sťahuje tlačidlo na
+[FriWorld-Hub](https://github.com/Robindhuil/FriWorld-Hub).
+
+```bash
+gh release create v<verzia> "$USERPROFILE/Documents/Robin/unity/frilens/<verzia>/FriLens-<verzia>.apk" --repo Robindhuil/FriLens --title "FriLens <verzia>" --notes-file <poznámky.md> --prerelease
+```
+
+Výsledná adresa je predvídateľná zo samotnej verzie:
+
+```
+https://github.com/Robindhuil/FriLens/releases/download/v<verzia>/FriLens-<verzia>.apk
+```
+
+Preto má APK v názve pomlčku, nie medzeru — GitHub by medzeru v názve assetu premenil na
+bodku a adresa by sa už z verzie odvodiť nedala.
+
+Potom stačí prepísať `version`, `apk` a `apkMb` v `src/content/frilens.ts` vo webovom
+repozitári a stránka ukazuje nový build.
+
+> **Repozitár musí zostať verejný.** Release assety z privátneho repozitára vracajú každému
+> okrem majiteľa chybu 404, takže tlačidlo na webe by prestalo fungovať.
 
 **Každý dokument nesie v hlavičke verziu**, ku ktorej sa vzťahuje. Keď sa verzia zdvihne
 a dokument sa vecne zmení, prepíše sa mu aj verzia v hlavičke.

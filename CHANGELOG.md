@@ -10,6 +10,12 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [Unreleased]
 
+### Changed
+
+- APK sa pomenúva `FriLens-<verzia>.apk` s pomlčkou namiesto medzery. GitHub premieňa medzeru
+  v názve assetu na bodku, takže s pomlčkou sa adresa na stiahnutie dá odvodiť priamo
+  z verzie a nemusí sa nikde opisovať.
+
 ## [0.1.0-alpha] — 2026-09-02
 
 Prvý build. Nič z toho zatiaľ nebežalo na telefóne.
@@ -50,6 +56,13 @@ Prvý build prešiel. `aapt dump badging` na `FriLens 0.1.0-alpha.apk` (43 MB):
 | `com.google.ar.core.InstallActivity` | prítomná, teda aj tok na doinštalovanie Play Services for AR |
 | permissions | `CAMERA`, `INTERNET` |
 | debuggable | nie, release build |
+
+Vydané ako [v0.1.0-alpha](https://github.com/Robindhuil/FriLens/releases/tag/v0.1.0-alpha).
+Repozitár bol pri tejto príležitosti zverejnený — release assety z privátneho repozitára sa
+bez prihlásenia stiahnuť nedajú a tlačidlo na
+[FriWorld-Hub](https://github.com/Robindhuil/FriWorld-Hub) by nefungovalo. Pred zverejnením
+prekontrolované, že v repozitári nie je keystore, `.env` ani žiadny kľúč; `navmesh.blend` je
+gitignorovaný, takže 300 MB sken sa nezverejnil.
 
 ### Changed
 

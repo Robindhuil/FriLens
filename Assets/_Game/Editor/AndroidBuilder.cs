@@ -57,7 +57,10 @@ namespace FriLens.EditorTools
 
             var folder = OutputFolder();
             Directory.CreateDirectory(folder);
-            var apk = Path.Combine(folder, $"{ProductName} {Version}.apk");
+            // Hyphen, not a space: this file is uploaded to GitHub Releases as-is, and a space
+            // in an asset name turns into a dot in the download URL. Keeping them identical
+            // means the link on the web can be predicted from the version alone.
+            var apk = Path.Combine(folder, $"{ProductName}-{Version}.apk");
 
             Debug.Log($"Building {Version} to {apk}. An IL2CPP build takes a while and the editor "
                 + "is unresponsive until it finishes; the first one is by far the slowest.");
