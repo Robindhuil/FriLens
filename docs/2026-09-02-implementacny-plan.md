@@ -28,30 +28,52 @@ Krátke veci, ktoré blokujú build alebo špinia repozitár.
 
 ---
 
-## Fáza 1 — Extrakcia navigačných plôch
+## Fáza 1 — Extrakcia navigačných plôch — ✅ hotové
 
-Editorový skript `Assets/Editor/NavMeshExtractor.cs`, menu `FriLens/Extract Nav Meshes`.
+`Assets/_Game/Editor/NavMeshExtractorWindow.cs`, menu `FriLens/Extract Nav Meshes`
+(okno s výberom prefixu) a `FriLens/Extract Nav Meshes (all floors)` (dávka cez všetkých
+deväť podlaží).
 
 Čo robí:
 
 1. Načíta prefab z `Assets/Models/navmesh.blend`.
-2. Vyfiltruje `MeshRenderer`-y, ktorých meno obsahuje `_nav_`, podľa zadaného prefixu
-   (`ra0`, `rb1`, …). Prefix je pole v okne, aby sa dalo prepínať podlažie bez editovania kódu.
-3. Zlúči ich do jedného `Mesh` — vrcholy transformuje cez `renderer.transform.localToWorldMatrix`
-   relatívne ku koreňu, čím sa **zapečie aj rotácia 270° X** (diera K4).
-4. Uloží ako `Assets/Generated/Nav/<prefix>_nav.asset`.
-5. Vypíše do konzoly počet trojuholníkov, rozmery a stred — čísla, ktoré patria do
-   dokumentácie.
+2. Vyfiltruje `MeshFilter`-y, ktorých meno obsahuje `_nav_` a začína zadaným prefixom
+   (`ra0`, `rb1`, `rc0`, …). Tlačidlo **List groups** vypíše, aké prefixy v modeli existujú,
+   aby sa nemusel hádať.
+3. Zlúči ich do jedného `Mesh` cez `CombineMeshes`, kde každá inštancia nesie
+   `filter.transform.localToWorldMatrix`. Tá reťaz siaha až po koreň modelu, takže sa
+   **zapečie aj rotácia 270° X** (diera K4).
+4. Uloží ako `Assets/_Game/Generated/Nav/<prefix>_nav.asset`.
+5. Vypíše počet trojuholníkov, rozmery, stred a rozsah Y.
 
-Pozor na dve veci:
+Dve veci, ktoré sa dali ľahko pokaziť a sú ošetrené:
 
-- **Index buffer.** Zlúčené podlažie má do 2 000 trojuholníkov, takže 16-bit stačí. Ak by
-  sa niekedy zlučovalo viac podlaží naraz, prepnúť na `IndexFormat.UInt32`.
-- **Počiatok.** Mesh nechať v pôvodných súradniciach modelu, neposúvať do nuly. Zosúladenie
-  vo fáze 3 s tým počíta a póza značky je tiež v súradniciach modelu.
+- **Index buffer.** Najväčšie podlažie (`rc0`) má 2 885 vrcholov, takže 16-bit stačí.
+  Skript prepne na `UInt32` sám, ak by rozpočet vrcholov prekročil 60 000.
+- **Počiatok.** Mesh zostáva v súradniciach modelu, neposúva sa do nuly. Zosúladenie vo
+  fáze 3 s tým počíta a póza značky je v tom istom priestore.
 
-**Hotovo, keď:** `ra000_nav.asset` existuje, má ~1 259 trojuholníkov a v scéne pri
-nulovej transformácii vyzerá ako pôdorys prízemia budovy A.
+### Výsledok
+
+| asset | vrcholy | trojuholníky | rozmery X × Y × Z (m) | rozsah Y (m) |
+|---|---:|---:|---|---|
+| `ra0_nav` | 1 933 | 1 259 | 21.06 × 3.97 × 80.54 | 4.81 – 8.78 |
+| `ra1_nav` | 1 865 | 1 196 | 21.06 × 3.94 × 73.93 | 8.39 – 12.33 |
+| `ra2_nav` | 2 087 | 1 470 | 21.23 × 3.99 × 73.93 | 11.97 – 15.96 |
+| `ra3_nav` | 2 805 | 1 687 | 21.23 × 4.35 × 73.93 | 15.55 – 19.90 |
+| `rb0_nav` | 1 554 | 1 083 | 31.40 × 7.26 × 48.75 | 3.29 – 10.55 |
+| `rb1_nav` | 902 | 654 | 30.54 × 3.70 × 43.04 | 10.46 – 14.16 |
+| `rb2_nav` | 904 | 643 | 30.59 × 3.70 × 43.26 | 14.07 – 17.77 |
+| `rb3_nav` | 867 | 623 | 24.60 × 4.25 × 43.26 | 17.10 – 21.35 |
+| `rc0_nav` | 2 885 | 1 890 | 48.88 × 7.37 × 45.52 | 0.69 – 8.07 |
+
+Počty trojuholníkov aj rozmery sedia na hodnoty namerané priamo na zdrojovom modeli, čo
+znamená, že zlúčenie nič nestratilo. Orientácia overená zvlášť: **560 z 1 933 vrcholov
+`ra0_nav` leží do 5 cm od `Y = 5.15 m`**, teda na jednej vodorovnej podlahovej rovine.
+Keby sa rotácia nezapiekla, toto číslo by bolo nula a plocha by stála na hrane.
+
+Suterén, terasy a exteriér sa zámerne neextrahujú — nie sú súčasťou tohto testu a každý
+z nich by potreboval vlastné rozhodnutie, čo je ešte jedna plocha.
 
 ---
 
