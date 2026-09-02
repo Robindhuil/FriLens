@@ -222,10 +222,21 @@ prekryv bude v AR otočený o 90° a nebude zjavné prečo.
 Toto je tvrdá podmienka testu a je celá pred nami. Pozri kroky 5–6 pôvodného dokumentu —
 tam sa nič nemení a nič sa nedá skrátiť.
 
-### K6 — Nie je potvrdené testovacie zariadenie
+### K6 — Dostupný telefón nemá ARCore
 
-Min SDK je nastavené na 30 (Android 11). Treba konkrétny telefón zo zoznamu podporovaných
-ARCore zariadení, so zapnutým USB ladením.
+Overené 2026-09-02: **Redmi 14C ARCore nepodporuje.**
+
+Tým je fáza 6 (test v teréne) a s ňou fázy 3a, 3b a 4 viazaná na zariadenie, ktoré zatiaľ
+nie je k dispozícii. Žiadne nastavenie ani náhradný režim to neobíde — meranie driftu
+potrebuje 6DoF tracking kamery a na Androide to nevie poskytnúť nič iné než ARCore.
+
+Aby sa aspoň všetko ostatné dalo overiť na telefóne, ktorý je po ruke, je appka prepnutá
+na `AR Optional` a má náhradný Preview režim — [ADR 004](decisions/004-zariadenia-bez-arcore.md).
+
+Zostáva zohnať telefón zo
+[zoznamu podporovaných ARCore zariadení](https://developers.google.com/ar/devices)
+so zapnutým USB ladením. Pozor aj na to, že zariadenie zo zoznamu potrebuje ešte
+samostatnú aplikáciu **Google Play Services for AR** z Play.
 
 ### K7 — Trasa na 100 m priamo neexistuje
 

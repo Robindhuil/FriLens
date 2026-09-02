@@ -62,6 +62,13 @@ namespace FriLens
         bool m_Enabled;
         bool m_WarnedAboutUnsetAnchor;
 
+        /// <summary>
+        /// Raised right after an averaged pose has been applied. Distance walked has to start
+        /// counting from here rather than from the button press, because the burst of samples
+        /// takes a moment and anything walked during it belongs to the new alignment.
+        /// </summary>
+        public event System.Action Aligned;
+
         public AlignmentState State { get; private set; } = AlignmentState.Waiting;
 
         /// <summary>Frames collected so far in the current burst, out of <see cref="SampleTarget"/>.</summary>
@@ -196,6 +203,8 @@ namespace FriLens
 
             m_Positions.Clear();
             m_Rotations.Clear();
+
+            Aligned?.Invoke();
         }
 
         void WarnIfAnchorLooksUnset()

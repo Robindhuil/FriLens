@@ -1,0 +1,50 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/_Game/UI/DiagnosticsHud.uss" />
+    <ui:VisualElement name="root" class="root" picking-mode="Ignore">
+
+        <ui:VisualElement name="banner" class="banner">
+            <ui:Label name="mode-label" class="banner__mode" text="CHECKING" />
+            <ui:Label name="mode-detail" class="banner__detail" text="Checking what this device can do…" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="stats" class="stats" picking-mode="Ignore">
+
+            <ui:VisualElement class="stat" picking-mode="Ignore">
+                <ui:Label class="stat__name" text="Tracking" />
+                <ui:Label name="tracking-value" class="stat__value" text="—" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="stat" picking-mode="Ignore">
+                <ui:Label class="stat__name" text="Marker" />
+                <ui:Label name="marker-value" class="stat__value" text="—" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="stat" picking-mode="Ignore">
+                <ui:Label class="stat__name" text="Alignment" />
+                <ui:Label name="alignment-value" class="stat__value" text="—" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="stat stat--headline" picking-mode="Ignore">
+                <ui:Label class="stat__name" text="Walked" />
+                <ui:Label name="walked-value" class="stat__value" text="—" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="stat" picking-mode="Ignore">
+                <ui:Label class="stat__name" text="From marker" />
+                <ui:Label name="origin-value" class="stat__value" text="—" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+        <ui:VisualElement name="spacer" class="spacer" picking-mode="Ignore" />
+
+        <ui:VisualElement name="controls" class="controls">
+            <ui:Button name="realign-button" class="button button--primary" text="Re-anchor" />
+            <ui:Button name="overlay-button" class="button" text="Hide overlay" />
+            <ui:Button name="mark-button" class="button" text="Mark" />
+        </ui:VisualElement>
+
+        <ui:Label name="log-value" class="footer" text="log: —" />
+
+    </ui:VisualElement>
+</ui:UXML>

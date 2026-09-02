@@ -1,0 +1,149 @@
+/*
+ * Field HUD. Read at arm's length, in a corridor, while walking, often against a bright window.
+ * That drives every choice here: heavy panels behind text rather than plain labels over the
+ * camera feed, large type, and touch targets big enough to hit without looking.
+ */
+
+.root {
+    flex-grow: 1;
+    justify-content: flex-start;
+    padding-top: 44px;
+    padding-bottom: 24px;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+/* --- banner ------------------------------------------------------------- */
+
+.banner {
+    background-color: rgba(10, 12, 16, 0.86);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+}
+
+.banner__mode {
+    font-size: 22px;
+    -unity-font-style: bold;
+    color: rgb(120, 226, 255);
+    letter-spacing: 2px;
+}
+
+.banner__detail {
+    font-size: 15px;
+    color: rgba(226, 232, 240, 0.78);
+    white-space: normal;
+    margin-top: 2px;
+}
+
+/* Preview is not a test. It has to be impossible to mistake for one. */
+.banner--preview {
+    background-color: rgba(94, 44, 8, 0.92);
+}
+
+.banner--preview .banner__mode {
+    color: rgb(255, 186, 96);
+}
+
+.banner--ar {
+    background-color: rgba(8, 42, 52, 0.90);
+}
+
+/* --- stats -------------------------------------------------------------- */
+
+.stats {
+    background-color: rgba(10, 12, 16, 0.86);
+    border-radius: 12px;
+    padding: 6px 14px;
+}
+
+.stat {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.stat__name {
+    font-size: 15px;
+    color: rgba(226, 232, 240, 0.62);
+}
+
+.stat__value {
+    font-size: 19px;
+    -unity-font-style: bold;
+    color: rgb(237, 242, 247);
+    -unity-text-align: middle-right;
+}
+
+/* Distance walked is the x-axis of the whole test, so it outranks the rest. */
+.stat--headline .stat__value {
+    font-size: 27px;
+    color: rgb(120, 226, 255);
+}
+
+.stat__value--warn {
+    color: rgb(255, 186, 96);
+}
+
+.stat__value--bad {
+    color: rgb(255, 122, 122);
+}
+
+.stat__value--idle {
+    color: rgba(226, 232, 240, 0.45);
+}
+
+/* --- controls ----------------------------------------------------------- */
+
+.spacer {
+    flex-grow: 1;
+}
+
+.controls {
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.button {
+    flex-grow: 1;
+    height: 62px;
+    margin: 0 4px;
+    border-radius: 12px;
+    border-width: 0;
+    font-size: 17px;
+    -unity-font-style: bold;
+    background-color: rgba(28, 34, 44, 0.94);
+    color: rgb(237, 242, 247);
+}
+
+.button:hover {
+    background-color: rgba(44, 54, 68, 0.96);
+}
+
+.button:active {
+    background-color: rgba(70, 86, 108, 0.98);
+}
+
+.button--primary {
+    background-color: rgba(14, 116, 144, 0.96);
+}
+
+.button--primary:active {
+    background-color: rgba(22, 160, 195, 0.98);
+}
+
+.button--disabled {
+    background-color: rgba(28, 34, 44, 0.55);
+    color: rgba(237, 242, 247, 0.35);
+}
+
+/* --- footer ------------------------------------------------------------- */
+
+.footer {
+    margin-top: 8px;
+    font-size: 12px;
+    color: rgba(226, 232, 240, 0.45);
+    white-space: normal;
+}

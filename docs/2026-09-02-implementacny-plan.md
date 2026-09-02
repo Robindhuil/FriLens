@@ -18,7 +18,9 @@ Krátke veci, ktoré blokujú build alebo špinia repozitár.
 - [x] `Assets/Models/*.blend` do `.gitignore` ([ADR 002](decisions/002-verzovanie-modelov.md))
 - [x] Aktívny build target prepnutý na **Android**
 - [x] Bundle identifier `sk.uniza.fri.frilens`, company `FRI UNIZA`, product `FriLens`
-- [x] ARCore **AR Required** — už bolo nastavené
+- [x] ~~ARCore **AR Required**~~ → **AR Optional** (zmenené 2026-09-02, [ADR 004](decisions/004-zariadenia-bez-arcore.md)).
+      Pri `Required` sa appka na zariadení bez ARCore ani nenainštaluje, takže by sa na
+      dostupnom telefóne nedalo overiť vôbec nič. Dostupnosť sa teraz rieši za behu.
 - [x] ARCore **Depth: Required → Optional**. Test nekreslí okluziu, takže požadovať depth
       API by len zúžilo zoznam telefónov, na ktoré sa appka dá nainštalovať.
 - [x] Min SDK **30 → 25**. Pôvodný dokument chcel 24, lebo ARCore beží od Androidu 7.0,
@@ -295,25 +297,90 @@ z rovnakého miesta trafí to isté (rozdiel pod 1–2 cm). Vyžaduje značku (f
 
 ---
 
-## Fáza 5 — Diagnostika
+## Fáza 5 — Diagnostika a UI — ✅ hotové (okrem overenia na zariadení)
 
-Bez čísel sa z testu stane „vyzerá to trochu mimo".
+UI je postavené na **UI Toolkit**, nie uGUI.
 
-Na obrazovke:
+| Súbor | Čo je v ňom |
+|---|---|
+| `Assets/_Game/UI/DiagnosticsHud.uxml` | štruktúra HUD |
+| `Assets/_Game/UI/DiagnosticsHud.uss` | štýly |
+| `Assets/_Game/UI/FriLensPanelSettings.asset` | `ScaleWithScreenSize`, referencia 1080 × 1920, match 0.5 |
+| `Assets/UI Toolkit/UnityThemes/UnityDefaultRuntimeTheme.tss` | predvolená runtime téma |
+| `Scripts/Runtime/DiagnosticsHud.cs` | naviazanie a aktualizácia |
+| `Scripts/Runtime/CameraTravel.cs` | integrovanie prejdenej vzdialenosti |
+| `Scripts/Runtime/SessionLogger.cs` | CSV zápis |
+| `Scripts/Runtime/SessionModeController.cs` | výber AR / Preview režimu |
+| `Scripts/Runtime/PreviewCameraRig.cs` | otočná kamera pre Preview |
 
-- Stav trackingu z `ARSession.state` a `ARSession.notTrackingReason`
-- Čas od posledného rozpoznania značky
-- **Prejdená vzdialenosť od zosúladenia** — integrovaná z pozície AR kamery po snímkoch
-- Priama vzdialenosť od značky (iné číslo než prejdená vzdialenosť, obe treba)
-- Tlačidlá: re-anchor, skryť prekryv (nech vidno, čo je pod ním)
+### Na obrazovke
 
-Do súboru (`Application.persistentDataPath`, CSV): časová pečiatka, pozícia a rotácia
-kamery, stav trackingu, prejdená vzdialenosť, značka udalosti pri stlačení tlačidla.
+- **Režim** — nápadný pruh navrchu. `AR` tyrkysový, `PREVIEW — NOT A TEST` oranžový.
+- **Tracking** — `ARSession.state`, pri probléme aj `notTrackingReason`
+- **Marker** — v zábere / nevidno / stav sledovania
+- **Alignment** — čas od zosúladenia a **rozptyl vzoriek** `±x cm / y°`
+- **Walked** — prejdená vzdialenosť od zosúladenia, zvýraznená; je to os, po ktorej drift rastie
+- **From marker** — priama vzdialenosť od miesta zosúladenia. Iné číslo než prejdená
+  vzdialenosť: chôdza chodbou a späť skončí pri značke s celým nazbieraným driftom.
+- Tlačidlá **Re-anchor**, **Hide overlay**, **Mark**
 
-Dôvod na súbor: fotky z terénu nezachytia priebeh, len okamihy. Bez logu sa nedá spätne
-povedať, kedy presne tracking vypadol.
+`Mark` zapíše očíslovanú udalosť do logu. Na trase sa ním označí každý merací bod, aby sa
+fotka z neho dala spätne priradiť k riadku.
 
-**Hotovo, keď:** po prechádzke je na telefóne CSV, ktorý sa dá stiahnuť a otvoriť.
+### Do súboru
+
+`Application.persistentDataPath/frilens-RRRRMMDD-HHMMSS.csv`, 4 riadky za sekundu plus
+riadok pri každej udalosti:
+
+```
+time_s,mode,session_state,not_tracking_reason,cam_x,cam_y,cam_z,cam_yaw,cam_pitch,cam_roll,
+walked_m,from_origin_m,since_align_s,spread_cm,spread_deg,event
+```
+
+Flush pri každej udalosti a vždy, keď appka ide na pozadie — telefón vo vrecku dostane
+proces zabitý bez varovania.
+
+### Prejdená vzdialenosť sa počíta od aplikovania zosúladenia
+
+Nie od stlačenia tlačidla. Zber 30 vzoriek chvíľu trvá a čokoľvek sa počas neho prejde
+patrí k novému zosúladeniu. `MarkerAlignment` na to vystavuje udalosť `Aligned`.
+
+Kroky pod `m_MinimumStepMeters` (4 mm) sa nerátajú, inak by chvenie trackera pri státí
+ticho nafukovalo súčet.
+
+### Overené spustením v editore
+
+| Čo | Výsledok |
+|---|---|
+| HUD sa vykreslí, hodnoty žijú | ✓ |
+| CSV vznikne a plní sa | ✓ 43 riadkov za ~10 s |
+| Preview režim: AR rig vypnutý, preview rig zapnutý | ✓ |
+| Preview kamera sa sama zameria na prekryv | ✓ z (−61, 86, −53) na stred podlažia (−29, 6.8, −7.9) |
+| `Re-anchor` v Preview zošednuté | ✓ |
+| Celá reťaz zosúladenia | ✓ značka v zábere, 30 vzoriek, priemer, aplikácia, reset vzdialenosti |
+
+Posledný riadok bol prekvapenie: XR Simulation v editore podstrčí sledovaný obrázok, takže
+prebehla celá cesta od detekcie po zosúladenie, nielen matematika.
+
+### Editor nie je náhrada za telefón bez ARCore
+
+XR Simulation odpovedá na `CheckAvailability()` stavom `SessionTracking`, takže v editore
+appka **vždy** skončí v AR režime. Preview vetva sa inak nedá vyskúšať vôbec — a prvýkrát
+by sa videla až na tom telefóne, kde na nej záleží.
+
+Preto má `SessionModeController` v inšpektore pole `m_Override` s hodnotami
+`Auto` / `ForceAr` / `ForcePreview`. V scéne je uložené na `Auto`; `ForcePreview` slúži na
+kontrolu, ako appka vyzerá na zariadení bez ARCore. Keď je vynútené, HUD to napíše.
+
+### Nedoriešené
+
+Na snímkach z editora sa vľavo hore objavuje **zmenšená kópia panelu**. Vyzerá to na
+artefakt `ScreenCapture` pri Game view s iným pomerom strán než referenčné rozlíšenie
+panelu, nie na chybu UI — hodnoty v skutočnej pozícii panelu sú správne. **Potvrdiť sa to
+dá až na telefóne**, kde je rozlíšenie natívne a na výšku.
+
+**Neoverené:** ako HUD vyzerá na skutočnej obrazovke na výšku a či sa CSV dá z telefónu
+stiahnuť.
 
 ---
 
