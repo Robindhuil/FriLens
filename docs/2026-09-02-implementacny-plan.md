@@ -121,15 +121,18 @@ nezmenené; sem patrí len to, čo k nim pribudlo.
 
 ### 3b. Póza značky v modeli
 
-**Blokované dierou K1** — v projekte nie sú steny, len podlahové polygóny. Bez geometrie
-budovy sa póza značky určiť nedá. Postup:
+Určuje sa **priamo z hrán navigačných polygónov** — tie ležia na vnútornom líci stien,
+lebo pochádzajú z toho istého skenu ([ADR 003](decisions/003-poza-znacky-z-nav-polygonov.md)).
+Model budovy sa nedonáša.
 
-1. Doniesť `FriWorld/Assets/3Dmodels/static/fri_building/fri_building.blend` do FriLens
-   ako editorový pomocník, mimo build.
-2. **Overiť, že má rovnaký počiatok súradníc ako `navmesh.blend`** — priložiť obe a pozrieť,
-   či nav plochy ležia na podlahách. Sufixy `.002` naznačujú spoločný pôvod, ale je to
-   predpoklad, nie fakt.
-3. Umiestniť `MarkerAnchor` presne na pózu značky.
+1. Značku nalepiť na miesto, ktoré polygón zachytáva — **roh miestnosti alebo rovný úsek
+   steny**. Zárubňa, výklenok ani stĺp v polygóne nie sú a ich pozícia sa z neho vyčítať
+   nedá.
+2. Vodorovnú pozíciu a natočenie odčítať z hrany či rohu polygónu vo vygenerovanom
+   `<podlažie>_nav.asset`.
+3. Výšku odmerať pravítkom od podlahy a pripočítať k výške podlahy daného podlažia
+   (`ra000` je na `Y = 5.15 m`).
+4. Umiestniť `MarkerAnchor` na výslednú pózu.
 
 ### 3c. Skript zosúladenia
 
@@ -209,10 +212,12 @@ Nezmenené oproti pôvodnému dokumentu, doplnený jeden riadok:
 | chyba rastie s dĺžkou chodby, prekryv sa „rozťahuje" | zlá mierka — rozmer značky alebo model nie je 1:1 |
 | prekryv je pootočený a odchýlka rastie so vzdialenosťou | rotácia značky, alebo VIO drift v yaw |
 | chyba rastie s prejdenou vzdialenosťou, tvar sedí | bežný VIO drift — očakávaj 1–2 % prejdenej dráhy |
-| **hrana sedí v jednej miestnosti a nesedí vo vedľajšej** | **ručne kreslené nav polygóny nie sú konzistentne na stenách** |
+| **hrana sedí v jednej miestnosti a nesedí vo vedľajšej** | **nav polygóny nesedia na stenách tak, ako sa predpokladá** |
 
-Posledný riadok je nový a plynie z [ADR 001](decisions/001-zdroj-navmesh-geometrie.md):
-plochy nie sú pečené, sú kreslené, a nikto zatiaľ neoveril, s akou disciplínou.
+Posledný riadok je nový. Podľa [ADR 003](decisions/003-poza-znacky-z-nav-polygonov.md) je
+nepravdepodobný — plochy pochádzajú z toho istého skenu ako budova a ležia na líci stien.
+Ak napriek tomu nastane, znamená to, že predpoklad, na ktorom stojí celé určenie pózy
+značky, neplatí. To je informácia, ktorú test má vedieť odovzdať.
 
 ---
 
@@ -223,10 +228,10 @@ Tieto tri menia poradie práce, nie jej obsah.
 1. **Ktoré podlažie testovať prvé?** `ra` podlažie 0 má najdlhšiu chodbu (30.8 m)
    a najjednoduchší pôdorys. `rc` podlažie 0 má jedáleň a prednáškové sály, teda veľké
    otvorené priestory, kde sa drift prejaví inak. Návrh: začať `ra` podlažím 0.
-2. **Kedy doniesť `fri_building`?** Blokuje fázu 3b. Návrh: hneď po fáze 1, aby sa dala
-   overiť aj konzistencia nav plôch so stenami.
-3. **Portrait alebo landscape?** Portrait je prirodzenejší na chôdzu, landscape lepšie
+2. **Portrait alebo landscape?** Portrait je prirodzenejší na chôdzu, landscape lepšie
    ukáže hranu pri stene. Návrh: nechať portrait, orientáciu zamknúť.
+
+Otázka „kedy doniesť `fri_building`" odpadla — [ADR 003](decisions/003-poza-znacky-z-nav-polygonov.md).
 
 ---
 

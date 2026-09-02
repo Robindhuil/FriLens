@@ -170,10 +170,10 @@ Dôsledky:
 
 - `com.unity.ai.navigation` netreba.
 - `NavMesh.CalculateTriangulation()` netreba — mesh je priamo v assete.
-- Zostáva iná otázka, ktorú pôvodný dokument nemohol položiť: **sedia tie ručne kreslené
-  polygóny na steny?** Ak ich autor kreslil od oka s rezervou, hrana bude odsadená rovnako
-  ako pri pečení, len nekonzistentne. Toto je teraz najväčšia neznáma testu a nedá sa
-  overiť inak než porovnaním s geometriou budovy — ktorú v tomto projekte nemáme.
+- Otázka, či tie ručne kreslené polygóny sedia na steny, je **zodpovedaná**: autor modelu
+  potvrdil, že sedia a že pochádzajú z toho istého skenu ako geometria budovy. Hrana
+  polygónu je teda vnútorné líce steny a dá sa použiť ako referencia aj na určenie pózy
+  značky — pozri [ADR 003](decisions/003-poza-znacky-z-nav-polygonov.md).
 
 ---
 
@@ -181,20 +181,19 @@ Dôsledky:
 
 Zoradené podľa toho, čo najskôr zastaví prácu.
 
-### K1 — Chýba geometria budovy, bez nej sa nedá určiť póza značky
+### K1 — Chýba geometria budovy — ✅ vyriešené 2026-09-02
 
-Krok 5 pôvodného dokumentu žiada „zistiť pozíciu aj rotáciu značky v modeli". V projekte
-sú **len navigačné plochy**. Steny, zárubne, rohy miestností — nič z toho tu nie je. Bez
-nich sa póza značky dá určiť len odhadom z podlahových polygónov, čo je presne ten druh
-chyby, ktorý má test merať.
+Pôvodná obava: krok 5 pôvodného dokumentu žiada „zistiť pozíciu aj rotáciu značky
+v modeli", a v projekte sú len podlahové polygóny bez stien a zárubní.
 
-Budova existuje vo FriWorlde: `FriWorld/Assets/3Dmodels/static/fri_building/fri_building.blend`
-(90 MB), plus `interior_objects.blend` (9 MB).
+Autor modelu potvrdil, že **polygóny sedia na steny a pochádzajú z toho istého skenu**.
+Hrana polygónu je teda vnútorné líce steny. Póza značky sa dá určiť z nej:
 
-Treba: doniesť `fri_building` do FriLens **iba ako editorový pomocník** (nie do buildu) a
-overiť, že má rovnaký počiatok súradníc ako `navmesh.blend`. Duplikované mená objektov
-(`.002` sufixy) naznačujú, že oba vyšli z jedného Blender súboru, takže počiatok
-pravdepodobne sedí — ale je to predpoklad, nie fakt.
+- vodorovná pozícia a natočenie z hrany alebo rohu polygónu,
+- výška pravítkom na mieste, pripočítaná k známej výške podlahy (`ra000` je na `Y = 5.15 m`).
+
+`fri_building.blend` sa preto donášať nebude. Podrobne aj s obmedzeniami, ktoré z toho
+plynú pre výber miesta na značku, v [ADR 003](decisions/003-poza-znacky-z-nav-polygonov.md).
 
 ### K2 — 300 MB blend v repozitári
 

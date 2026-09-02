@@ -44,11 +44,12 @@ kombinovaný `Mesh` asset na podlažie.
 a opakovateľná z jedného tlačidla.
 
 **Zlé.** Presúva sa tým otázka presnosti. Pri pečení by sme vedeli, že hrana je odsadená
-presne o `agentRadius`. Pri ručne kreslených polygónoch nevieme nič — autor ich mohol
-kresliť na stenu, alebo s rezervou, alebo nekonzistentne po miestnostiach. **Toto je teraz
-najväčšia neznáma testu.** Overiť sa dá len porovnaním s geometriou budovy
-(`fri_building.blend` vo FriWorlde), a to je samostatná úloha; pozri diery K1 a K3
-v [analýze](../2026-09-02-stav-projektu-a-analyza-navmeshu.md).
+presne o `agentRadius`. Pri ručne kreslených polygónoch to z geometrie nevyplýva.
+
+> **Doplnené 2026-09-02:** autor modelu potvrdil, že polygóny sedia na steny a pochádzajú
+> z toho istého skenu ako geometria budovy. Odsek vyššie tým prestal byť otvorenou otázkou
+> a `fri_building.blend` sa donášať nebude — pozri [ADR 003](003-poza-znacky-z-nav-polygonov.md).
+> Rozhodnutie tohto ADR sa nemení.
 
 **Pozor.** Importér natáča koreň o 270° okolo X (Blender Z-up → Unity Y-up). Extrakcia
 musí túto rotáciu zapiecť do vrcholov, inak bude prekryv v AR otočený o 90°.
