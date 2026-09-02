@@ -11,20 +11,49 @@ fáza 6 je v teréne.
 
 ---
 
-## Fáza 0 — Hygiena projektu
+## Fáza 0 — Hygiena projektu — ✅ hotové (okrem overenia na zariadení)
 
 Krátke veci, ktoré blokujú build alebo špinia repozitár.
 
-- [ ] `Assets/Models/*.blend`, `*.blend1` do `.gitignore` (pozri [ADR 002](decisions/002-verzovanie-modelov.md))
-- [ ] Prepnúť aktívny build target na **Android**
-- [ ] Bundle identifier z `com.unity.template.ar_mobile` na niečo vlastné,
-      napr. `sk.uniza.fri.frilens`
-- [ ] Overiť ARCore settings → **AR Required**
-- [ ] `Screen.sleepTimeout = NeverSleep` a zamknutá orientácia — v teréne s telefónom
-      v ruke sa oboje ráta
-- [ ] Odinštalovať `com.unity.xr.arkit` (iOS nerobíme) a zvážiť `com.unity.xr.interaction.toolkit`
+- [x] `Assets/Models/*.blend` do `.gitignore` ([ADR 002](decisions/002-verzovanie-modelov.md))
+- [x] Aktívny build target prepnutý na **Android**
+- [x] Bundle identifier `sk.uniza.fri.frilens`, company `FRI UNIZA`, product `FriLens`
+- [x] ARCore **AR Required** — už bolo nastavené
+- [x] ARCore **Depth: Required → Optional**. Test nekreslí okluziu, takže požadovať depth
+      API by len zúžilo zoznam telefónov, na ktoré sa appka dá nainštalovať.
+- [x] Min SDK **30 → 25**. Pôvodný dokument chcel 24, lebo ARCore beží od Androidu 7.0,
+      ale Unity 6000.4 nižšie než 25 odmieta: *„Minimum supported Android API level is 25
+      (Android 7.1 Nougat)."* 25 je teda podlaha.
+- [x] Orientácia zamknutá na **Portrait** (autorotácia vypnutá vo všetkých troch zvyšných
+      smeroch) — otočenie počas chôdze je artefakt, ktorý test nepotrebuje
+- [x] `Screen.sleepTimeout = NeverSleep` cez `KeepScreenAwake` na objekte `FriLens` v scéne.
+      Každé zamknutie obrazovky ukončí AR session a zosúladenie po ňom už meria drift novej
+      session, nie tej testovanej.
+- [x] Odinštalovaný `com.unity.xr.arkit` vrátane osirených `AR Kit Loader.asset`,
+      `AR Kit Settings.asset` a záznamu v `EditorBuildSettings`
 
-**Hotovo, keď:** prázdny build prejde na telefón a spustí sa.
+`com.unity.xr.interaction.toolkit` **zostáva zatiaľ nainštalovaný** — šablónová scéna na ňom
+stojí (`Screen Space Ray Interactor`, `Object Spawner`). Odstráni sa vo fáze 2, keď scéna tie
+komponenty už mať nebude; skôr by z nich boli missing scripty.
+
+### Stav po fáze 0
+
+```
+Active build target : Android
+Company / Product   : FRI UNIZA / FriLens
+Bundle id           : sk.uniza.fri.frilens
+Min SDK             : AndroidApiLevel25
+Scripting backend   : IL2CPP
+Architectures       : ARM64
+Graphics APIs       : OpenGLES3
+Orientation         : Portrait
+ARCore              : requirement=Required depth=Optional
+ARKit package       : removed
+KeepScreenAwake     : on 'FriLens'
+```
+
+**Neoverené:** či prázdny build prejde na telefón a spustí sa. Vyžaduje zariadenie
+s ARCore a zapnutým USB ladením (diera K6) a nedá sa odbaviť od stola.
 
 ---
 
