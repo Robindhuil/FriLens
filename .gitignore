@@ -105,3 +105,9 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Blender zdrojové modely v Assets/Models/ sa neverzujú.
+# 300 MB blend by zjedol tretinu LFS kvóty a import vyžaduje nainštalovaný Blender.
+# Dôvod a náhradné riešenie: docs/decisions/002-verzovanie-modelov.md
+/[Aa]ssets/[Mm]odels/*.blend
+/[Aa]ssets/[Mm]odels/*.blend.meta
