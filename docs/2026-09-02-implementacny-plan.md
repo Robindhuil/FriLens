@@ -213,25 +213,74 @@ Model budovy sa nedonáša.
    (`ra000` je na `Y = 5.15 m`).
 4. Umiestniť `MarkerAnchor` na výslednú pózu.
 
-### 3c. Skript zosúladenia
+### 3c. Skript zosúladenia — ✅ hotové (okrem overenia na zariadení)
 
-`MarkerAlignment.cs`, na `ARTrackedImageManager`:
+`Assets/_Game/Scripts/Runtime/MarkerAlignment.cs`, na objekte `FriLens` v scéne. Napojený
+na `ARTrackedImageManager`, `AlignmentRoot` a `MarkerAnchor`.
 
-- Pri `trackedImagesChanged`, keď je `trackingState == Tracking`, zbierať pózu **~30 snímok**
-  a spriemerovať (pozíciu aritmeticky, rotáciu cez váženú kvaterniónovú priemerovanú maticu
-  alebo jednoducho `Quaternion.Slerp` s klesajúcou váhou). Až potom zamknúť.
+**Jednorazové zosúladenie, nie sledovanie.** Kým je stav `Sampling` a značka je v stave
+`TrackingState.Tracking`, komponent zbiera jej pózu **jeden vzorok za snímok, 30 snímok**,
+spriemeruje a raz aplikuje. Potom sa už nehýbe.
 
-  Dôvod: ARCore aktualizuje pózu sledovaného obrázka každý snímok a skáče o jednotky
-  centimetrov. Zosúladenie z jedného snímku meria šum, nie chybu modelu — a riadok „chyba
-  už pri značke, konštantná" z tabuľky v kroku 10 by potom konštantný nebol.
+Priemerovanie nie je kozmetika. ARCore aktualizuje pózu sledovaného obrázka každý snímok
+a skáče o jednotky centimetrov. Zosúladenie z jedného snímku meria ten šum, nie chybu
+v zameraní značky — a riadok „chyba už pri značke, konštantná" z tabuľky v kroku 10 by
+konštantný nevyšiel.
 
-- Zosúladenie: `AlignmentRoot.SetPositionAndRotation` tak, aby `MarkerAnchor` sadol na
-  spriemerovanú pózu. Prakticky `AlignmentRoot.transform = markerWorldPose * MarkerAnchor.localToWorld⁻¹`.
-- **Tlačidlo re-anchor** — v teréne sa bude používať často.
-- Tlačidlo zamrznúť / rozmraziť sledovanie, aby sa prekryv nehýbal počas fotenia.
+Sledovať pózu naživo by bolo horšie: prekryv by sa chvel a hlavne by sa **schoval presne
+ten jav, ktorý test meria** — ako ďaleko prekryv odíde od budovy počas chôdze.
 
-**Hotovo, keď:** po namierení na značku prekryv skočí na miesto a pri opakovanom
-zosúladení z rovnakého miesta skočí na to isté (rozdiel pod 1–2 cm).
+**Matematika.** Póza kotvy voči koreňu je pevná, takže hľadaný koreň je
+`root = measured · anchorLocal⁻¹`:
+
+```csharp
+rootRotation = measuredRotation * Quaternion.Inverse(anchorLocalRotation);
+rootPosition = measuredPosition - rootRotation * anchorLocalPosition;
+```
+
+**Rozptyl vzoriek.** `SampleSpreadMeters` a `SampleSpreadDegrees` hlásia najväčšiu odchýlku
+vzorky od priemeru. To je práve to číslo, ktorým sa pri čítaní výsledku odlíši skutočný
+posun od šumu trackera. Zapisuje sa aj do konzoly pri každom zosúladení.
+
+**`Realign()`** je verejná metóda pre tlačidlo re-anchor. Prvé zosúladenie prebehne
+automaticky pri prvom uvidení značky (`m_AlignOnFirstSighting`), ďalšie len na požiadanie.
+
+**Varovanie na nenastavenú kotvu.** Ak `MarkerAnchor` stále sedí na počiatku bez rotácie,
+komponent to raz nahlási — inak by prekryv pristál na nezmyselnom mieste bez vysvetlenia.
+
+#### Odchýlka od plánu: tlačidlo zamrznúť/rozmraziť nevzniklo
+
+Plán ho žiadal, „aby sa prekryv nehýbal počas fotenia". Pri jednorazovom zosúladení sa
+prekryv nehýbe nikdy — stojí v priestore session a to, čo sa hýbe, je kamera. Tlačidlo by
+bolo bez funkcie. Skryť prekryv sa dá tlačidlom z fázy 5, ktoré plní iný účel a ten zostáva.
+
+#### Overenie matematiky
+
+`FriLens/Verify Alignment Math` (`Assets/_Game/Editor/AlignmentMathVerifier.cs`) — štyri
+kontroly proti známym odpovediam:
+
+```
+solve: anchor lands 0.0001 mm and 0.00000 deg off target
+identity anchor: pos err 0.0000 mm, rot err 0.00000 deg
+rotation average over 30 sign-mixed samples with +-1 deg jitter: 0.000 deg from truth
+  naive sum magnitude, for contrast: 0.0374 (a correct sum is near 30)
+position average: (2.00, 3.00, 4.00) (expected (2.0, 3.0, 4.0))
+
+ALL CHECKS PASSED
+```
+
+Tretia kontrola stojí za vysvetlenie. `q` a `−q` sú tá istá rotácia a ARCore vracia raz
+jedno, raz druhé. Naivný súčet ich vyruší — vidno to na tom riadku „naive sum magnitude
+0.0374" tam, kde by mala byť hodnota blízko 30. Priemer preto najprv preklopí znamienka na
+jednu pologuľu. Bez toho by zosúladenie tu a tam dalo úplný nezmysel a v teréne by to
+vyzeralo ako zle zameraná značka.
+
+Kontroly sú menu položka, nie testovací asmdef: runtime skripty žijú v preddefinovanej
+`Assembly-CSharp`, na ktorú sa testovacia assembly s asmdef odkázať nedá.
+
+**Neoverené:** či po namierení na značku prekryv skočí na miesto a či opakované zosúladenie
+z rovnakého miesta trafí to isté (rozdiel pod 1–2 cm). Vyžaduje značku (fáza 3a), jej pózu
+(fáza 3b) a zariadenie (diera K6).
 
 ---
 
