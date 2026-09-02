@@ -106,32 +106,82 @@ z nich by potreboval vlastné rozhodnutie, čo je ešte jedna plocha.
 
 ---
 
-## Fáza 2 — Vyčistenie scény
+## Fáza 2 — Vyčistenie scény — ✅ hotové (okrem overenia na zariadení)
 
-Zo šablóny zostáva len to, čo AR potrebuje.
+Scéna presunutá a premenovaná: `Assets/Scenes/SampleScene.unity` →
+**`Assets/_Game/Scenes/FriLensTest.unity`**. Vlastný obsah patrí do `_Game/`, rovnako ako
+vo FriWorlde. Build settings obsahujú už len ju.
 
-Odstrániť: `Object Spawner`, `Screen Space Ray Interactor`, celé šablónové `UI`
-(Create/Delete/Options Button, Options Modal, Coaching UI, Greeting Prompt, DebugMenu,
-Object Menu Animator), `ARPlaneManager` vizualizáciu.
+### Odstránené
 
-Nechať a doplniť:
+- `UI` — celé šablónové menu (Create/Delete/Options Button, Options Modal, Coaching UI,
+  Greeting Prompt, DebugMenu, Object Menu Animator)
+- `Object Spawner`, `Screen Space Ray Interactor` — „ťukni a polož kocku"
+- `Directional Light` — prekryv je unlit, svetlo nemá čo osvetľovať
+- `ARPlaneManager` — detekcia rovín kreslila prechodové štvorce práve po podlahe, teda po
+  ploche, ktorej hranu má test čítať. K tomu stojí CPU.
+- `ARRaycastManager`, `InputActionManager` — existovali len pre tap-to-place
+
+### Odpojenie od šablónového prefabu
+
+`XR Origin (AR Rig)` bol inštanciou prefabu z `Assets/Samples/…/AR Starter Assets/`, takže
+odstránené komponenty boli len overrides a scéna si ďalej ťahala závislosti na šablóne.
+Po `UnpackPrefabInstance(Completely)` klesol počet závislostí scény na `MobileARTemplateAssets`
+a `Samples` **zo 16 na 1**.
+
+Tá jedna je `Assets/Samples/…/Starter Assets/XRI Default Input Actions.inputactions`, ktorú
+používa `TrackedPoseDriver` na `Main Camera` na polohu a rotáciu kamery. **Zložka
+`Assets/Samples` sa preto zatiaľ nedá zmazať** — najskôr by ju musel nahradiť vlastný
+`.inputactions`. Bez zariadenia sa to overiť nedá, takže to nechávam tak.
+
+### Výsledná hierarchia
 
 ```
 AR Session
-XR Origin (AR Rig)
+EventSystem
+XR Origin (AR Rig)         + XROrigin, ARTrackedImageManager → FriLensMarkers.asset
   └ Camera Offset
-      └ Main Camera        + ARCameraManager (focusMode = Auto)
-ARTrackedImageManager      → Reference Image Library
-AlignmentRoot              ← korene prekryvu, hýbe ním zosúladenie
-  ├ NavOverlay             MeshFilter = ra000_nav.asset, MeshRenderer = unlit priehľadný
-  └ MarkerAnchor           prázdny objekt na póze značky v súradniciach modelu
-Diagnostics (Canvas)
+      └ Main Camera        + ARCameraManager, ARCameraBackground, TrackedPoseDriver
+FriLens                    + KeepScreenAwake
+AlignmentRoot              ← koreň prekryvu, hýbe ním zosúladenie
+  ├ NavOverlay             ra0_nav (1 259 tris), NavOverlay.mat, lokálne Y = +0.03
+  └ MarkerAnchor           póza značky v súradniciach modelu — zatiaľ nenastavená (fáza 3b)
 ```
 
-`focusMode = Auto` nie je kozmetika — bez autofokusu sa značka z dvoch metrov chytá
-nespoľahlivo.
+Missing scriptov v scéne: 0.
 
-**Hotovo, keď:** appka sa spustí na telefóne, kamera beží, nič zo šablóny neprekáža.
+### Vytvorené assety
+
+| Asset | Poznámka |
+|---|---|
+| `Assets/_Game/AR/FriLensMarkers.asset` | Reference Image Library, **zatiaľ prázdna** |
+| `Assets/_Game/Materials/NavOverlay.mat` | URP/Unlit, Transparent, Cull Off, ZWrite off, queue 3000, `_BaseColor` RGBA(0, 0.85, 1, 0.35) |
+
+`autoFocusRequested` na `ARCameraManager` bolo v šablóne už zapnuté — bez autofokusu sa
+značka z dvoch metrov chytá nespoľahlivo, takže tu nebolo čo meniť.
+
+### Čo z fázy 4 už padlo sem
+
+Materiál aj posadenie 3 cm nad podlahu museli vzniknúť spolu s `NavOverlay`, inak by objekt
+nemal čo kresliť. Fáze 4 zostáva ladenie farby oproti skutočnej podlahe, čo sa aj tak dá
+robiť až na mieste.
+
+Obojstranné vykreslenie preto, že prekryv je jediná plocha: pozerať sa na ňu zhora pri
+státí na nej a spredu od dverí musí dať to isté. `ZWrite` vypnutý, nech si prekrývajúce sa
+polygóny nevystrihujú diery.
+
+### Nedokončené a vedomé
+
+- **`Diagnostics` Canvas nevznikol.** Plán ho tu uvádzal, ale prázdny canvas je mŕtve
+  závažie — vznikne vo fáze 5 aj s obsahom.
+- **`MarkerAnchor` je na počiatku.** Kým fáza 3b nenastaví pózu značky, prekryv sa po
+  zosúladení objaví na nezmyselnom mieste. To je očakávané, nie chyba.
+- **Reference Image Library je prázdna.** ARCore potrebuje na zostavenie svojej `.imgdb`
+  aspoň jeden obrázok, takže build môže na prázdnej knižnici zlyhať. Overiť sa to dá až
+  buildom; obrázok tam aj tak musí pribudnúť vo fáze 3a.
+
+**Neoverené:** či sa appka spustí na telefóne a beží kamera. Rovnako ako pri fáze 0 to
+vyžaduje zariadenie (diera K6).
 
 ---
 
