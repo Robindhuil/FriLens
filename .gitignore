@@ -111,3 +111,12 @@ InitTestScene*.unity*
 # Dôvod a náhradné riešenie: docs/decisions/002-verzovanie-modelov.md
 /[Aa]ssets/[Mm]odels/*.blend
 /[Aa]ssets/[Mm]odels/*.blend.meta
+
+# XR Simulation presúva svoje settings sem počas play mode a späť po jeho ukončení.
+# Je to pracovný priečinok, nie zdroj.
+/[Aa]ssets/XR/Temp/
+/[Aa]ssets/XR/Temp.meta
+
+# com.unity.test-framework.performance si sem píše výsledky behov.
+/[Aa]ssets/[Rr]esources/PerformanceTestRun*.json
+/[Aa]ssets/[Rr]esources/PerformanceTestRun*.json.meta

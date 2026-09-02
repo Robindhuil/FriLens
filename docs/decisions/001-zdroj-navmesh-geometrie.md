@@ -1,6 +1,6 @@
 # ADR 001 — Zdroj navigačnej geometrie: nepiecť, extrahovať
 
-**Dátum:** 2026-09-02 · **Stav:** prijaté
+**Verzia:** 0.1.0-alpha · **Dátum:** 2026-09-02 · **Stav:** prijaté
 
 ## Kontext
 

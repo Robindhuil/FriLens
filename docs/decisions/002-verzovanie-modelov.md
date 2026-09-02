@@ -1,6 +1,6 @@
 # ADR 002 — Verzovanie veľkých modelov
 
-**Dátum:** 2026-09-02 · **Stav:** navrhnuté, čaká na potvrdenie
+**Verzia:** 0.1.0-alpha · **Dátum:** 2026-09-02 · **Stav:** navrhnuté, čaká na potvrdenie
 
 ## Kontext
 

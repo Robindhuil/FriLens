@@ -1,6 +1,6 @@
 # Stav projektu a analýza `navmesh.blend`
 
-**Dátum:** 2026-09-02 · **Unity:** 6000.4.11f1 · **Stav:** prieskum dokončený, implementácia nezačatá
+**Verzia:** 0.1.0-alpha · **Dátum:** 2026-09-02 · **Unity:** 6000.4.11f1 · **Stav:** prieskum dokončený
 
 Východiskový dokument: [`FriWorld/docs/2026-08-29-frilens-ar-test.md`](../../FriWorld/docs/2026-08-29-frilens-ar-test.md).
 Tento dokument opisuje, čo v projekte skutočne je — nie čo bolo naplánované. Kde sa
@@ -30,6 +30,9 @@ označil za povinný, lebo predpokladal, že navmesh budeme piecť. Nebudeme.
 ### Android
 
 Android Build Support **je nainštalovaný** (`PlaybackEngines/AndroidPlayer`).
+
+Tabuľka nižšie je stav **pri prieskume**. Čo z nej fáza 0 zmenila, je v
+[pláne](2026-09-02-implementacny-plan.md#fáza-0--hygiena-projektu--✅-hotové-okrem-overenia-na-zariadení).
 
 | Nastavenie | Hodnota | Verdikt |
 |---|---|---|

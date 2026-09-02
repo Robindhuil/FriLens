@@ -1,6 +1,6 @@
 # ADR 004 — Zariadenia bez ARCore
 
-**Dátum:** 2026-09-02 · **Stav:** prijaté
+**Verzia:** 0.1.0-alpha · **Dátum:** 2026-09-02 · **Stav:** prijaté
 
 ## Kontext
 

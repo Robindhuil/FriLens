@@ -1,5 +1,7 @@
 # FriLens — dokumentácia
 
+**Verzia:** 0.1.0-alpha · **Stav:** fázy 0–2, 3c a 5 hotové; nič z toho zatiaľ nebežalo na telefóne
+
 Samostatný Unity projekt oddelený od `FriWorld`. Jediná otázka, na ktorú má odpovedať:
 **ako presne sa navmesh premietne do skutočnej fakulty a ako rýchlo to odchádza, keď sa
 človek prejde.**
@@ -20,6 +22,35 @@ Nie navigačná appka. Nie prekryv miestností. Jedna značka, jedna plocha, vla
 Východiskový návrh testu žije vo FriWorlde:
 [`FriWorld/docs/2026-08-29-frilens-ar-test.md`](../../FriWorld/docs/2026-08-29-frilens-ar-test.md).
 Tam, kde sa s ním tunajšie dokumenty rozchádzajú, je rozdiel výslovne vysvetlený.
+
+## Verzie a buildy
+
+Verzia je konštanta `Version` v
+[`Assets/_Game/Editor/AndroidBuilder.cs`](../Assets/_Game/Editor/AndroidBuilder.cs). Je to
+jediné miesto, kde sa mení — odtiaľ sa stampuje do `PlayerSettings.bundleVersion` aj do
+názvu priečinka s buildom. Player Settings sa preto ručne needitujú; editor ich vie prepísať
+pri každom uložení a build, ktorého manifest nesedí s názvom priečinka, je horší než žiadna
+verzia.
+
+Build sa spúšťa cez menu **`FriLens > Build Android <verzia>`** a skončí v:
+
+```
+Documents/Robin/unity/frilens/builds/android/<verzia>/
+    FriLens.apk
+    build-info.txt      ← verzia, dátum, Unity, bundle id, min SDK, backend, ABI, scény
+```
+
+Nový build:
+
+1. zdvihnúť `Version` **aj** `VersionCode` v `AndroidBuilder.cs`,
+2. dopísať, čo sa zmenilo, do [`CHANGELOG.md`](../CHANGELOG.md),
+3. spustiť menu položku.
+
+Prvý IL2CPP build trvá aj desiatky minút a editor je počas neho nereagujúci. Ďalšie sú
+podstatne rýchlejšie.
+
+**Každý dokument nesie v hlavičke verziu**, ku ktorej sa vzťahuje. Keď sa verzia zdvihne
+a dokument sa vecne zmení, prepíše sa mu aj verzia v hlavičke.
 
 ## Ako túto dokumentáciu udržiavať
 
