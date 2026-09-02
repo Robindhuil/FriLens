@@ -178,9 +178,9 @@ polygóny nevystrihujú diery.
   závažie — vznikne vo fáze 5 aj s obsahom.
 - **`MarkerAnchor` je na počiatku.** Kým fáza 3b nenastaví pózu značky, prekryv sa po
   zosúladení objaví na nezmyselnom mieste. To je očakávané, nie chyba.
-- **Reference Image Library je prázdna.** ARCore potrebuje na zostavenie svojej `.imgdb`
-  aspoň jeden obrázok, takže build môže na prázdnej knižnici zlyhať. Overiť sa to dá až
-  buildom; obrázok tam aj tak musí pribudnúť vo fáze 3a.
+- **Reference Image Library je prázdna**, takže appka nemá čo sledovať. Obava, že prázdna
+  knižnica zhodí build, sa **nepotvrdila** — build 0.1.0-alpha prešiel a v APK jednoducho
+  nie je žiadna `.imgdb`. Obrázok tam musí pribudnúť vo fáze 3a.
 
 **Neoverené:** či sa appka spustí na telefóne a beží kamera. Rovnako ako pri fáze 0 to
 vyžaduje zariadenie (diera K6).

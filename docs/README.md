@@ -35,8 +35,8 @@ verzia.
 Build sa spúšťa cez menu **`FriLens > Build Android <verzia>`** a skončí v:
 
 ```
-Documents/Robin/unity/frilens/builds/android/<verzia>/
-    FriLens.apk
+Documents/Robin/unity/frilens/<verzia>/
+    FriLens <verzia>.apk
     build-info.txt      ← verzia, dátum, Unity, bundle id, min SDK, backend, ABI, scény
 ```
 

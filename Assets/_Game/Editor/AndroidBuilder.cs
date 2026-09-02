@@ -30,7 +30,7 @@ namespace FriLens.EditorTools
         /// <summary>Android versionCode. Must go up on every build Android is asked to install over another.</summary>
         public const int VersionCode = 1;
 
-        const string ApkName = "FriLens.apk";
+        const string ProductName = "FriLens";
 
         [MenuItem("FriLens/Build Android " + Version)]
         public static void Build()
@@ -57,7 +57,7 @@ namespace FriLens.EditorTools
 
             var folder = OutputFolder();
             Directory.CreateDirectory(folder);
-            var apk = Path.Combine(folder, ApkName);
+            var apk = Path.Combine(folder, $"{ProductName} {Version}.apk");
 
             Debug.Log($"Building {Version} to {apk}. An IL2CPP build takes a while and the editor "
                 + "is unresponsive until it finishes; the first one is by far the slowest.");
@@ -97,13 +97,17 @@ namespace FriLens.EditorTools
         }
 
         /// <summary>
-        /// Sits beside the other Unity builds in Documents, one folder per version. Derived from
-        /// the OS documents folder rather than hard-coded, so the path is not tied to one machine.
+        /// Sits beside the other Unity builds in Documents, one folder per version. The layout
+        /// matches the one the 0.1.0-alpha build was filed under by hand; FriLens only ships to
+        /// Android, so there is no platform folder the way friworld has builds/web and builds/win.
+        ///
+        /// Derived from the OS documents folder rather than hard-coded, so the path is not tied
+        /// to one machine.
         /// </summary>
         public static string OutputFolder()
         {
             var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            return Path.Combine(documents, "Robin", "unity", "frilens", "builds", "android", Version);
+            return Path.Combine(documents, "Robin", "unity", "frilens", Version);
         }
 
         /// <summary>

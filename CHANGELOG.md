@@ -33,7 +33,23 @@ Prvý build. Nič z toho zatiaľ nebežalo na telefóne.
 - Držanie obrazovky zapnutej po celú session. Zamknutie obrazovky ukončí AR session
   a zosúladenie po ňom už meria drift novej session.
 - `FriLens > Build Android <verzia>` — stampne verziu, zbuilduje APK a uloží ho do
-  `Documents/Robin/unity/frilens/builds/android/<verzia>/` aj s `build-info.txt`.
+  `Documents/Robin/unity/frilens/<verzia>/` aj s `build-info.txt`.
+
+### Overené na APK
+
+Prvý build prešiel. `aapt dump badging` na `FriLens 0.1.0-alpha.apk` (43 MB):
+
+| | |
+|---|---|
+| package | `sk.uniza.fri.frilens` |
+| versionName / versionCode | `0.1.0-alpha` / `1` |
+| minSdkVersion / targetSdk | 25 / 36 |
+| native-code | `arm64-v8a` |
+| orientácia | portrait |
+| `com.google.ar.core` | **`optional`** — nainštaluje sa aj na zariadenie bez ARCore |
+| `com.google.ar.core.InstallActivity` | prítomná, teda aj tok na doinštalovanie Play Services for AR |
+| permissions | `CAMERA`, `INTERNET` |
+| debuggable | nie, release build |
 
 ### Changed
 
@@ -61,7 +77,8 @@ Prvý build. Nič z toho zatiaľ nebežalo na telefóne.
   póza a telefón s ARCore.
 - `MarkerAnchor` stojí na počiatku, takže po zosúladení pristane prekryv na nezmyselnom
   mieste. Očakávané, nie chyba.
-- Reference Image Library je prázdna. ARCore potrebuje na zostavenie `.imgdb` aspoň jeden
-  obrázok, takže build na nej môže zlyhať — overí sa až prvým buildom.
+- Reference Image Library je prázdna, takže appka nemá čo sledovať. Obava, že prázdna
+  knižnica zhodí build, sa **nepotvrdila** — build prešiel a v APK jednoducho nie je žiadna
+  `.imgdb`.
 - Na snímkach z editora sa vľavo hore objavuje zmenšená kópia UI panelu. Vyzerá to na
   artefakt `ScreenCapture`, potvrdiť sa to dá až na telefóne.
