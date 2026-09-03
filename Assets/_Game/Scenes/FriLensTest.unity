@@ -290,6 +290,7 @@ MonoBehaviour:
   m_SampleCount: 30
   m_ReferenceImageName: 
   m_AlignOnFirstSighting: 1
+  m_SampleGapTimeoutSeconds: 2
 --- !u!114 &288061786
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -322,6 +323,7 @@ MonoBehaviour:
   m_Camera: {fileID: 2512387469332387801}
   m_MinimumStepMeters: 0.004
   m_MaximumStepSpeed: 4
+  m_MaximumStepMeters: 1
 --- !u!114 &288061788
 MonoBehaviour:
   m_ObjectHideFlags: 0
