@@ -1,6 +1,6 @@
 # FriLens — dokumentácia
 
-**Verzia:** 0.1.0-alpha · **Stav:** fázy 0–2, 3c a 5 hotové; nič z toho zatiaľ nebežalo na telefóne
+**Verzia:** 0.1.1-alpha · **Stav:** fázy 0–2, 3c a 5 hotové; prvý beh na telefóne odhalil dve chyby v AR — opravené v 0.1.1-alpha, zatiaľ neoverené
 
 Samostatný Unity projekt oddelený od `FriWorld`. Jediná otázka, na ktorú má odpovedať:
 **ako presne sa navmesh premietne do skutočnej fakulty a ako rýchlo to odchádza, keď sa

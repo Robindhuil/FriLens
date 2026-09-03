@@ -1,6 +1,6 @@
 # Implementačný plán
 
-**Verzia:** 0.1.0-alpha · **Dátum:** 2026-09-02 · **Stav:** fázy 0–2, 3c, 5 hotové · **Predpoklad:** [analýza stavu](2026-09-02-stav-projektu-a-analyza-navmeshu.md)
+**Verzia:** 0.1.1-alpha · **Dátum:** 2026-09-02 · **Stav:** fázy 0–2, 3c, 5 hotové · **Predpoklad:** [analýza stavu](2026-09-02-stav-projektu-a-analyza-navmeshu.md)
 
 Cieľ testu sa nemení oproti pôvodnému dokumentu: **zistiť, ako presne sedí navmesh na
 skutočnú fakultu a ako rýchlo to odchádza pri chôdzi.** Nie navigácia, nie okluzia, jedna
