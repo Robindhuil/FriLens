@@ -1,6 +1,6 @@
 # Stav projektu a analýza `navmesh.blend`
 
-**Verzia:** 0.1.0-alpha · **Dátum:** 2026-09-02 · **Unity:** 6000.4.11f1 · **Stav:** prieskum dokončený
+**Verzia:** 0.1.1-alpha · **Dátum:** 2026-09-02 · **Unity:** 6000.4.11f1 · **Stav:** prieskum dokončený
 
 Východiskový dokument: [`FriWorld/docs/2026-08-29-frilens-ar-test.md`](../../FriWorld/docs/2026-08-29-frilens-ar-test.md).
 Tento dokument opisuje, čo v projekte skutočne je — nie čo bolo naplánované. Kde sa
