@@ -79,11 +79,11 @@ namespace FriLens
             // working session, so the preview path can never be reached by asking. Without a way
             // to force it, the mode a phone like the Redmi 14C actually lands in would only ever
             // be seen for the first time on that phone.
-            if (m_Override != ModeOverride.Auto)
+            if (m_Override == ModeOverride.ForcePreview)
             {
                 DecidedFrom = ARSession.state;
-                if (m_Override == ModeOverride.ForcePreview) EnterPreview(); else EnterAr();
-                Explanation = "Forced " + m_Override + " in the inspector. Not what this device reported.";
+                EnterPreview();
+                Explanation = "Forced to preview in the inspector. Not what this device reported.";
                 yield break;
             }
 
@@ -94,7 +94,7 @@ namespace FriLens
             // opens the camera and sits in SessionInitializing forever with notTrackingReason
             // None, because nothing failed; it simply never converges. Asking the sensor first
             // is both cheaper and more truthful than asking ARCore.
-            if (!SystemInfo.supportsGyroscope)
+            if (m_Override != ModeOverride.ForceAr && !SystemInfo.supportsGyroscope)
             {
                 DecidedFrom = ARSession.state;
                 EnterPreview();
@@ -117,6 +117,16 @@ namespace FriLens
             }
 
             DecidedFrom = ARSession.state;
+
+            // ForceAr overrides the verdict, not the check. Skipping the check as well used to
+            // leave the session sitting at state None, so the forced AR mode showed a HUD that
+            // could never light up — which made it useless for the one thing it exists for.
+            if (m_Override == ModeOverride.ForceAr)
+            {
+                EnterAr();
+                Explanation = "Forced to AR in the inspector. Not what this device reported.";
+                yield break;
+            }
 
             if (ARSession.state == ARSessionState.Unsupported || ARSession.state == ARSessionState.NeedsInstall)
                 EnterPreview();

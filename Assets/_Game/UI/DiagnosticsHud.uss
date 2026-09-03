@@ -1,149 +1,336 @@
-/*
- * Field HUD. Read at arm's length, in a corridor, while walking, often against a bright window.
- * That drives every choice here: heavy panels behind text rather than plain labels over the
- * camera feed, large type, and touch targets big enough to hit without looking.
+/* FriLens diagnostics HUD.
+ *
+ * Visual language taken from FriWorld-Hub: paper and ink, hard outlines, a shadow that is a
+ * solid offset layer rather than a blur. Everything rests on shape, colour, size and spacing —
+ * USS has no gradients, no blur and no box-shadow, so nothing here may depend on them.
+ *
+ * Colours live here as custom properties and nowhere else. Code sets classes, never colours;
+ * that way a repaint is one file, not a hunt through C#.
+ *
+ * Two things this file has already been caught out by, both silent:
+ *
+ *   var() works for colours but NOT for -unity-font-definition. A font behind a variable
+ *   resolves to nothing and the text simply does not draw — no warning, no fallback face.
+ *   The font urls are therefore written out in full at every use. Do not tidy them into
+ *   tokens.
+ *
+ *   border-radius clamps its horizontal and vertical radii separately, so 999px on a wide,
+ *   short element gives an ellipse rather than a pill. Radii are half the element's height.
  */
 
-.root {
+/* ── Tokens ─────────────────────────────────────────────────────────── */
+.hud {
+    --paper: #fffcf5;
+    --surface: #ffffff;
+    --ink: #1b1b1b;
+    --accent: #fbb800;
+    --accent-soft: #fff1c9;
+
+    --ok: #10b981;
+    --warn-fg: #a56a00;
+    --warn-bg: #fff1c9;
+    --bad-fg: #b3261e;
+    --bad-bg: #fbddd8;
+
+    --value: #1b1b1b;
+    --value-idle: rgba(27, 27, 27, 0.35);
+    --label: rgba(27, 27, 27, 0.6);
+    --label-idle: rgba(27, 27, 27, 0.45);
+    --hairline: rgba(27, 27, 27, 0.1);
+    --outline-idle: rgba(27, 27, 27, 0.3);
+    --disabled-bg: #efece5;
+
     flex-grow: 1;
+    align-items: stretch;
     justify-content: flex-start;
-    padding-top: 44px;
-    padding-bottom: 24px;
-    padding-left: 16px;
-    padding-right: 16px;
 }
 
-/* --- banner ------------------------------------------------------------- */
+.is-hidden { display: none; }
 
-.banner {
-    background-color: rgba(10, 12, 16, 0.86);
-    border-radius: 12px;
-    padding: 10px 14px;
-    margin-bottom: 10px;
+/* ── Card and hard shadow ───────────────────────────────────────────── */
+/* USS has no box-shadow. The wrapper is a solid ink slab and the card inside it is nudged up
+   and left, so the ink shows along the bottom and right edges. */
+.shadow {
+    background-color: var(--ink);
+    border-radius: 16px;
+    margin-left: 12px;
+    margin-right: 12px;
+    margin-top: 10px;
+}
+.shadow--pill { border-radius: 32px; }
+
+.card {
+    background-color: var(--surface);
+    border-width: 1.5px;
+    border-color: var(--ink);
+    border-radius: 16px;
+    translate: -3px -3px;
+    overflow: hidden;
 }
 
-.banner__mode {
-    font-size: 22px;
-    -unity-font-style: bold;
-    color: rgb(120, 226, 255);
-    letter-spacing: 2px;
+/* ── Mode banner ────────────────────────────────────────────────────── */
+.banner-body { padding: 13px 16px 15px 16px; }
+
+.hazard {
+    height: 10px;
+    background-image: url("project://database/Assets/_Game/UI/Icons/hazard-stripe-360x10.png");
+    -unity-background-scale-mode: scale-and-crop;
 }
 
-.banner__detail {
-    font-size: 15px;
-    color: rgba(226, 232, 240, 0.78);
-    white-space: normal;
-    margin-top: 2px;
-}
-
-/* Preview is not a test. It has to be impossible to mistake for one. */
-.banner--preview {
-    background-color: rgba(94, 44, 8, 0.92);
-}
-
-.banner--preview .banner__mode {
-    color: rgb(255, 186, 96);
-}
-
-.banner--ar {
-    background-color: rgba(8, 42, 52, 0.90);
-}
-
-/* --- stats -------------------------------------------------------------- */
-
-.stats {
-    background-color: rgba(10, 12, 16, 0.86);
-    border-radius: 12px;
-    padding: 6px 14px;
-}
-
-.stat {
+.pill {
     flex-direction: row;
-    justify-content: space-between;
     align-items: center;
-    padding-top: 5px;
-    padding-bottom: 5px;
+    align-self: flex-start;
+    background-color: var(--accent-soft);
+    border-width: 1.5px;
+    border-color: var(--ink);
+    border-radius: 13px;
+    padding: 2px 10px 2px 10px;
 }
 
-.stat__name {
+.pill-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 4px;
+    margin-right: 7px;
+    background-color: var(--outline-idle);
+}
+/* The dot's colour is a class, not a value set from code. */
+.pill-dot--idle   { background-color: var(--outline-idle); }
+.pill-dot--ok     { background-color: var(--ok); }
+.pill-dot--accent { background-color: var(--ink); }
+
+.pill-text {
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    color: var(--ink);
+    -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/Nunito SDF.asset");
+    -unity-font-style: bold;
+}
+
+.mode-title {
+    margin-top: 7px;
+    font-size: 22px;
+    color: var(--ink);
+    -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/Fredoka SDF.asset");
+    -unity-font-style: bold;
+}
+.mode-reason {
+    margin-top: 3px;
     font-size: 15px;
-    color: rgba(226, 232, 240, 0.62);
-}
-
-.stat__value {
-    font-size: 19px;
-    -unity-font-style: bold;
-    color: rgb(237, 242, 247);
-    -unity-text-align: middle-right;
-}
-
-/* Distance walked is the x-axis of the whole test, so it outranks the rest. */
-.stat--headline .stat__value {
-    font-size: 27px;
-    color: rgb(120, 226, 255);
-}
-
-.stat__value--warn {
-    color: rgb(255, 186, 96);
-}
-
-.stat__value--bad {
-    color: rgb(255, 122, 122);
-}
-
-.stat__value--idle {
-    color: rgba(226, 232, 240, 0.45);
-}
-
-/* --- controls ----------------------------------------------------------- */
-
-.spacer {
-    flex-grow: 1;
-}
-
-.controls {
-    flex-direction: row;
-    justify-content: space-between;
-}
-
-.button {
-    flex-grow: 1;
-    height: 62px;
-    margin: 0 4px;
-    border-radius: 12px;
-    border-width: 0;
-    font-size: 17px;
-    -unity-font-style: bold;
-    background-color: rgba(28, 34, 44, 0.94);
-    color: rgb(237, 242, 247);
-}
-
-.button:hover {
-    background-color: rgba(44, 54, 68, 0.96);
-}
-
-.button:active {
-    background-color: rgba(70, 86, 108, 0.98);
-}
-
-.button--primary {
-    background-color: rgba(14, 116, 144, 0.96);
-}
-
-.button--primary:active {
-    background-color: rgba(22, 160, 195, 0.98);
-}
-
-.button--disabled {
-    background-color: rgba(28, 34, 44, 0.55);
-    color: rgba(237, 242, 247, 0.35);
-}
-
-/* --- footer ------------------------------------------------------------- */
-
-.footer {
-    margin-top: 8px;
-    font-size: 12px;
-    color: rgba(226, 232, 240, 0.45);
+    color: var(--label);
     white-space: normal;
+    -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/Nunito SDF.asset");
 }
+
+/* ── Readout ────────────────────────────────────────────────────────── */
+.row {
+    flex-direction: row;
+    align-items: center;
+    padding: 9px 14px 9px 14px;
+    border-top-width: 1.5px;
+    border-top-color: var(--hairline);
+    min-height: 44px;
+}
+/* USS has no structural pseudo-classes, so the first row is marked by hand. */
+.row--first { border-top-width: 0; }
+
+.row--walked {
+    background-color: var(--paper);
+    padding-top: 12px;
+    padding-bottom: 12px;
+    min-height: 50px;
+}
+
+.row-icon {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    margin-right: 10px;
+    border-width: 1.5px;
+    border-color: var(--outline-idle);
+    border-radius: 7px;
+    background-color: var(--paper);
+    align-items: center;
+    justify-content: center;
+}
+.row-icon--strong { border-color: var(--ink); background-color: var(--surface); }
+.row-icon--active { border-color: var(--ink); }
+.row-icon--warn   { border-color: var(--ink); background-color: var(--warn-bg); }
+.row-icon--bad    { border-color: var(--ink); background-color: var(--bad-bg); }
+
+.row-glyph {
+    width: 16px;
+    height: 16px;
+    -unity-background-image-tint-color: var(--ink);
+}
+.glyph--tracking    { background-image: url("project://database/Assets/_Game/UI/Icons/tracking.png"); }
+.glyph--marker      { background-image: url("project://database/Assets/_Game/UI/Icons/marker.png"); }
+.glyph--alignment   { background-image: url("project://database/Assets/_Game/UI/Icons/alignment.png"); }
+.glyph--walked      { background-image: url("project://database/Assets/_Game/UI/Icons/walked.png"); }
+.glyph--from-marker { background-image: url("project://database/Assets/_Game/UI/Icons/from-marker.png"); }
+.glyph--device      { background-image: url("project://database/Assets/_Game/UI/Icons/device.png"); }
+
+.row-label {
+    flex-shrink: 0;
+    font-size: 15px;
+    color: var(--label);
+    -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/Nunito SDF.asset");
+    -unity-font-style: bold;
+}
+.row-label--strong { letter-spacing: 0.3px; }
+.row-label--idle   { color: var(--label-idle); }
+
+.row-spacer { flex-grow: 1; }
+
+.dot {
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    margin-right: 8px;
+    background-color: var(--ok);
+}
+
+/* Monospaced on purpose: these numbers change several times a second and a proportional face
+   would make the whole row twitch on every redraw. */
+.row-value {
+    font-size: 19px;
+    color: var(--value);
+    /* Flex items here do not shrink unless told to, so a long value such as the alignment
+       readout ran straight off the right edge of the card instead of wrapping inside it. */
+    flex-shrink: 1;
+    max-width: 180px;
+    white-space: normal;
+    -unity-text-align: middle-right;
+    -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/JetBrainsMono-Medium SDF.asset");
+}
+
+.v--ok   { color: var(--value); background-color: rgba(0, 0, 0, 0); }
+.v--warn { color: var(--warn-fg); background-color: var(--warn-bg); border-radius: 6px; padding: 2px 6px 2px 6px; }
+.v--bad  { color: var(--bad-fg);  background-color: var(--bad-bg);  border-radius: 6px; padding: 2px 6px 2px 6px; }
+.v--idle { color: var(--value-idle); background-color: rgba(0, 0, 0, 0); }
+
+/* Long values such as "SessionInitializing · InsufficientLight" wrap to two lines. */
+.v--long { font-size: 16px; }
+
+.walked-holder { justify-content: center; }
+.marker-band {
+    position: absolute;
+    left: -4px;
+    right: -4px;
+    bottom: 3px;
+    height: 12px;
+    border-radius: 2px;
+    background-color: var(--accent);
+}
+.walked-value {
+    font-size: 40px;
+    color: var(--value);
+    -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/Fredoka SDF.asset");
+    -unity-font-style: bold;
+}
+
+/* ── Space for the camera ───────────────────────────────────────────── */
+.gap { flex-grow: 1; min-height: 24px; }
+
+/* ── Buttons ────────────────────────────────────────────────────────── */
+.buttons { margin-left: 12px; margin-right: 12px; }
+
+.btn {
+    height: 64px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    border-width: 1.5px;
+    border-color: var(--ink);
+    border-radius: 32px;
+    background-color: var(--surface);
+}
+.btn--primary   { background-color: var(--accent); translate: -3px -3px; }
+.btn--secondary { background-color: var(--surface); }
+.btn:hover      { background-color: var(--surface); }
+.btn--primary:hover  { background-color: var(--accent); }
+.btn--primary:active { translate: -1px -1px; }
+
+.btn:disabled {
+    opacity: 1;
+    background-color: var(--disabled-bg);
+    border-color: var(--outline-idle);
+    translate: 0 0;
+}
+.btn:disabled .btn-text  { color: var(--value-idle); }
+.btn:disabled .btn-glyph { -unity-background-image-tint-color: var(--value-idle); }
+.btn:disabled .btn-note  { color: var(--value-idle); }
+
+.btn-glyph {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-right: 9px;
+    -unity-background-image-tint-color: var(--ink);
+}
+.glyph--reanchor     { background-image: url("project://database/Assets/_Game/UI/Icons/reanchor.png"); }
+.glyph--overlay-hide { background-image: url("project://database/Assets/_Game/UI/Icons/overlay-hide.png"); }
+.glyph--overlay-show { background-image: url("project://database/Assets/_Game/UI/Icons/overlay-show.png"); }
+.glyph--mark         { background-image: url("project://database/Assets/_Game/UI/Icons/mark.png"); }
+
+.btn-text {
+    font-size: 17px;
+    color: var(--ink);
+    -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/Fredoka SDF.asset");
+    -unity-font-style: bold;
+}
+.btn-note {
+    font-size: 12px;
+    margin-left: 8px;
+    color: var(--value-idle);
+    -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/JetBrainsMono-Medium SDF.asset");
+}
+
+.btn-row { flex-direction: row; margin-top: 10px; }
+.btn--grow { flex-grow: 1; margin-right: 10px; }
+.btn--mark { width: 110px; }
+
+/* ── Footer ─────────────────────────────────────────────────────────── */
+.footer {
+    margin: 10px 12px 12px 12px;
+    padding: 6px 12px 6px 12px;
+    border-width: 1.5px;
+    border-color: rgba(27, 27, 27, 0.2);
+    border-radius: 15px;
+    background-color: rgba(255, 252, 245, 0.9);
+    font-size: 12px;
+    color: rgba(27, 27, 27, 0.5);
+    white-space: normal;
+    -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/JetBrainsMono-Regular SDF.asset");
+}
+.footer--alert { color: var(--accent); border-color: var(--ink); background-color: var(--ink); }
+
+/* ── Preview mode ───────────────────────────────────────────────────── */
+/* Preview draws the same overlay with none of the meaning. Somebody will eventually try to
+   read accuracy off it, so the whole card flips to black with a hazard stripe — a change big
+   enough to register out of the corner of the eye, not a word that has to be read. */
+.hud--preview #banner { background-color: var(--ink); }
+.hud--preview .mode-title { color: var(--accent); font-size: 24px; }
+.hud--preview .mode-reason { color: rgba(255, 252, 245, 0.75); }
+.hud--preview .pill { background-color: var(--accent); border-color: var(--accent); }
+.hud--preview .pill-dot { background-color: var(--ink); }
+.hud--preview .pill-text { color: var(--ink); }
+
+.hud--preview #readout { background-color: #2a2a2a; }
+.hud--preview .row { border-top-color: rgba(255, 252, 245, 0.12); }
+.hud--preview .row--walked { background-color: #1f1f1f; }
+.hud--preview .row-label { color: rgba(255, 252, 245, 0.4); }
+.hud--preview .row-value { color: rgba(255, 252, 245, 0.35); }
+.hud--preview .walked-value { font-size: 22px; color: rgba(255, 252, 245, 0.4); }
+.hud--preview .row-icon { background-color: #1f1f1f; border-color: rgba(255, 252, 245, 0.25); }
+.hud--preview .row-glyph { -unity-background-image-tint-color: rgba(255, 252, 245, 0.45); }
+
+/* The dimming above is deliberate, but it must not swallow a value that is reporting a
+   problem — in preview the Device row is the one saying why there is no AR. Restored here,
+   after the dimming rule, with a background dark enough to read on the black card. */
+.hud--preview .v--warn { color: #ffce6a; background-color: rgba(165, 106, 0, 0.35); }
+.hud--preview .v--bad  { color: #ff9a92; background-color: rgba(179, 38, 30, 0.35); }

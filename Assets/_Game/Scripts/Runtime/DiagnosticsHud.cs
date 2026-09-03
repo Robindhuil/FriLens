@@ -1,20 +1,21 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.XR.ARFoundation;
+using UnityEngine.XR.ARSubsystems;
 
 namespace FriLens
 {
     /// <summary>
-    /// The on-screen readout for the field test, built on UI Toolkit.
+    /// Reads the state of the test and hands it to <see cref="DiagnosticsHudView"/>.
     ///
-    /// Without numbers on screen the test degrades into "it looked a bit off", which is not an
-    /// answer to anything. Every row here exists because reading the result depends on it:
-    /// tracking state says whether a jump was drift or a lost session, distance walked is the
-    /// axis drift grows along, and the alignment's sample spread separates a real offset at the
-    /// marker from tracker noise.
+    /// Without numbers on screen the test degrades into "it looked a bit off", which answers
+    /// nothing. Every row exists because reading the result depends on it: tracking state says
+    /// whether a jump was drift or a lost session, distance walked is the axis drift grows
+    /// along, and the alignment's sample spread separates a real offset at the marker from
+    /// tracker noise.
     ///
-    /// The mode banner is deliberately loud. Preview mode draws the same overlay with none of the
-    /// meaning, and somebody eventually will try to read accuracy off it.
+    /// This class knows what the numbers mean; the view knows how they look. Neither knows the
+    /// other's job.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public class DiagnosticsHud : MonoBehaviour
@@ -24,135 +25,108 @@ namespace FriLens
         [SerializeField] CameraTravel m_Travel;
         [SerializeField] SessionLogger m_Logger;
 
-        [Tooltip("Renderer switched off by the Hide overlay button, so you can see what is under it.")]
+        [Tooltip("Renderer switched off by the overlay button, so you can see what is under it.")]
         [SerializeField] Renderer m_Overlay;
 
         [Tooltip("Seconds of SessionInitializing after which the HUD stops waiting politely and "
             + "says the session is stuck.")]
         [SerializeField] float m_InitializingPatienceSeconds = 20f;
 
-        Label m_ModeLabel;
-        Label m_ModeDetail;
-        Label m_Tracking;
-        Label m_Device;
-        Label m_Marker;
-        Label m_AlignmentValue;
-        Label m_Walked;
-        Label m_FromOrigin;
-        Label m_Log;
-        VisualElement m_Banner;
-        Button m_RealignButton;
-        Button m_OverlayButton;
-        Button m_MarkButton;
+        DiagnosticsHudView m_View;
 
         int m_MarkCount;
-        SessionModeController.SessionMode m_ShownMode = (SessionModeController.SessionMode)(-1);
         float m_InitializingSince = -1f;
-
-        void OnEnable()
-        {
-            var root = GetComponent<UIDocument>().rootVisualElement;
-
-            m_Banner = root.Q<VisualElement>("banner");
-            m_ModeLabel = root.Q<Label>("mode-label");
-            m_ModeDetail = root.Q<Label>("mode-detail");
-            m_Tracking = root.Q<Label>("tracking-value");
-            m_Device = root.Q<Label>("device-value");
-            m_Marker = root.Q<Label>("marker-value");
-            m_AlignmentValue = root.Q<Label>("alignment-value");
-            m_Walked = root.Q<Label>("walked-value");
-            m_FromOrigin = root.Q<Label>("origin-value");
-            m_Log = root.Q<Label>("log-value");
-
-            m_RealignButton = root.Q<Button>("realign-button");
-            m_OverlayButton = root.Q<Button>("overlay-button");
-            m_MarkButton = root.Q<Button>("mark-button");
-
-            m_RealignButton.clicked += OnRealign;
-            m_OverlayButton.clicked += OnToggleOverlay;
-            m_MarkButton.clicked += OnMark;
-
-            if (m_Alignment != null)
-                m_Alignment.Aligned += OnAligned;
-        }
+        SessionModeController.SessionMode m_ShownMode = (SessionModeController.SessionMode)(-1);
 
         void OnDisable()
         {
-            if (m_RealignButton != null) m_RealignButton.clicked -= OnRealign;
-            if (m_OverlayButton != null) m_OverlayButton.clicked -= OnToggleOverlay;
-            if (m_MarkButton != null) m_MarkButton.clicked -= OnMark;
+            if (m_View != null)
+            {
+                m_View.Reanchor -= OnReanchor;
+                m_View.Mark -= OnMark;
+                m_View.OverlayToggled -= OnOverlayToggled;
+                m_View = null;
+            }
 
             if (m_Alignment != null)
                 m_Alignment.Aligned -= OnAligned;
         }
 
+        /// <summary>
+        /// Builds the view on the first frame the document has actually been populated.
+        ///
+        /// UIDocument fills its root in its own OnEnable, and the order between two components
+        /// on the same object is not defined. Constructing eagerly would work most of the time
+        /// and throw on the times it did not, which is the worst of both.
+        /// </summary>
+        bool EnsureView()
+        {
+            if (m_View != null)
+                return true;
+
+            var root = GetComponent<UIDocument>().rootVisualElement;
+            if (root == null || root.Q("hud-root") == null)
+                return false;
+
+            m_View = new DiagnosticsHudView(root);
+            m_View.Reanchor += OnReanchor;
+            m_View.Mark += OnMark;
+            m_View.OverlayToggled += OnOverlayToggled;
+
+            if (m_Overlay != null)
+                m_View.SetOverlayVisible(m_Overlay.enabled);
+
+            if (m_Alignment != null)
+                m_Alignment.Aligned += OnAligned;
+
+            // A freshly built view shows whatever the UXML declared, so push the mode through
+            // even if it has not changed since last frame.
+            m_ShownMode = (SessionModeController.SessionMode)(-1);
+            return true;
+        }
+
         void Update()
         {
+            if (!EnsureView())
+                return;
+
             UpdateMode();
             UpdateTracking();
-            UpdateDevice();
             UpdateMarker();
             UpdateAlignment();
             UpdateTravel();
+            UpdateDevice();
             UpdateLog();
         }
 
         void UpdateMode()
         {
-            if (m_Mode == null)
-                return;
-
-            if (m_ShownMode == m_Mode.Mode)
+            if (m_Mode == null || m_ShownMode == m_Mode.Mode)
                 return;
 
             m_ShownMode = m_Mode.Mode;
 
-            m_Banner.RemoveFromClassList("banner--ar");
-            m_Banner.RemoveFromClassList("banner--preview");
-
-            switch (m_ShownMode)
+            m_View.SetMode(m_ShownMode switch
             {
-                case SessionModeController.SessionMode.Ar:
-                    m_ModeLabel.text = "AR";
-                    m_Banner.AddToClassList("banner--ar");
-                    break;
-
-                case SessionModeController.SessionMode.Preview:
-                    m_ModeLabel.text = "PREVIEW — NOT A TEST";
-                    m_Banner.AddToClassList("banner--preview");
-                    break;
-
-                default:
-                    m_ModeLabel.text = "CHECKING";
-                    break;
-            }
-
-            m_ModeDetail.text = m_Mode.Explanation;
-
-            // Everything on these two buttons needs a tracked marker, which preview mode has not
-            // got. Leaving them live would invite the conclusion that alignment is broken.
-            var arRunning = m_ShownMode == SessionModeController.SessionMode.Ar;
-            SetEnabled(m_RealignButton, arRunning);
-            SetEnabled(m_OverlayButton, true);
-            SetEnabled(m_MarkButton, true);
+                SessionModeController.SessionMode.Ar => HudMode.Ar,
+                SessionModeController.SessionMode.Preview => HudMode.Preview,
+                _ => HudMode.Checking
+            }, m_Mode.Explanation);
         }
 
         void UpdateTracking()
         {
             if (m_Mode != null && m_Mode.Mode == SessionModeController.SessionMode.Preview)
-            {
-                Set(m_Tracking, "no session", "idle");
                 return;
-            }
 
             var state = ARSession.state;
             var reason = ARSession.notTrackingReason;
 
             // A session that never leaves SessionInitializing reports no failure at all —
             // notTrackingReason stays None because nothing went wrong, tracking simply never
-            // converges. Shown as a plain orange word it looks like "still working on it"
-            // forever. After a while it is a finding, and the HUD should say so on its own
-            // rather than needing a CSV pulled off the phone to notice.
+            // converges. Shown as a plain warning it looks like "still working on it" forever.
+            // After a while it is a finding, and the HUD should say so on its own rather than
+            // needing a CSV pulled off the phone to notice.
             if (state == ARSessionState.SessionInitializing)
             {
                 if (m_InitializingSince < 0f)
@@ -165,107 +139,112 @@ namespace FriLens
 
             if (state == ARSessionState.SessionTracking)
             {
-                Set(m_Tracking, "tracking", null);
+                m_View.SetRow(HudRow.Tracking, "tracking", ValueState.Ok);
                 return;
             }
 
             var stuckFor = m_InitializingSince < 0f ? 0f : Time.time - m_InitializingSince;
             if (stuckFor > m_InitializingPatienceSeconds)
             {
-                Set(m_Tracking, $"stuck initializing {stuckFor:F0} s", "bad");
+                m_View.SetRow(HudRow.Tracking, $"stuck initializing {stuckFor:F0} s", ValueState.Bad);
                 return;
             }
 
-            if (reason != UnityEngine.XR.ARSubsystems.NotTrackingReason.None)
-                Set(m_Tracking, $"{state} · {reason}", "bad");
+            if (reason != NotTrackingReason.None)
+                m_View.SetRow(HudRow.Tracking, $"{state} · {reason}", ValueState.Bad);
             else
-                Set(m_Tracking, state.ToString(), "warn");
-        }
-
-        /// <summary>
-        /// Hardware ARCore needs, read straight off the device.
-        ///
-        /// Motion tracking is visual-inertial: without a gyroscope ARCore can open the camera and
-        /// still never initialise, which is indistinguishable on screen from a session that is
-        /// merely slow. Naming the missing part turns a mystery into a fact.
-        /// </summary>
-        void UpdateDevice()
-        {
-            var gyro = SystemInfo.supportsGyroscope;
-            var accelerometer = SystemInfo.supportsAccelerometer;
-
-            if (!gyro)
-                Set(m_Device, "no gyroscope — AR cannot track", "bad");
-            else if (!accelerometer)
-                Set(m_Device, "no accelerometer", "bad");
-            else
-                Set(m_Device, "gyro + accel ok", null);
+                m_View.SetRow(HudRow.Tracking, state.ToString(), ValueState.Warn);
         }
 
         void UpdateMarker()
         {
-            if (m_Alignment == null)
+            if (m_Alignment == null || InPreview)
                 return;
 
             var marker = m_Alignment.TrackedMarker;
-
             if (marker == null)
             {
-                Set(m_Marker, "not seen", "idle");
+                m_View.SetRow(HudRow.Marker, "not seen", ValueState.Idle);
                 return;
             }
 
-            var tracking = marker.trackingState == UnityEngine.XR.ARSubsystems.TrackingState.Tracking;
-            Set(m_Marker, tracking ? "in view" : marker.trackingState.ToString(), tracking ? null : "warn");
+            var tracking = marker.trackingState == TrackingState.Tracking;
+            m_View.SetRow(HudRow.Marker,
+                tracking ? "in view" : marker.trackingState.ToString(),
+                tracking ? ValueState.Ok : ValueState.Warn);
         }
 
         void UpdateAlignment()
         {
-            if (m_Alignment == null)
+            if (m_Alignment == null || InPreview)
                 return;
 
             switch (m_Alignment.State)
             {
                 case MarkerAlignment.AlignmentState.Sampling:
-                    Set(m_AlignmentValue,
-                        $"sampling {m_Alignment.SamplesCollected}/{m_Alignment.SampleTarget}", "warn");
+                    m_View.SetRow(HudRow.Alignment,
+                        $"sampling {m_Alignment.SamplesCollected}/{m_Alignment.SampleTarget}",
+                        ValueState.Warn);
                     break;
 
                 case MarkerAlignment.AlignmentState.Aligned:
-                    Set(m_AlignmentValue,
+                    m_View.SetRow(HudRow.Alignment,
                         $"{m_Alignment.TimeSinceAlignment:F0} s ago · "
                         + $"±{m_Alignment.SampleSpreadMeters * 100f:F1} cm / {m_Alignment.SampleSpreadDegrees:F1}°",
-                        null);
+                        ValueState.Ok);
                     break;
 
                 default:
-                    Set(m_AlignmentValue, "none", "idle");
+                    m_View.SetRow(HudRow.Alignment, "none", ValueState.Idle);
                     break;
             }
         }
 
         void UpdateTravel()
         {
-            if (m_Travel == null)
+            if (m_Travel == null || InPreview)
                 return;
 
             if (!m_Travel.HasOrigin)
             {
-                Set(m_Walked, "—", "idle");
-                Set(m_FromOrigin, "—", "idle");
+                m_View.SetWalked(0f, ValueState.Idle);
+                m_View.SetRow(HudRow.FromMarker, "—", ValueState.Idle);
                 return;
             }
 
-            Set(m_Walked, $"{m_Travel.DistanceWalked:F1} m", null);
+            // Warn rather than bad when the session is not tracking: the figure is stale, not
+            // wrong, and painting it red during the ordinary few seconds before tracking starts
+            // would cry wolf every single run.
+            var tracking = ARSession.state == ARSessionState.SessionTracking;
+            m_View.SetWalked(m_Travel.DistanceWalked, tracking ? ValueState.Ok : ValueState.Warn);
 
             // Jumps ride along on the straight-line row because they are the same kind of fact:
             // how much of what you are looking at came from the tracker rather than from walking.
             var jumps = m_Travel.RelocalisationJumps;
             if (jumps > 0)
-                Set(m_FromOrigin, $"{m_Travel.DistanceFromOrigin:F1} m · {jumps} jump"
-                    + (jumps == 1 ? "" : "s") + $" {m_Travel.JumpedMeters:F1} m", "warn");
+                m_View.SetRow(HudRow.FromMarker,
+                    $"{m_Travel.DistanceFromOrigin:F1} m · {jumps} jump{(jumps == 1 ? "" : "s")} "
+                    + $"{m_Travel.JumpedMeters:F1} m",
+                    ValueState.Warn);
             else
-                Set(m_FromOrigin, $"{m_Travel.DistanceFromOrigin:F1} m", null);
+                m_View.SetRow(HudRow.FromMarker, $"{m_Travel.DistanceFromOrigin:F1} m", ValueState.Ok);
+        }
+
+        /// <summary>
+        /// Hardware ARCore needs, read straight off the device.
+        ///
+        /// Motion tracking is visual-inertial: without a gyroscope ARCore can open the camera and
+        /// still never initialise, which on screen is indistinguishable from a session that is
+        /// merely slow. Naming the missing part turns a mystery into a fact.
+        /// </summary>
+        void UpdateDevice()
+        {
+            if (!SystemInfo.supportsGyroscope)
+                m_View.SetRow(HudRow.Device, "no gyroscope", ValueState.Bad);
+            else if (!SystemInfo.supportsAccelerometer)
+                m_View.SetRow(HudRow.Device, "no accelerometer", ValueState.Bad);
+            else
+                m_View.SetRow(HudRow.Device, "gyro + accel", ValueState.Ok);
         }
 
         void UpdateLog()
@@ -273,12 +252,16 @@ namespace FriLens
             if (m_Logger == null)
                 return;
 
-            m_Log.text = string.IsNullOrEmpty(m_Logger.FilePath)
-                ? "log: not writing"
-                : $"log: {System.IO.Path.GetFileName(m_Logger.FilePath)} · {m_Logger.RowsWritten} rows · {m_MarkCount} marks";
+            if (string.IsNullOrEmpty(m_Logger.FilePath))
+                m_View.SetLogNotWriting();
+            else
+                m_View.SetLog(System.IO.Path.GetFileName(m_Logger.FilePath),
+                    m_Logger.RowsWritten, m_MarkCount);
         }
 
-        void OnRealign()
+        bool InPreview => m_Mode != null && m_Mode.Mode == SessionModeController.SessionMode.Preview;
+
+        void OnReanchor()
         {
             m_Alignment?.Realign();
             m_Logger?.MarkEvent("realign-requested");
@@ -294,14 +277,12 @@ namespace FriLens
             m_Logger?.MarkEvent("aligned");
         }
 
-        void OnToggleOverlay()
+        void OnOverlayToggled(bool visible)
         {
-            if (m_Overlay == null)
-                return;
+            if (m_Overlay != null)
+                m_Overlay.enabled = visible;
 
-            m_Overlay.enabled = !m_Overlay.enabled;
-            m_OverlayButton.text = m_Overlay.enabled ? "Hide overlay" : "Show overlay";
-            m_Logger?.MarkEvent(m_Overlay.enabled ? "overlay-shown" : "overlay-hidden");
+            m_Logger?.MarkEvent(visible ? "overlay-shown" : "overlay-hidden");
         }
 
         /// <summary>
@@ -312,23 +293,6 @@ namespace FriLens
         {
             m_MarkCount++;
             m_Logger?.MarkEvent($"mark-{m_MarkCount}");
-        }
-
-        static void Set(Label label, string text, string modifier)
-        {
-            label.text = text;
-            label.RemoveFromClassList("stat__value--warn");
-            label.RemoveFromClassList("stat__value--bad");
-            label.RemoveFromClassList("stat__value--idle");
-
-            if (modifier != null)
-                label.AddToClassList("stat__value--" + modifier);
-        }
-
-        static void SetEnabled(Button button, bool enabled)
-        {
-            button.SetEnabled(enabled);
-            button.EnableInClassList("button--disabled", !enabled);
         }
     }
 }
