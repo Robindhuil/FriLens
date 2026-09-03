@@ -1,6 +1,6 @@
 # FriLens — dokumentácia
 
-**Verzia:** 0.1.1-alpha · **Stav:** fázy 0–2, 3c a 5 hotové; prvý beh na telefóne odhalil dve chyby v AR — opravené v 0.1.1-alpha, zatiaľ neoverené
+**Verzia:** 0.1.4-alpha · **Stav:** fázy 0–2, 3c a 5 hotové; tracking overený v teréne na Redmi Note 10 Pro. Metóda merania prejdenej vzdialenosti prepracovaná — čísla z behov pred 0.1.4-alpha sú nadhodnotené, pozri [ADR 005](decisions/005-ako-merat-prejdenu-vzdialenost.md). Chýba vytlačená značka (fáza 3a) a jej zameraná póza (3b), bez nich sa drift nemeria.
 
 Samostatný Unity projekt oddelený od `FriWorld`. Jediná otázka, na ktorú má odpovedať:
 **ako presne sa navmesh premietne do skutočnej fakulty a ako rýchlo to odchádza, keď sa
@@ -75,6 +75,11 @@ repozitári a stránka ukazuje nový build.
 
 > **Repozitár musí zostať verejný.** Release assety z privátneho repozitára vracajú každému
 > okrem majiteľa chybu 404, takže tlačidlo na webe by prestalo fungovať.
+
+> **História bola 2026-09-03 prepísaná**, aby sa v commitoch neobjavoval Claude ako
+> spoluautor. Všetky SHA sa zmenili a značky `v0.1.2-alpha` aj `v0.1.3-alpha` ukazujú na nové
+> commity; samotné releasy aj ich APK zostali. Existujúci klon repozitára sa s remote
+> rozchádza a treba ho preklonovať alebo resetnúť na `origin/main`.
 
 **Každý dokument nesie v hlavičke verziu**, ku ktorej sa vzťahuje. Keď sa verzia zdvihne
 a dokument sa vecne zmení, prepíše sa mu aj verzia v hlavičke.
