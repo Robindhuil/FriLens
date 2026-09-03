@@ -10,6 +10,53 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [Unreleased]
 
+## [0.1.4-alpha]
+
+Prvé tri behy na Redmi Note 10 Pro s 0.1.3. Tracking funguje, prejdená vzdialenosť sa počíta
+— **84,4 m za 195 sekúnd** v najdlhšom behu. Ale filter skokov robil falošné poplachy.
+
+### Fixed
+
+- **Filter skokov označoval bežnú chôdzu za relokalizáciu.** Medzi 65. a 69. sekundou jedného
+  behu je zhluk 24 „skokov", každý 0,13–0,20 m, všetky rovnaké, všetky pri `SessionTracking`
+  bez hlásenej poruchy. To nie sú relokalizácie, to sú kroky.
+
+  Príčina bola v tom, ako som počítal rýchlosť. ARCore dodáva pózy tempom kamery, teda výrazne
+  pomalšie, než sa vykresľuje. Na snímku, keď nová póza dorazí, sa objaví pohyb za celý
+  medzičas naraz — a delením jedným `Time.deltaTime` vyjde rýchlosť niekoľkonásobne vyššia,
+  než aká naozaj bola. Teraz sa delí časom od poslednej **skutočnej zmeny pózy**.
+
+  Skutočné relokalizácie boli v tom behu štyri, každá metrová: 1,46 · 3,36 · 1,80 · 1,70 m.
+  Tie absolútny strop na dĺžku kroku zachytí ďalej.
+
+- **Počítadlo sa spúšťalo skôr, než dorazila prvá póza.** Session hlási `SessionTracking`
+  o snímok či dva skôr, než driver zapíše pózu, a dovtedy je kamera na počiatku sveta. V behu
+  `230108` sa tak `Origin` zafixoval na (0,0,0), `From marker` meral od miesta, kde nikto
+  nestál, a skok na prvú skutočnú pózu sa započítal ako relokalizácia. Teraz sa čaká, kým sa
+  póza naozaj pohne.
+
+- **Re-anchor bez značky tvrdil „sampling 0/30" donekonečna.** Keď sa za dve sekundy nenazbiera
+  ani jedna vzorka, stav sa vráti na `none`.
+
+- **Riadok v logu miešal dva snímky.** `SessionLogger` mohol bežať skôr než `CameraTravel`,
+  takže zapísal aktuálnu pozíciu kamery spolu s odvodenými hodnotami z predošlého snímku.
+  V behu `230108` to vidno na dvoch riadkoch s rovnakou pozíciou a inou `from_origin`. Poradie
+  skriptov je teraz pevné: `CameraTravel` (−50) → `SessionLogger` (50) → `DiagnosticsHud` (60).
+
+### Namerané v behu 225741
+
+Po štarte je odometria čistá. Medzi značkami, teda počas súvislej chôdze:
+
+| úsek | čas | prejdené | skoky |
+|---|---:|---:|---:|
+| mark-2 → mark-3 | 4,7 s | 0,76 m | 0 |
+| mark-3 → mark-4 | 14,1 s | 8,06 m | 0 |
+| mark-4 → mark-5 | 30,1 s | 13,62 m | 0 |
+| mark-5 → mark-6 | 36,5 s | 21,07 m | 0 |
+
+**43 metrov súvislej chôdze bez jediného skoku.** Zhluk falošných skokov aj skutočné
+relokalizácie padli do prvých 85 sekúnd, keď sa telefónom manipulovalo.
+
 ## [0.1.3-alpha] — 2026-09-03
 
 Vydané ako [v0.1.3-alpha](https://github.com/Robindhuil/FriLens/releases/tag/v0.1.3-alpha).

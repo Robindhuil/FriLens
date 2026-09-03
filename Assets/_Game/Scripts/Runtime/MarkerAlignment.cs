@@ -143,12 +143,23 @@ namespace FriLens
                 // before and after — possibly across a relocalisation, from a different distance
                 // and angle — and produce an alignment that looks measured and is not. Old
                 // samples are dropped rather than continued.
-                if (m_Positions.Count > 0 && Time.time - m_LastSampleTime > m_SampleGapTimeoutSeconds)
+                if (Time.time - m_LastSampleTime > m_SampleGapTimeoutSeconds)
                 {
-                    Debug.LogWarning($"{nameof(MarkerAlignment)}: dropped {m_Positions.Count} samples, "
-                        + $"the marker was out of view for more than {m_SampleGapTimeoutSeconds:F0} s.", this);
-                    m_Positions.Clear();
-                    m_Rotations.Clear();
+                    if (m_Positions.Count > 0)
+                    {
+                        Debug.LogWarning($"{nameof(MarkerAlignment)}: dropped {m_Positions.Count} samples, "
+                            + $"the marker was out of view for more than {m_SampleGapTimeoutSeconds:F0} s.", this);
+                        m_Positions.Clear();
+                        m_Rotations.Clear();
+                        m_LastSampleTime = Time.time;
+                    }
+                    else
+                    {
+                        // Nothing was ever collected, so this is a re-anchor pressed with no
+                        // marker in front of the camera. Standing in "sampling 0/30" for ever
+                        // reads as work in progress; going back to waiting is the truth.
+                        State = AlignmentState.Waiting;
+                    }
                 }
 
                 return;

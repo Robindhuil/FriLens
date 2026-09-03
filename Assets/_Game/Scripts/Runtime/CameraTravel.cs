@@ -30,6 +30,12 @@ namespace FriLens
         Vector3 m_LastPosition;
         bool m_Started;
 
+        /// <summary>Seconds accumulated since the pose last actually moved.</summary>
+        float m_TimeSinceMovement;
+
+        Vector3 m_FirstTrackedPosition;
+        float m_TrackingSince = -1f;
+
         /// <summary>Path length walked since the last reset, in metres.</summary>
         public float DistanceWalked { get; private set; }
 
@@ -70,6 +76,7 @@ namespace FriLens
             DistanceFromOrigin = 0f;
             RelocalisationJumps = 0;
             JumpedMeters = 0f;
+            m_TimeSinceMovement = 0f;
             m_Started = true;
         }
 
@@ -87,13 +94,20 @@ namespace FriLens
             // there, and the leap to the first real pose would be counted as a relocalisation.
             if (!m_Started)
             {
-                if (ARSession.state == ARSessionState.SessionTracking)
-                    RestartFrom();
+                WaitForFirstPose();
                 return;
             }
 
             var position = m_Camera.position;
             var step = Vector3.Distance(position, m_LastPosition);
+
+            // Time is accumulated whether or not the pose moved. ARCore delivers poses at the
+            // camera's rate, which is well below the render rate, so on the frame a new pose
+            // lands the whole interval's movement arrives at once. Dividing that by one frame's
+            // deltaTime multiplies the apparent speed several times over — in one run it turned
+            // twenty-four ordinary walking steps of 0.14 m into "relocalisations". Dividing by
+            // the time since the pose last moved measures the speed that actually happened.
+            m_TimeSinceMovement += Time.deltaTime;
 
             if (step >= m_MinimumStepMeters)
             {
@@ -104,7 +118,7 @@ namespace FriLens
                 // Speed alone is not enough. A long frame — a hitch, or the first frame after the
                 // app comes back from the background — makes a two metre leap look like a stroll,
                 // so an absolute cap backs it up.
-                var speed = Time.deltaTime > 0f ? step / Time.deltaTime : float.MaxValue;
+                var speed = m_TimeSinceMovement > 0f ? step / m_TimeSinceMovement : float.MaxValue;
                 if (speed > m_MaximumStepSpeed || step > m_MaximumStepMeters)
                 {
                     RelocalisationJumps++;
@@ -118,9 +132,39 @@ namespace FriLens
                 // The anchor moves either way. Holding it back across a relocalisation would turn
                 // the jump into a slow fake walk spread over the following frames.
                 m_LastPosition = position;
+                m_TimeSinceMovement = 0f;
             }
 
             DistanceFromOrigin = Vector3.Distance(position, Origin);
+        }
+
+        /// <summary>
+        /// Holds off until a real pose has arrived.
+        ///
+        /// The session reports SessionTracking a frame or two before the pose driver writes the
+        /// first pose, and until then the camera sits at the world origin. Starting on the state
+        /// change alone pinned Origin to (0,0,0) in one run, so "from marker" measured from a
+        /// place nobody had stood, and the leap to the first real pose counted as a jump.
+        /// </summary>
+        void WaitForFirstPose()
+        {
+            if (ARSession.state != ARSessionState.SessionTracking)
+            {
+                m_TrackingSince = -1f;
+                return;
+            }
+
+            if (m_TrackingSince < 0f)
+            {
+                m_TrackingSince = Time.time;
+                m_FirstTrackedPosition = m_Camera.position;
+                return;
+            }
+
+            // Either the pose has moved — so it is being driven — or enough time has passed that
+            // waiting longer would lose measurements on a phone held very still.
+            if (m_Camera.position != m_FirstTrackedPosition || Time.time - m_TrackingSince > 1f)
+                RestartFrom();
         }
     }
 }
