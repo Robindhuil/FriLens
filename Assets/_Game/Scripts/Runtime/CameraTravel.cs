@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.XR.ARFoundation;
 
 namespace FriLens
 {
@@ -10,9 +11,6 @@ namespace FriLens
     /// next to "after 47 m of walking". Straight-line distance from the marker is a different
     /// number and both are worth having: a walk down a corridor and back ends up near the marker
     /// again while having accumulated the full drift.
-    ///
-    /// Frames shorter than <see cref="m_MinimumStepMeters"/> are ignored so that tracker jitter
-    /// while standing still does not quietly inflate the total.
     /// </summary>
     public class CameraTravel : MonoBehaviour
     {
@@ -24,6 +22,10 @@ namespace FriLens
         [Tooltip("Implied speed above which a step is a tracker relocalisation, not walking. "
             + "A brisk walk is about 2 m/s.")]
         [SerializeField] float m_MaximumStepSpeed = 4f;
+
+        [Tooltip("Any single step longer than this is a relocalisation whatever the frame time "
+            + "says, which catches jumps that arrive on a long frame.")]
+        [SerializeField] float m_MaximumStepMeters = 1f;
 
         Vector3 m_LastPosition;
         bool m_Started;
@@ -53,8 +55,11 @@ namespace FriLens
         /// <summary>
         /// Starts counting again from the camera's current position. Called when an alignment is
         /// applied, so the numbers on screen always refer to the alignment being tested.
+        ///
+        /// Deliberately not called Reset: that is a Unity message name, and the editor calls it
+        /// on a component when it is added or reset from the inspector.
         /// </summary>
-        public void Reset()
+        public void RestartFrom()
         {
             if (m_Camera == null)
                 return;
@@ -73,14 +78,17 @@ namespace FriLens
             if (m_Camera == null)
                 return;
 
-            // Counting starts on its own rather than waiting for an alignment. Without a marker
-            // there is no alignment, so the old behaviour left the distance at zero for the whole
-            // run — which made the one measurement that proves tracking reaches the app impossible
-            // to take until the marker existed. An alignment still resets it, so the number the
-            // test reads is still "since alignment".
+            // Counting starts on its own rather than waiting for an alignment, because without a
+            // printed marker there is never an alignment and the distance would stay at zero for
+            // the whole run — the one measurement that proves the pose reaches the app at all.
+            //
+            // It waits for tracking first, though. Before that the camera sits at the world
+            // origin, so starting early would fix Origin at (0,0,0) and report the distance from
+            // there, and the leap to the first real pose would be counted as a relocalisation.
             if (!m_Started)
             {
-                Reset();
+                if (ARSession.state == ARSessionState.SessionTracking)
+                    RestartFrom();
                 return;
             }
 
@@ -92,8 +100,12 @@ namespace FriLens
                 // A step implying more than a sprint is ARCore repositioning itself, not walking.
                 // Adding those to the total inflates the very axis drift is measured against: in
                 // one 77 m run three such jumps contributed 5.4 m, seven percent of the distance.
-                var speed = Time.deltaTime > 0f ? step / Time.deltaTime : 0f;
-                if (speed > m_MaximumStepSpeed)
+                //
+                // Speed alone is not enough. A long frame — a hitch, or the first frame after the
+                // app comes back from the background — makes a two metre leap look like a stroll,
+                // so an absolute cap backs it up.
+                var speed = Time.deltaTime > 0f ? step / Time.deltaTime : float.MaxValue;
+                if (speed > m_MaximumStepSpeed || step > m_MaximumStepMeters)
                 {
                     RelocalisationJumps++;
                     JumpedMeters += step;
