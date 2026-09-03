@@ -42,12 +42,7 @@ namespace FriLens
         [Tooltip("Movement below this in one frame is treated as jitter, not travel.")]
         [SerializeField] float m_MinimumStepMeters = 0.004f;
 
-        [Tooltip("Implied speed above which a step is a tracker relocalisation, not walking. "
-            + "A brisk walk is about 2 m/s.")]
-        [SerializeField] float m_MaximumStepSpeed = 4f;
-
-        [Tooltip("Any single step longer than this is a relocalisation whatever the frame time "
-            + "says, which catches jumps that arrive on a long frame.")]
+        [Tooltip("Any single step longer than this is a tracker relocalisation, not walking.")]
         [SerializeField] float m_MaximumStepMeters = 1f;
 
         [Header("Resampled path")]
@@ -61,9 +56,6 @@ namespace FriLens
 
         Vector3 m_LastPosition;
         bool m_Started;
-
-        /// <summary>Seconds accumulated since the pose last actually moved.</summary>
-        float m_TimeSinceMovement;
 
         PathResampler m_Resampler;
 
@@ -94,7 +86,7 @@ namespace FriLens
         public float ResampleStepMeters => m_ResampleStepMeters;
 
         /// <summary>
-        /// Steps discarded as too fast to be walking. Each one is ARCore correcting itself, and
+        /// Steps discarded as too far to be walking. Each one is ARCore correcting itself, and
         /// on screen it is the moment the overlay visibly jumps. Counting them separates "the
         /// overlay drifted away gradually" from "the tracker relocalised", which are different
         /// findings with different causes.
@@ -124,7 +116,6 @@ namespace FriLens
             DistanceFromOrigin = 0f;
             RelocalisationJumps = 0;
             JumpedMeters = 0f;
-            m_TimeSinceMovement = 0f;
             m_Started = true;
         }
 
@@ -149,25 +140,29 @@ namespace FriLens
             var position = m_Camera.position;
             var step = Vector3.Distance(position, m_LastPosition);
 
-            // Time is accumulated whether or not the pose moved. ARCore delivers poses at the
-            // camera's rate, which is well below the render rate, so on the frame a new pose
-            // lands the whole interval's movement arrives at once. Dividing that by one frame's
-            // deltaTime multiplies the apparent speed several times over — in one run it turned
-            // twenty-four ordinary walking steps of 0.14 m into "relocalisations". Dividing by
-            // the time since the pose last moved measures the speed that actually happened.
-            m_TimeSinceMovement += Time.deltaTime;
-
             if (step >= m_MinimumStepMeters)
             {
-                // A step implying more than a sprint is ARCore repositioning itself, not walking.
-                // Adding those to the total inflates the very axis drift is measured against: in
-                // one 77 m run three such jumps contributed 5.4 m, seven percent of the distance.
+                // A relocalisation is a discontinuity: ARCore repositioning itself, not walking.
+                // Adding those to the total inflates the very axis drift is measured against.
                 //
-                // Speed alone is not enough. A long frame — a hitch, or the first frame after the
-                // app comes back from the background — makes a two metre leap look like a stroll,
-                // so an absolute cap backs it up.
-                var speed = m_TimeSinceMovement > 0f ? step / m_TimeSinceMovement : float.MaxValue;
-                if (speed > m_MaximumStepSpeed || step > m_MaximumStepMeters)
+                // The test is a plain distance cap, and two attempts at something cleverer are
+                // the reason. Judging a step by its implied speed does not work, because the
+                // time it happened over cannot be measured from the render loop: ARCore delivers
+                // poses at the camera's rate, so a frame that receives a new pose shows the whole
+                // interval's movement at once. Dividing that by one frame's deltaTime inflates
+                // the apparent speed several times over. Dividing instead by the time since the
+                // pose last moved fixes it only while standing still — during walking the pose
+                // moves every frame, the timer resets every frame, and the divisor is one frame
+                // again. That second attempt shipped in 0.1.4-alpha and the very next field run
+                // produced fifty-nine "relocalisations" of 0.19 to 0.26 m, all while tracking was
+                // reported as fine. They were footsteps.
+                //
+                // The same run separates the two populations cleanly by distance alone: ten real
+                // relocalisations from 1.13 m to 6.71 m, and everything false at 0.93 m or below.
+                // A cap at one metre lands in that gap. Walking cannot produce a metre between
+                // two frames, and a relocalisation smaller than a metre costs the total less than
+                // a metre — so what the cap gives up is worth less than what the speed test cost.
+                if (step > m_MaximumStepMeters)
                 {
                     RelocalisationJumps++;
                     JumpedMeters += step;
@@ -194,7 +189,6 @@ namespace FriLens
                 // The anchor moves either way. Holding it back across a relocalisation would turn
                 // the jump into a slow fake walk spread over the following frames.
                 m_LastPosition = position;
-                m_TimeSinceMovement = 0f;
             }
 
             m_Resampler.Add(position, Time.deltaTime, m_SmoothingSeconds, m_ResampleStepMeters);

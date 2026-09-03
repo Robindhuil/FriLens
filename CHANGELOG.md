@@ -10,6 +10,53 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [Unreleased]
 
+## [0.1.5-alpha]
+
+Prvý beh na 0.1.4-alpha, Redmi Note 10 Pro, 298 sekúnd. Prekryv bolo konečne vidieť
+a tlačidlo na jeho skrytie sa použilo štyrikrát. Prevzorkovanie funguje. Filter skokov nie.
+
+### Namerané
+
+| | |
+|---|---:|
+| walked | 105,94 m |
+| path_raw | 150,23 m |
+| nafúknutie | **+42 %** |
+| skoky | 69 (43,29 m) |
+
+Najčistejší úsek behu — 44,9 s súvislej chôdze bez jediného skoku — dáva **walked 16,79 m
+oproti raw 20,46 m, teda +22 %**. To je najlepší odhad samotného skreslenia, aký zatiaľ máme:
+bez relokalizácií, bez manipulácie, len chôdza s telefónom v ruke.
+
+Celých 42 % za beh je viac, lebo súčasťou behu bolo aj státie, mierenie a stláčanie tlačidiel.
+
+### Fixed
+
+- **Filter skokov označoval kroky za relokalizácie aj po oprave v 0.1.4-alpha.** Tá oprava
+  fungovala len keď človek stojí. Delil som časom od poslednej zmeny pózy, lenže ten čas sa
+  resetuje pri každom posune nad 4 mm — a pri chôdzi sa póza hýbe každý snímok, takže delič
+  bol zase jeden snímok.
+
+  Beh to ukázal ako učebnicový príklad. Skoky sa rozpadli na dve skupiny s medzerou medzi nimi:
+
+  | | počet | spolu |
+  |---|---:|---:|
+  | ≥ 1 m — od 1,13 do 6,71 m | 10 | 31,61 m |
+  | < 1 m — 59× medzi 0,19 a 0,93 m | 59 | 11,68 m |
+
+  Tých 59 sú kroky. Absolútny strop na jeden meter trafil všetkých desať skutočných a ani
+  jeden falošný, takže **rýchlostný test je preč**. Nedal sa spraviť správne: čas, za ktorý
+  sa krok stal, sa z vykresľovacej slučky zmerať nedá, lebo ARCore dodáva pózy vlastným
+  tempom. Cena je, že relokalizácia kratšia než meter sa započíta ako chôdza — čo stojí menej
+  než meter na stometrovej dráhe.
+
+### Známe obmedzenia
+
+- **Riadok `From marker` po tomto behu nič neznamená.** `Origin` je obyčajná pozícia, nie
+  `ARAnchor`, takže ju ARCore pri relokalizácii neopraví a posúvam ju o skok ručne. Za tento
+  beh sa nazbieralo 43 m posunov a na konci hlásil 1,94 m. Aj po oprave filtra zostane 31 m
+  skutočných relokalizácií. Riešenie je použiť `ARAnchor` a nechať jeho údržbu na ARCore.
+
 ## [0.1.4-alpha] — 2026-09-04
 
 Prvé tri behy na Redmi Note 10 Pro s 0.1.3. Tracking funguje, prejdená vzdialenosť sa počíta
