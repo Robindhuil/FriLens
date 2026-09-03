@@ -280,9 +280,30 @@ vyzeralo ako zle zameraná značka.
 Kontroly sú menu položka, nie testovací asmdef: runtime skripty žijú v preddefinovanej
 `Assembly-CSharp`, na ktorú sa testovacia assembly s asmdef odkázať nedá.
 
+#### Overenie na zariadení, 2026-09-03
+
+Beh na telefóne, ktorý ARCore zvláda, s buildom 0.1.0-alpha odhalil chybu, ktorá by inak
+zabila celý test bez toho, aby ju bolo z čoho spoznať:
+
+```
+4.572   Ar, SessionTracking, None      ← ARCore trackuje
+…       55 sekúnd v SessionTracking
+cam_x = cam_y = cam_z = 0.0000         ← póza sa do appky nedostane
+walked_m = 0.000
+```
+
+`SessionTracking` znamená, že **ARCore** trackuje. Nehovorí nič o tom, či sa póza dostane
+do scény — tú doručuje `TrackedPoseDriver` cez `InputActionReference` do
+`XRI Default Input Actions`, a tie akcie zapína `InputActionManager`, ktorý fáza 2 odstránila.
+Prekryv by teda stál na mieste a `Walked` by zostalo nulové aj po prejdení celej fakulty.
+Opravené v 0.1.1-alpha, potvrdené týmto logom.
+
+Ponaučenie do protokolu: **stav trackingu na HUD-e nestačí ako dôkaz, že meranie beží.**
+Jediný spoľahlivý dôkaz je rastúce `Walked`.
+
 **Neoverené:** či po namierení na značku prekryv skočí na miesto a či opakované zosúladenie
-z rovnakého miesta trafí to isté (rozdiel pod 1–2 cm). Vyžaduje značku (fáza 3a), jej pózu
-(fáza 3b) a zariadenie (diera K6).
+z rovnakého miesta trafí to isté (rozdiel pod 1–2 cm). Vyžaduje značku (fáza 3a) a jej pózu
+(fáza 3b).
 
 ---
 

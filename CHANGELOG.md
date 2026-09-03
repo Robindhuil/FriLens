@@ -54,8 +54,33 @@ na inom telefóne trackuje správne, takže príčinou bol hardvér, nie poradie
 Zmena v kóde zostáva, lebo vypínať `ARCameraManager` pod bežiacou session je aj tak zlé, ale
 ako oprava tohto problému bola pripísaná neprávom.
 
-Či bola potrebná druhá oprava (`InputActionManager`), zatiaľ **overené nie je** — na to treba
-log z telefónu, ktorý trackuje.
+### Oprava `InputActionManager` je potvrdená
+
+Log z telefónu, ktorý ARCore zvláda, s buildom **0.1.0-alpha z releases** — teda bez oboch
+opráv:
+
+```
+0.270   Ar, SessionInitializing, None
+4.572   Ar, SessionTracking,     None      ← ARCore trackuje
+…       55 sekúnd v SessionTracking
+59.982  Ar, SessionInitializing, InsufficientLight
+```
+
+Po celý ten čas, vrátane 55 sekúnd v `SessionTracking`:
+
+```
+cam_x = cam_y = cam_z = 0.0000
+cam_yaw = cam_pitch = cam_roll = 0.00
+walked_m = 0.000
+```
+
+**ARCore trackoval bezchybne a póza sa aj tak do aplikácie nedostala.** Presne to je chyba,
+ktorú `InputActionManager` opravuje: `TrackedPoseDriver` číta pózu cez `InputActionReference`
+do `XRI Default Input Actions` a tie akcie bez neho nikto nezapne. Diagnóza sedela.
+
+Zároveň sa ukázalo, že stĺpec `not_tracking_reason` funguje — pri zhoršenom svetle sa objaví
+`InsufficientLight`. Na Redmi tam bolo `None` počas celej doby, čo teda naozaj znamenalo
+„nič nezlyhalo", nie „appka to nevie prečítať". Dve rôzne poruchy, dva rôzne obrazy.
 
 ## [0.1.1-alpha] — 2026-09-03
 
