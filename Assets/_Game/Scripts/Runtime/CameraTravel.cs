@@ -65,8 +65,7 @@ namespace FriLens
         /// <summary>Seconds accumulated since the pose last actually moved.</summary>
         float m_TimeSinceMovement;
 
-        Vector3 m_Smoothed;
-        Vector3 m_LastKept;
+        PathResampler m_Resampler;
 
         Vector3 m_FirstTrackedPosition;
         float m_TrackingSince = -1f;
@@ -75,7 +74,7 @@ namespace FriLens
         /// Path length since the last reset, measured at <see cref="ResampleStepMeters"/>
         /// resolution. This is the figure a drift percentage should be divided by.
         /// </summary>
-        public float DistanceWalked { get; private set; }
+        public float DistanceWalked => m_Resampler.Length;
 
         /// <summary>
         /// Path length summed frame by frame, without filtering or resampling. Kept so the two
@@ -119,10 +118,8 @@ namespace FriLens
 
             m_LastPosition = m_Camera.position;
             Origin = m_LastPosition;
-            m_Smoothed = m_LastPosition;
-            m_LastKept = m_LastPosition;
+            m_Resampler.Restart(m_LastPosition);
 
-            DistanceWalked = 0f;
             PathRawMeters = 0f;
             DistanceFromOrigin = 0f;
             RelocalisationJumps = 0;
@@ -175,15 +172,18 @@ namespace FriLens
                     RelocalisationJumps++;
                     JumpedMeters += step;
 
-                    // Everything the resampler works from is carried across the jump rather than
-                    // left behind to chase it. Left alone the filter would spend the next second
-                    // sliding towards the new pose and the resampler would bill that slide as
-                    // walking: the jump would be removed from one figure and quietly added to the
-                    // other. Origin moves too, so "distance from marker" keeps measuring the same
-                    // physical place after the tracker has renumbered the world around it.
+                    // The resampler is carried across the jump rather than left behind to chase
+                    // it, and Origin moves with it.
+                    //
+                    // Origin is a plain position, not an ARAnchor, so ARCore does not correct it
+                    // when it corrects itself. After a relocalisation it therefore points at the
+                    // wrong place by exactly the jump, and "distance from marker" would step by
+                    // a metre while the tester stood still. Moving it keeps the row measuring
+                    // where the person is. It does mean the correction is not visible in that
+                    // number — which is right, because the drift this test measures is read off
+                    // the overlay against the wall, not off this row.
                     var jump = position - m_LastPosition;
-                    m_Smoothed += jump;
-                    m_LastKept += jump;
+                    m_Resampler.Shift(jump);
                     Origin += jump;
                 }
                 else
@@ -197,29 +197,9 @@ namespace FriLens
                 m_TimeSinceMovement = 0f;
             }
 
-            UpdateResampledPath(position);
+            m_Resampler.Add(position, Time.deltaTime, m_SmoothingSeconds, m_ResampleStepMeters);
 
             DistanceFromOrigin = Vector3.Distance(position, Origin);
-        }
-
-        /// <summary>
-        /// Low-pass filters the position and adds a segment each time the filtered point has
-        /// moved a full step away from the last one kept.
-        /// </summary>
-        void UpdateResampledPath(Vector3 position)
-        {
-            // Exponential smoothing written against elapsed time rather than as a fixed
-            // per-frame blend, so the filter behaves the same at 30 and at 60 fps and does not
-            // change character when the frame rate drops.
-            var blend = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(m_SmoothingSeconds, 0.001f));
-            m_Smoothed = Vector3.Lerp(m_Smoothed, position, blend);
-
-            var travelled = Vector3.Distance(m_Smoothed, m_LastKept);
-            if (travelled < m_ResampleStepMeters)
-                return;
-
-            DistanceWalked += travelled;
-            m_LastKept = m_Smoothed;
         }
 
         /// <summary>
