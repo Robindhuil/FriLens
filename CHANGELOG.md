@@ -10,7 +10,7 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [Unreleased]
 
-## [0.1.4-alpha]
+## [0.1.4-alpha] — 2026-09-04
 
 Prvé tri behy na Redmi Note 10 Pro s 0.1.3. Tracking funguje, prejdená vzdialenosť sa počíta
 — **84,4 m za 195 sekúnd** v najdlhšom behu. Ale filter skokov robil falošné poplachy a samotné
