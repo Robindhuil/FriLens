@@ -30,6 +30,33 @@ nulová. Táto verzia nič neopravuje; dáva appke schopnosť povedať prečo.
   `gfx`. Bez toho sa log, kde tracking nikdy nenaskočil, nedá odlíšiť od logu zo zariadenia,
   ktoré trackovať nikdy nevedelo.
 
+### Changed
+
+- **Appka už neverí `CheckAvailability()` naslepo.** Tá metóda odpovedá na otázku „dá sa tu
+  použiť ARCore API", nie „vie toto zariadenie trackovať" — a na prvú stačí mať nainštalované
+  Google Play Services for AR, čo ide aj na telefón bez potrebného hardvéru. Pribudli dve
+  poistky:
+
+  1. **Chýbajúci gyroskop sa kontroluje skôr než ARCore.** Motion tracking je vizuálno-
+     inerciálny, takže bez gyroskopu niet z čoho počítať inerciálnu polovicu. Appka ide rovno
+     do Preview a napíše prečo, namiesto toho, aby čakala na session, ktorá nikdy nenabehne.
+  2. **Časový limit na `SessionInitializing`.** Zariadenie môže gyroskop mať a aj tak nikdy
+     nedokonvergovať — necertifikovaný telefón bez kalibračného profilu robí presne to. Po 25
+     sekundách appka AR vzdá a prepne do Preview s vysvetlením. Zostať v AR režime navždy
+     znamená živý obraz z kamery a zamrznutý prekryv, čo vyzerá ako rozbitá appka namiesto
+     nevhodného telefónu.
+
+### Poznámka k 0.1.1-alpha
+
+Oprava so štartom AR rigu bola v 0.1.1-alpha označená ako príčina toho, že session neopúšťala
+`SessionInitializing`. **Nebola.** Build 0.1.0-alpha z releases — teda bez oboch opráv —
+na inom telefóne trackuje správne, takže príčinou bol hardvér, nie poradie zapínania rigu.
+Zmena v kóde zostáva, lebo vypínať `ARCameraManager` pod bežiacou session je aj tak zlé, ale
+ako oprava tohto problému bola pripísaná neprávom.
+
+Či bola potrebná druhá oprava (`InputActionManager`), zatiaľ **overené nie je** — na to treba
+log z telefónu, ktorý trackuje.
+
 ## [0.1.1-alpha] — 2026-09-03
 
 Opravné vydanie. Prvý beh 0.1.0-alpha na telefóne ukázal, že AR strana nefungovala vôbec;
