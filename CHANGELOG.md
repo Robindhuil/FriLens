@@ -36,6 +36,12 @@ oboje spôsobili zmeny z fáz 2 a 5.
 - APK sa pomenúva `FriLens-<verzia>.apk` s pomlčkou namiesto medzery. GitHub premieňa medzeru
   v názve assetu na bodku, takže s pomlčkou sa adresa na stiahnutie dá odvodiť priamo
   z verzie a nemusí sa nikde opisovať.
+- **Verziu stampuje build callback, nie len menu položka** (`VersionStamp.cs`). Držať verziu
+  v kóde malo zabrániť tomu, aby sa Player Settings rozišli so skutočnosťou, ale samo to
+  fungovalo len pre buildy spustené z menu FriLens. Build z Unity dialógu ten kód nikdy
+  nespustil a potichu vydal predošlé číslo verzie — prvé APK 0.1.1-alpha vyšlo označené ako
+  0.1.0-alpha, s opravami vnútri a zlým menom na obale. `IPreprocessBuildWithReport` sa
+  spustí pri každom builde, nech ho začne kto chce.
 
 ### Overené na 0.1.0-alpha
 
