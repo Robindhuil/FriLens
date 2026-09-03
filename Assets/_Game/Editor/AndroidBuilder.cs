@@ -25,10 +25,10 @@ namespace FriLens.EditorTools
     public static class AndroidBuilder
     {
         /// <summary>Human-readable version. Also the name of the output folder.</summary>
-        public const string Version = "0.1.3-alpha";
+        public const string Version = "0.1.4-alpha";
 
         /// <summary>Android versionCode. Must go up on every build Android is asked to install over another.</summary>
-        public const int VersionCode = 4;
+        public const int VersionCode = 5;
 
         const string ProductName = "FriLens";
 
