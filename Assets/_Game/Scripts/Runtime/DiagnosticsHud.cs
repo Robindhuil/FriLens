@@ -257,7 +257,15 @@ namespace FriLens
             }
 
             Set(m_Walked, $"{m_Travel.DistanceWalked:F1} m", null);
-            Set(m_FromOrigin, $"{m_Travel.DistanceFromOrigin:F1} m", null);
+
+            // Jumps ride along on the straight-line row because they are the same kind of fact:
+            // how much of what you are looking at came from the tracker rather than from walking.
+            var jumps = m_Travel.RelocalisationJumps;
+            if (jumps > 0)
+                Set(m_FromOrigin, $"{m_Travel.DistanceFromOrigin:F1} m · {jumps} jump"
+                    + (jumps == 1 ? "" : "s") + $" {m_Travel.JumpedMeters:F1} m", "warn");
+            else
+                Set(m_FromOrigin, $"{m_Travel.DistanceFromOrigin:F1} m", null);
         }
 
         void UpdateLog()
