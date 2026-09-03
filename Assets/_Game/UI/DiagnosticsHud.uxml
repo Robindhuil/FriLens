@@ -15,6 +15,11 @@
             </ui:VisualElement>
 
             <ui:VisualElement class="stat" picking-mode="Ignore">
+                <ui:Label class="stat__name" text="Device" />
+                <ui:Label name="device-value" class="stat__value" text="—" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="stat" picking-mode="Ignore">
                 <ui:Label class="stat__name" text="Marker" />
                 <ui:Label name="marker-value" class="stat__value" text="—" />
             </ui:VisualElement>
