@@ -4,18 +4,41 @@ using UnityEngine.XR.ARFoundation;
 namespace FriLens
 {
     /// <summary>
-    /// Adds up how far the camera has physically moved since the last alignment.
+    /// Measures how far the camera has physically travelled since the last alignment.
     ///
-    /// This is the x-axis of the whole test. VIO drift grows with distance walked, not with time
-    /// and not with distance from the marker, so "the overlay was 30 cm out" only means something
-    /// next to "after 47 m of walking". Straight-line distance from the marker is a different
+    /// This is the x-axis of the whole test. VIO drift grows with distance travelled, not with
+    /// time and not with distance from the marker, so "the overlay was 30 cm out" only means
+    /// something next to "after 47 m". Straight-line distance from the marker is a different
     /// number and both are worth having: a walk down a corridor and back ends up near the marker
     /// again while having accumulated the full drift.
+    ///
+    /// Two path lengths are reported, and the difference between them is itself a finding.
+    ///
+    /// <see cref="PathRawMeters"/> adds up every frame's displacement. That is the obvious way to
+    /// measure a path and it is biased upward, because every sample carries tracker noise and
+    /// every wobble of the hand is a real movement of the camera. The same bias is documented
+    /// wherever arc length is computed from sampled trajectories: GPS studies of animal travel
+    /// find path length overestimated by a few percent at typical sampling rates and by up to
+    /// twenty percent at the fastest ones, purely from measurement noise summing along the path.
+    /// Standing still and waving the phone adds metres to this figure, which is exactly what the
+    /// first field runs showed.
+    ///
+    /// <see cref="DistanceWalked"/> resamples before it sums, which is the standard remedy: the
+    /// position is low-pass filtered, and a segment is added only once the filtered position has
+    /// moved a fixed step away from the last point kept. Hand movement oscillates about a
+    /// stationary mean, so the filter attenuates it and the step threshold discards what is left.
+    /// Walking translates the mean, which survives both. The cost is a coarser resolution and a
+    /// slight underestimate on tight curves, both of which are small next to the bias removed.
+    ///
+    /// The honest limit: this measures the camera, not the person. A slow sweep of the arm over
+    /// half a metre moves the camera as surely as a step does, and nothing in the pose can tell
+    /// them apart. Holding the phone steady while walking is still part of the method.
     /// </summary>
     public class CameraTravel : MonoBehaviour
     {
         [SerializeField] Transform m_Camera;
 
+        [Header("Raw path")]
         [Tooltip("Movement below this in one frame is treated as jitter, not travel.")]
         [SerializeField] float m_MinimumStepMeters = 0.004f;
 
@@ -27,17 +50,39 @@ namespace FriLens
             + "says, which catches jumps that arrive on a long frame.")]
         [SerializeField] float m_MaximumStepMeters = 1f;
 
+        [Header("Resampled path")]
+        [Tooltip("Time constant of the low-pass filter on position. Long enough to average out "
+            + "hand movement, short enough not to cut corners while walking.")]
+        [SerializeField, Range(0.05f, 2f)] float m_SmoothingSeconds = 0.35f;
+
+        [Tooltip("Resolution the path is measured at. The filtered position has to move this far "
+            + "from the last point kept before a segment is added.")]
+        [SerializeField, Range(0.05f, 2f)] float m_ResampleStepMeters = 0.3f;
+
         Vector3 m_LastPosition;
         bool m_Started;
 
         /// <summary>Seconds accumulated since the pose last actually moved.</summary>
         float m_TimeSinceMovement;
 
+        Vector3 m_Smoothed;
+        Vector3 m_LastKept;
+
         Vector3 m_FirstTrackedPosition;
         float m_TrackingSince = -1f;
 
-        /// <summary>Path length walked since the last reset, in metres.</summary>
+        /// <summary>
+        /// Path length since the last reset, measured at <see cref="ResampleStepMeters"/>
+        /// resolution. This is the figure a drift percentage should be divided by.
+        /// </summary>
         public float DistanceWalked { get; private set; }
+
+        /// <summary>
+        /// Path length summed frame by frame, without filtering or resampling. Kept so the two
+        /// can be compared: the gap between them is the noise and hand movement that would
+        /// otherwise have been reported as walking.
+        /// </summary>
+        public float PathRawMeters { get; private set; }
 
         /// <summary>Straight-line distance from where the count was last reset, in metres.</summary>
         public float DistanceFromOrigin { get; private set; }
@@ -46,6 +91,8 @@ namespace FriLens
         public Vector3 Origin { get; private set; }
 
         public bool HasOrigin => m_Started;
+
+        public float ResampleStepMeters => m_ResampleStepMeters;
 
         /// <summary>
         /// Steps discarded as too fast to be walking. Each one is ARCore correcting itself, and
@@ -72,7 +119,11 @@ namespace FriLens
 
             m_LastPosition = m_Camera.position;
             Origin = m_LastPosition;
+            m_Smoothed = m_LastPosition;
+            m_LastKept = m_LastPosition;
+
             DistanceWalked = 0f;
+            PathRawMeters = 0f;
             DistanceFromOrigin = 0f;
             RelocalisationJumps = 0;
             JumpedMeters = 0f;
@@ -123,10 +174,21 @@ namespace FriLens
                 {
                     RelocalisationJumps++;
                     JumpedMeters += step;
+
+                    // Everything the resampler works from is carried across the jump rather than
+                    // left behind to chase it. Left alone the filter would spend the next second
+                    // sliding towards the new pose and the resampler would bill that slide as
+                    // walking: the jump would be removed from one figure and quietly added to the
+                    // other. Origin moves too, so "distance from marker" keeps measuring the same
+                    // physical place after the tracker has renumbered the world around it.
+                    var jump = position - m_LastPosition;
+                    m_Smoothed += jump;
+                    m_LastKept += jump;
+                    Origin += jump;
                 }
                 else
                 {
-                    DistanceWalked += step;
+                    PathRawMeters += step;
                 }
 
                 // The anchor moves either way. Holding it back across a relocalisation would turn
@@ -135,7 +197,29 @@ namespace FriLens
                 m_TimeSinceMovement = 0f;
             }
 
+            UpdateResampledPath(position);
+
             DistanceFromOrigin = Vector3.Distance(position, Origin);
+        }
+
+        /// <summary>
+        /// Low-pass filters the position and adds a segment each time the filtered point has
+        /// moved a full step away from the last one kept.
+        /// </summary>
+        void UpdateResampledPath(Vector3 position)
+        {
+            // Exponential smoothing written against elapsed time rather than as a fixed
+            // per-frame blend, so the filter behaves the same at 30 and at 60 fps and does not
+            // change character when the frame rate drops.
+            var blend = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(m_SmoothingSeconds, 0.001f));
+            m_Smoothed = Vector3.Lerp(m_Smoothed, position, blend);
+
+            var travelled = Vector3.Distance(m_Smoothed, m_LastKept);
+            if (travelled < m_ResampleStepMeters)
+                return;
+
+            DistanceWalked += travelled;
+            m_LastKept = m_Smoothed;
         }
 
         /// <summary>

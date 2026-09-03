@@ -73,6 +73,9 @@
           <ui:VisualElement name="walked-holder" class="walked-holder">
             <ui:VisualElement name="walked-band" class="marker-band is-hidden" />
             <ui:Label name="value-walked" class="walked-value v--idle" text="0.0 m" />
+            <!-- The unfiltered sum, kept visible so the headline figure can be checked against
+                 it rather than believed. -->
+            <ui:Label name="walked-note" class="walked-note is-hidden" text="" />
           </ui:VisualElement>
         </ui:VisualElement>
 

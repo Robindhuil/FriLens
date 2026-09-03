@@ -13,9 +13,56 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 ## [0.1.4-alpha]
 
 Prvé tri behy na Redmi Note 10 Pro s 0.1.3. Tracking funguje, prejdená vzdialenosť sa počíta
-— **84,4 m za 195 sekúnd** v najdlhšom behu. Ale filter skokov robil falošné poplachy.
+— **84,4 m za 195 sekúnd** v najdlhšom behu. Ale filter skokov robil falošné poplachy a samotné
+meranie dráhy stálo na metóde, ktorá číslo systematicky nafukuje.
+
+### Changed
+
+- **Prejdená vzdialenosť sa už nesčítava snímok po snímku.** Poloha sa najprv vyhladí
+  a segment sa pripočíta až vtedy, keď sa vyhladená poloha vzdiali o 0,30 m od naposledy
+  podržaného bodu. Mávanie telefónom v stoji kmitá okolo stojacej strednej hodnoty, takže ho
+  filter utlmí a prah zahodí; chôdza strednú hodnotu posúva a prejde.
+
+  Nie je to kozmetika. Sčítavanie každého snímku je z definície správne a **systematicky
+  nadhodnocuje**, lebo šum sa pri sčítavaní absolútnych hodnôt nikdy nevykráti. Pri GPS
+  záznamoch trajektórií je to zmerané na jednotky percent pri bežnom vzorkovaní a až dvadsať
+  percent pri najhustejšom. U nás k šumu pribúda ruka. Rozbor v
+  [ADR 005](docs/decisions/005-ako-merat-prejdenu-vzdialenost.md).
+
+- **Do CSV pribudol stĺpec `path_raw_m`** — pôvodný súčet bez filtrovania, hneď vedľa
+  `walked_m`. Na obrazovke je pod veľkým číslom drobné `raw`. Rozdiel medzi tými dvomi je
+  presne tá ruka a ten šum, ktoré sa doteraz vykazovali ako chôdza.
+
+- **Riadok `Tracking` hovorí, čo robiť, nie ako sa volá porucha.** `ExcessiveMotion` je teraz
+  „move the phone more slowly", `InsufficientFeatures` „point at a wall with more detail".
+  Je to odporúčanie priamo z dokumentácie ARCore a tu má váhu navyše: každý taký stav končí
+  relokalizáciou, a relokalizácia je ten metrový skok overlayu.
+
+  Tým sa vysvetľuje aj pozorovanie „agresívnejším mávaním sa gyroskop rozladil o meter".
+  Gyroskop sa nerozladil. ARCore stratil tracking na `ExcessiveMotion` a relokalizoval sa —
+  sú to tie isté metrové skoky, ktoré v logu behu `225741` sedia na 1,46 · 3,36 · 1,80 · 1,70 m.
+
+- **UI je menšie.** Referenčné rozlíšenie panelu 360×780 → 430×930, čo celý HUD zmenší
+  približne o šestinu.
 
 ### Fixed
+
+- **Overlay nebolo vidieť, takže „Hide overlay" nemalo čo skryť.** Model má 80 m a leží desiatky
+  metrov od počiatku sveta, kým AR session svoj svet vždy začína pri kamere. Bez značky tak
+  overlay ostal 19 m nabok a 5 m nad hlavou — a `far clip plane` bola 20 m. Nikto ho nikdy
+  nevidel; tlačidlo pritom fungovalo celý čas.
+
+  Dve opravy: far plane na 120 m a `ProvisionalPlacement`, ktorý pri chýbajúcej značke položí
+  podlahu modelu pod kameru. **Nie je to zarovnanie a nemeria to nič** — je to na to, aby sa
+  dalo overiť, že sa overlay kreslí, dá skryť a že pri chôdzi ujde. Riadok `Alignment` to
+  priznáva textom „dropped, not measured".
+
+- **Riadky `Marker` a `Alignment` sa nedali prečítať.** Hodnota „none" vyzerala ako prázdno.
+  Teraz je tam „waiting for marker", respektíve „dropped, not measured" — teda čo daný stav
+  znamená pre dôveryhodnosť toho, čo je na obrazovke.
+
+- **`far clip plane` bola 20 m na oboch kamerách.** Aj po správnom zarovnaní by sa z 80-metrovej
+  chodby kreslila len štvrtina.
 
 - **Filter skokov označoval bežnú chôdzu za relokalizáciu.** Medzi 65. a 69. sekundou jedného
   behu je zhluk 24 „skokov", každý 0,13–0,20 m, všetky rovnaké, všetky pri `SessionTracking`
