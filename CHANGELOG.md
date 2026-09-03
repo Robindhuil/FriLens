@@ -10,6 +10,35 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [Unreleased]
 
+## [0.1.3-alpha] — 2026-09-03
+
+Prvý beh na **Redmi Note 10 Pro** s 0.1.2-alpha ukázal dve veci: oprava pózy funguje, a meranie
+vzdialenosti má dve chyby, ktoré by v teréne skreslili výsledok.
+
+### Fixed
+
+- **Prejdená vzdialenosť zostávala nulová.** `CameraTravel` začínal počítať až po zosúladení
+  a bez vytlačenej značky k zosúladeniu nikdy nedôjde. V logu z 55-minútového behu tak bolo
+  `walked_m = 0.000`, hoci póza kamery sa preukázateľne hýbala v rozsahu 8 metrov. Počítadlo sa
+  teraz spustí samo pri prvom snímku; zosúladenie ho naďalej vynuluje, takže číslo, ktoré test
+  číta, je stále „od zosúladenia".
+
+  Vedľajší efekt je dôležitejší než samotná oprava: **desaťmetrová kontrola sa dá spraviť bez
+  značky**, teda ešte pred fázami 3a a 3b.
+
+- **Relokalizácie ARCore sa počítali ako chôdza.** V tom istom behu boli tri skoky rýchlejšie
+  než 3 m/s — najrýchlejší 2.85 m za 0.26 s, teda 10 m/s. Spolu **5.43 m zo 77 m, sedem percent
+  dráhy**. Drift sa meria ako percento prejdenej vzdialenosti, takže sedem percent chyby ide
+  priamo do osi merania. Kroky nad 4 m/s sa už do vzdialenosti nerátajú.
+
+### Added
+
+- **Počítadlo skokov.** Zahodené kroky sa nestrácajú — počítajú sa zvlášť a HUD ich ukáže vedľa
+  priamej vzdialenosti (`6.2 m · 3 jumps 5.4 m`). Sú to momenty, keď ARCore opravil sám seba,
+  a na obrazovke práve vtedy prekryv viditeľne skočí. Odlišuje to nález „prekryv sa vzďaľoval
+  postupne" od „tracker sa prelokalizoval", čo sú dve rôzne príčiny.
+- Stĺpce `jumps` a `jumped_m` v CSV, medzi `from_origin_m` a `since_align_s`.
+
 ## [0.1.2-alpha] — 2026-09-03
 
 Vydané ako [v0.1.2-alpha](https://github.com/Robindhuil/FriLens/releases/tag/v0.1.2-alpha).
