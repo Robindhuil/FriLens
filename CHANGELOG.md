@@ -39,6 +39,24 @@ vzdialenosti má dve chyby, ktoré by v teréne skreslili výsledok.
   postupne" od „tracker sa prelokalizoval", čo sú dve rôzne príčiny.
 - Stĺpce `jumps` a `jumped_m` v CSV, medzi `from_origin_m` a `since_align_s`.
 
+### Opravené po review
+
+Prehliadka logiky pred buildom našla štyri veci, z toho dve by pokazili meranie:
+
+- **`CameraTravel` začínal počítať skôr, než naskočil tracking.** Kamera je dovtedy na
+  počiatku sveta, takže `Origin` sa zafixoval na (0,0,0) a `From marker` by ukazoval
+  vzdialenosť od nuly, nie od miesta, kde človek stál. Skok na prvú skutočnú pózu sa navyše
+  započítal ako relokalizácia. Počítadlo teraz čaká na `SessionTracking`.
+- **Zber vzoriek pre zosúladenie nemal časový limit.** Keď značka zmizla zo záberu uprostred
+  série, rozobraté vzorky tam zostali a po návrate sa spriemerovali s novými — možno cez
+  relokalizáciu, z inej vzdialenosti a uhla. Vyšlo by z toho zosúladenie, ktoré vyzerá
+  odmerane a nie je. Po dvoch sekundách bez použiteľnej vzorky sa séria zahodí.
+- **Filter skokov stál len na rýchlosti.** Dlhý snímok — zadrhnutie alebo prvý snímok po
+  návrate z pozadia — spraví z dvojmetrového skoku zdanlivú prechádzku. Pribudol absolútny
+  strop na dĺžku kroku.
+- **`CameraTravel.Reset()` sa volalo ako Unity správa.** Editor volá `Reset()` sám pri
+  pridaní komponentu alebo pri „Reset" v inšpektore. Premenované na `RestartFrom()`.
+
 ### Zmenené UI
 
 HUD prekreslený podľa návrhu, ktorý preberá vizuálny jazyk z FriWorld-Hub: papier a inkoust,

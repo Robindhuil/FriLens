@@ -56,11 +56,16 @@ namespace FriLens
         [Tooltip("Align automatically the first time the marker is seen.")]
         [SerializeField] bool m_AlignOnFirstSighting = true;
 
+        [Tooltip("Seconds without a usable sample after which a half-collected burst is thrown "
+            + "away rather than continued.")]
+        [SerializeField] float m_SampleGapTimeoutSeconds = 2f;
+
         readonly List<Vector3> m_Positions = new();
         readonly List<Quaternion> m_Rotations = new();
 
         bool m_Enabled;
         bool m_WarnedAboutUnsetAnchor;
+        float m_LastSampleTime;
 
         /// <summary>
         /// Raised right after an averaged pose has been applied. Distance walked has to start
@@ -132,10 +137,26 @@ namespace FriLens
             // Poses reported while the tracker is only guessing would poison the average, so
             // limited tracking contributes nothing and the burst simply waits.
             if (TrackedMarker == null || TrackedMarker.trackingState != TrackingState.Tracking)
+            {
+                // Waiting is fine for a moment, but a burst left half full while the marker is
+                // out of view is a trap: when it comes back the average would mix poses from
+                // before and after — possibly across a relocalisation, from a different distance
+                // and angle — and produce an alignment that looks measured and is not. Old
+                // samples are dropped rather than continued.
+                if (m_Positions.Count > 0 && Time.time - m_LastSampleTime > m_SampleGapTimeoutSeconds)
+                {
+                    Debug.LogWarning($"{nameof(MarkerAlignment)}: dropped {m_Positions.Count} samples, "
+                        + $"the marker was out of view for more than {m_SampleGapTimeoutSeconds:F0} s.", this);
+                    m_Positions.Clear();
+                    m_Rotations.Clear();
+                }
+
                 return;
+            }
 
             m_Positions.Add(TrackedMarker.transform.position);
             m_Rotations.Add(TrackedMarker.transform.rotation);
+            m_LastSampleTime = Time.time;
 
             if (m_Positions.Count >= m_SampleCount)
                 ApplyAlignment();
@@ -152,6 +173,7 @@ namespace FriLens
 
             m_Positions.Clear();
             m_Rotations.Clear();
+            m_LastSampleTime = Time.time;
             State = AlignmentState.Sampling;
         }
 

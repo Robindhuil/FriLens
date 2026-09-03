@@ -65,6 +65,8 @@ namespace FriLens
         /// <summary>True when the phone could do AR but Google Play Services for AR is missing.</summary>
         public bool NeedsArServicesInstall { get; private set; }
 
+        float m_InitializingFor;
+
         IEnumerator Start()
         {
             // The AR rig is deliberately left alone here. Switching it off even for the two frames
@@ -162,8 +164,6 @@ namespace FriLens
                 + "Showing the overlay without AR.";
             Debug.LogWarning($"{nameof(SessionModeController)}: {Explanation}", this);
         }
-
-        float m_InitializingFor;
 
         void EnterAr()
         {

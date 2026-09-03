@@ -273,7 +273,7 @@ namespace FriLens
         /// </summary>
         void OnAligned()
         {
-            m_Travel?.Reset();
+            m_Travel?.RestartFrom();
             m_Logger?.MarkEvent("aligned");
         }
 
