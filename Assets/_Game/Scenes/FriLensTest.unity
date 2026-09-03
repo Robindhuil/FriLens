@@ -185,6 +185,7 @@ MonoBehaviour:
   m_Travel: {fileID: 288061787}
   m_Logger: {fileID: 288061786}
   m_Overlay: {fileID: 836722132}
+  m_InitializingPatienceSeconds: 20
 --- !u!114 &234078119
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -320,6 +321,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FriLens.CameraTravel
   m_Camera: {fileID: 2512387469332387801}
   m_MinimumStepMeters: 0.004
+  m_MaximumStepSpeed: 4
 --- !u!114 &288061788
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -335,6 +337,7 @@ MonoBehaviour:
   m_Session: {fileID: 702413258}
   m_ArRig: {fileID: 2512387470231460730}
   m_PreviewRig: {fileID: 2032841673}
+  m_InitializingTimeoutSeconds: 25
   m_Override: 0
 --- !u!114 &331264287
 MonoBehaviour:

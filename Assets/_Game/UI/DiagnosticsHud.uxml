@@ -1,55 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FriLens diagnostics HUD.
+
+     The hierarchy is flat and fixed: nothing here is ever created at runtime. C# only flips
+     classes and sets text on elements that already exist, which keeps the layout stable while
+     values change several times a second.
+
+     Element names are the contract with DiagnosticsHudView; renaming one here breaks the bind
+     silently, so they are kept in step with the HudRow enum. -->
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <Style src="project://database/Assets/_Game/UI/DiagnosticsHud.uss" />
-    <ui:VisualElement name="root" class="root" picking-mode="Ignore">
+  <Style src="project://database/Assets/_Game/UI/DiagnosticsHud.uss" />
 
-        <ui:VisualElement name="banner" class="banner">
-            <ui:Label name="mode-label" class="banner__mode" text="CHECKING" />
-            <ui:Label name="mode-detail" class="banner__detail" text="Checking what this device can do…" />
+  <ui:VisualElement name="hud-root" class="hud">
+
+    <!-- Mode banner -->
+    <ui:VisualElement name="banner-shadow" class="shadow">
+      <ui:VisualElement name="banner" class="card banner">
+        <!-- Hazard stripe, shown only in preview: the difference has to register peripherally. -->
+        <ui:VisualElement name="banner-hazard" class="hazard is-hidden" />
+        <ui:VisualElement name="banner-body" class="banner-body">
+          <ui:VisualElement name="mode-pill" class="pill">
+            <ui:VisualElement name="mode-dot" class="pill-dot pill-dot--idle" />
+            <ui:Label name="mode-pill-text" class="pill-text" text="CHECKING" />
+          </ui:VisualElement>
+          <ui:Label name="mode-title" class="mode-title" text="CHECKING" />
+          <ui:Label name="mode-reason" class="mode-reason" text="Checking what this device can do." />
         </ui:VisualElement>
-
-        <ui:VisualElement name="stats" class="stats" picking-mode="Ignore">
-
-            <ui:VisualElement class="stat" picking-mode="Ignore">
-                <ui:Label class="stat__name" text="Tracking" />
-                <ui:Label name="tracking-value" class="stat__value" text="—" />
-            </ui:VisualElement>
-
-            <ui:VisualElement class="stat" picking-mode="Ignore">
-                <ui:Label class="stat__name" text="Device" />
-                <ui:Label name="device-value" class="stat__value" text="—" />
-            </ui:VisualElement>
-
-            <ui:VisualElement class="stat" picking-mode="Ignore">
-                <ui:Label class="stat__name" text="Marker" />
-                <ui:Label name="marker-value" class="stat__value" text="—" />
-            </ui:VisualElement>
-
-            <ui:VisualElement class="stat" picking-mode="Ignore">
-                <ui:Label class="stat__name" text="Alignment" />
-                <ui:Label name="alignment-value" class="stat__value" text="—" />
-            </ui:VisualElement>
-
-            <ui:VisualElement class="stat stat--headline" picking-mode="Ignore">
-                <ui:Label class="stat__name" text="Walked" />
-                <ui:Label name="walked-value" class="stat__value" text="—" />
-            </ui:VisualElement>
-
-            <ui:VisualElement class="stat" picking-mode="Ignore">
-                <ui:Label class="stat__name" text="From marker" />
-                <ui:Label name="origin-value" class="stat__value" text="—" />
-            </ui:VisualElement>
-
-        </ui:VisualElement>
-
-        <ui:VisualElement name="spacer" class="spacer" picking-mode="Ignore" />
-
-        <ui:VisualElement name="controls" class="controls">
-            <ui:Button name="realign-button" class="button button--primary" text="Re-anchor" />
-            <ui:Button name="overlay-button" class="button" text="Hide overlay" />
-            <ui:Button name="mark-button" class="button" text="Mark" />
-        </ui:VisualElement>
-
-        <ui:Label name="log-value" class="footer" text="log: —" />
-
+      </ui:VisualElement>
     </ui:VisualElement>
+
+    <!-- Readout -->
+    <ui:VisualElement name="readout-shadow" class="shadow">
+      <ui:VisualElement name="readout" class="card readout">
+
+        <ui:VisualElement name="row-tracking" class="row row--first">
+          <ui:VisualElement name="icon-tracking" class="row-icon">
+            <ui:VisualElement class="row-glyph glyph--tracking" />
+          </ui:VisualElement>
+          <ui:Label class="row-label" text="Tracking" />
+          <ui:VisualElement class="row-spacer" />
+          <ui:VisualElement name="dot-tracking" class="dot is-hidden" />
+          <ui:Label name="value-tracking" class="row-value v--idle" text="—" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="row-marker" class="row">
+          <ui:VisualElement name="icon-marker" class="row-icon">
+            <ui:VisualElement class="row-glyph glyph--marker" />
+          </ui:VisualElement>
+          <ui:Label class="row-label" text="Marker" />
+          <ui:VisualElement class="row-spacer" />
+          <ui:VisualElement name="dot-marker" class="dot is-hidden" />
+          <ui:Label name="value-marker" class="row-value v--idle" text="—" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="row-alignment" class="row">
+          <ui:VisualElement name="icon-alignment" class="row-icon">
+            <ui:VisualElement class="row-glyph glyph--alignment" />
+          </ui:VisualElement>
+          <ui:Label class="row-label" text="Alignment" />
+          <ui:VisualElement class="row-spacer" />
+          <ui:VisualElement name="dot-alignment" class="dot is-hidden" />
+          <ui:Label name="value-alignment" class="row-value v--idle" text="—" />
+        </ui:VisualElement>
+
+        <!-- Distance walked is the axis drift is measured against, so it outranks every other
+             row and gets the display face and the marker band. -->
+        <ui:VisualElement name="row-walked" class="row row--walked">
+          <ui:VisualElement name="icon-walked" class="row-icon row-icon--strong">
+            <ui:VisualElement class="row-glyph glyph--walked" />
+          </ui:VisualElement>
+          <ui:Label class="row-label row-label--strong" text="WALKED" />
+          <ui:VisualElement class="row-spacer" />
+          <ui:VisualElement name="walked-holder" class="walked-holder">
+            <ui:VisualElement name="walked-band" class="marker-band is-hidden" />
+            <ui:Label name="value-walked" class="walked-value v--idle" text="0.0 m" />
+          </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="row-from-marker" class="row">
+          <ui:VisualElement name="icon-from-marker" class="row-icon">
+            <ui:VisualElement class="row-glyph glyph--from-marker" />
+          </ui:VisualElement>
+          <ui:Label class="row-label" text="From marker" />
+          <ui:VisualElement class="row-spacer" />
+          <ui:VisualElement name="dot-from-marker" class="dot is-hidden" />
+          <ui:Label name="value-from-marker" class="row-value v--idle" text="—" />
+        </ui:VisualElement>
+
+        <!-- Last because it is read once at startup, not watched. When it is bad the banner
+             carries the alarm; this row only says which part is missing. -->
+        <ui:VisualElement name="row-device" class="row">
+          <ui:VisualElement name="icon-device" class="row-icon">
+            <ui:VisualElement class="row-glyph glyph--device" />
+          </ui:VisualElement>
+          <ui:Label class="row-label" text="Device" />
+          <ui:VisualElement class="row-spacer" />
+          <ui:VisualElement name="dot-device" class="dot is-hidden" />
+          <ui:Label name="value-device" class="row-value v--idle" text="—" />
+        </ui:VisualElement>
+
+      </ui:VisualElement>
+    </ui:VisualElement>
+
+    <!-- Left empty on purpose: this is where the camera and the overlay show through. -->
+    <ui:VisualElement name="viewport-gap" class="gap" picking-mode="Ignore" />
+
+    <!-- Buttons, within thumb reach and large enough to hit without looking. -->
+    <ui:VisualElement name="buttons" class="buttons">
+      <ui:VisualElement name="reanchor-shadow" class="shadow shadow--pill">
+        <ui:Button name="btn-reanchor" class="btn btn--primary" text="">
+          <ui:VisualElement class="btn-glyph glyph--reanchor" />
+          <ui:Label name="btn-reanchor-text" class="btn-text" text="Re-anchor" />
+          <ui:Label name="btn-reanchor-note" class="btn-note is-hidden" text="unavailable" />
+        </ui:Button>
+      </ui:VisualElement>
+
+      <ui:VisualElement name="button-row" class="btn-row">
+        <ui:Button name="btn-overlay" class="btn btn--secondary btn--grow" text="">
+          <ui:VisualElement name="btn-overlay-glyph" class="btn-glyph glyph--overlay-hide" />
+          <ui:Label name="btn-overlay-text" class="btn-text" text="Hide overlay" />
+        </ui:Button>
+        <ui:Button name="btn-mark" class="btn btn--secondary btn--mark" text="">
+          <ui:VisualElement class="btn-glyph glyph--mark" />
+          <ui:Label class="btn-text" text="Mark" />
+        </ui:Button>
+      </ui:VisualElement>
+    </ui:VisualElement>
+
+    <!-- The only proof that the run is being recorded at all. -->
+    <ui:Label name="footer" class="footer" text="log: not writing" />
+
+  </ui:VisualElement>
 </ui:UXML>

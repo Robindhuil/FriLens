@@ -39,6 +39,41 @@ vzdialenosti má dve chyby, ktoré by v teréne skreslili výsledok.
   postupne" od „tracker sa prelokalizoval", čo sú dve rôzne príčiny.
 - Stĺpce `jumps` a `jumped_m` v CSV, medzi `from_origin_m` a `since_align_s`.
 
+### Zmenené UI
+
+HUD prekreslený podľa návrhu, ktorý preberá vizuálny jazyk z FriWorld-Hub: papier a inkoust,
+tvrdé obrysy, tieň ako plná posunutá vrstva. Celé UI je po anglicky, rovnako ako CSV a logy.
+
+- **Farby sú tokeny v USS a nikde inde.** C# nastavuje triedy, nikdy farby — aj bodka
+  v tabletke režimu má triedy `pill-dot--ok` / `--idle` / `--accent`. Prefarbenie je jeden
+  súbor, nie hľadanie po kóde.
+- **`DiagnosticsHudView`** je jediná trieda, ktorá siaha na vizuálny strom. Nič nevytvára, len
+  prepína triedy a texty na hierarchii, ktorá už existuje v UXML. `DiagnosticsHud` vie, čo
+  čísla znamenajú; view vie, ako vyzerajú.
+- **Preview prepína celý HUD jedným volaním** — banner do čierna so šrafou, číselník stlmený,
+  hodnoty neutrálne, hlavné číslo na *not measuring*, Re-anchor vypnutý. Nedá sa skončiť
+  napoly v Preview a vyzerať ako AR.
+- Riadok `Device` a počítadlo skokov doplnené do návrhu, ktorý ich ešte nemal.
+- Písma: Fredoka (nadpisy), Nunito (texty), JetBrains Mono (hodnoty). Mono má funkčný dôvod —
+  hodnoty sa menia niekoľkokrát za sekundu a proporcionálne písmo by riadkami trhalo.
+  Google dnes dáva Fredoka a Nunito len ako variabilné, takže rez 700 robí `-unity-font-style`.
+- Deväť ikon z návrhu plus vygenerovaná ikona pre `Device`.
+
+#### Štyri pasce UI Toolkitu, na ktoré sa narazilo
+
+Všetky tiché — nič nevypíše chybu, len to vyzerá zle:
+
+1. **UI Toolkit chce `UnityEngine.TextCore.Text.FontAsset`, nie `TMPro.TMP_FontAsset`.** TMP
+   asset na tej istej ceste sa nenačíta a text sa jednoducho nevykreslí. Bez varovania, bez
+   náhradného rezu.
+2. **`var()` funguje pre farby, ale nie pre `-unity-font-definition`.** Font za premennou
+   zmizne rovnako ticho. Cesty k fontom sú preto vypísané celé pri každom použití.
+3. **`border-radius` kláti vodorovný a zvislý polomer zvlášť**, takže `999px` na širokom
+   nízkom prvku spraví elipsu, nie pilulku. Polomery sú polovica výšky prvku.
+4. **Prvky sa v riadku samy nezmenšujú.** Dlhá hodnota stlačila ikonu z 26 px na 3 px a jej
+   glyf vyliezol von; hodnota `Alignment` zase pretiekla kartu o 30 px. Pevné rozmery
+   dostali `flex-shrink: 0`, hodnota `flex-shrink: 1`.
+
 ## [0.1.2-alpha] — 2026-09-03
 
 Vydané ako [v0.1.2-alpha](https://github.com/Robindhuil/FriLens/releases/tag/v0.1.2-alpha).
