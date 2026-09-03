@@ -10,6 +10,26 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [Unreleased]
 
+## [0.1.2-alpha] — 2026-09-03
+
+Diagnostika hardvéru. Po 0.1.1-alpha sa kamera konečne zapla — oprava so štartom AR rigu
+zabrala — ale session naďalej neopustila `SessionInitializing` a póza kamery zostala presne
+nulová. Táto verzia nič neopravuje; dáva appke schopnosť povedať prečo.
+
+### Added
+
+- **Riadok `Device` v HUD-e.** ARCore robí motion tracking cez VIO, čo bez gyroskopu nejde.
+  Bez neho sa session otvorí, kamera nabehne a tracking sa nikdy neustáli — na obrazovke
+  na nerozoznanie od session, ktorá je len pomalá. Ak `SystemInfo.supportsGyroscope` hlási
+  nepravdu, HUD napíše **„no gyroscope — AR cannot track"** načerveno.
+- **Časovač na zaseknutú session.** `SessionInitializing` nehlási žiadne zlyhanie —
+  `notTrackingReason` zostáva `None`, lebo sa nič nepokazilo, tracking len nikdy
+  nedokonverguje. Ako oranžové slovo to vyzeralo ako „ešte pracujem" donekonečna. Po 20
+  sekundách HUD prepne na **„stuck initializing N s"** načerveno. Je to nález, nie stav.
+- **Model telefónu a senzory do prvého riadku logu** — `device`, `android`, `gyro`, `accel`,
+  `gfx`. Bez toho sa log, kde tracking nikdy nenaskočil, nedá odlíšiť od logu zo zariadenia,
+  ktoré trackovať nikdy nevedelo.
+
 ## [0.1.1-alpha] — 2026-09-03
 
 Opravné vydanie. Prvý beh 0.1.0-alpha na telefóne ukázal, že AR strana nefungovala vôbec;

@@ -27,9 +27,14 @@ namespace FriLens
         [Tooltip("Renderer switched off by the Hide overlay button, so you can see what is under it.")]
         [SerializeField] Renderer m_Overlay;
 
+        [Tooltip("Seconds of SessionInitializing after which the HUD stops waiting politely and "
+            + "says the session is stuck.")]
+        [SerializeField] float m_InitializingPatienceSeconds = 20f;
+
         Label m_ModeLabel;
         Label m_ModeDetail;
         Label m_Tracking;
+        Label m_Device;
         Label m_Marker;
         Label m_AlignmentValue;
         Label m_Walked;
@@ -42,6 +47,7 @@ namespace FriLens
 
         int m_MarkCount;
         SessionModeController.SessionMode m_ShownMode = (SessionModeController.SessionMode)(-1);
+        float m_InitializingSince = -1f;
 
         void OnEnable()
         {
@@ -51,6 +57,7 @@ namespace FriLens
             m_ModeLabel = root.Q<Label>("mode-label");
             m_ModeDetail = root.Q<Label>("mode-detail");
             m_Tracking = root.Q<Label>("tracking-value");
+            m_Device = root.Q<Label>("device-value");
             m_Marker = root.Q<Label>("marker-value");
             m_AlignmentValue = root.Q<Label>("alignment-value");
             m_Walked = root.Q<Label>("walked-value");
@@ -83,6 +90,7 @@ namespace FriLens
         {
             UpdateMode();
             UpdateTracking();
+            UpdateDevice();
             UpdateMarker();
             UpdateAlignment();
             UpdateTravel();
@@ -140,12 +148,58 @@ namespace FriLens
             var state = ARSession.state;
             var reason = ARSession.notTrackingReason;
 
+            // A session that never leaves SessionInitializing reports no failure at all —
+            // notTrackingReason stays None because nothing went wrong, tracking simply never
+            // converges. Shown as a plain orange word it looks like "still working on it"
+            // forever. After a while it is a finding, and the HUD should say so on its own
+            // rather than needing a CSV pulled off the phone to notice.
+            if (state == ARSessionState.SessionInitializing)
+            {
+                if (m_InitializingSince < 0f)
+                    m_InitializingSince = Time.time;
+            }
+            else
+            {
+                m_InitializingSince = -1f;
+            }
+
             if (state == ARSessionState.SessionTracking)
+            {
                 Set(m_Tracking, "tracking", null);
-            else if (reason != UnityEngine.XR.ARSubsystems.NotTrackingReason.None)
+                return;
+            }
+
+            var stuckFor = m_InitializingSince < 0f ? 0f : Time.time - m_InitializingSince;
+            if (stuckFor > m_InitializingPatienceSeconds)
+            {
+                Set(m_Tracking, $"stuck initializing {stuckFor:F0} s", "bad");
+                return;
+            }
+
+            if (reason != UnityEngine.XR.ARSubsystems.NotTrackingReason.None)
                 Set(m_Tracking, $"{state} · {reason}", "bad");
             else
                 Set(m_Tracking, state.ToString(), "warn");
+        }
+
+        /// <summary>
+        /// Hardware ARCore needs, read straight off the device.
+        ///
+        /// Motion tracking is visual-inertial: without a gyroscope ARCore can open the camera and
+        /// still never initialise, which is indistinguishable on screen from a session that is
+        /// merely slow. Naming the missing part turns a mystery into a fact.
+        /// </summary>
+        void UpdateDevice()
+        {
+            var gyro = SystemInfo.supportsGyroscope;
+            var accelerometer = SystemInfo.supportsAccelerometer;
+
+            if (!gyro)
+                Set(m_Device, "no gyroscope — AR cannot track", "bad");
+            else if (!accelerometer)
+                Set(m_Device, "no accelerometer", "bad");
+            else
+                Set(m_Device, "gyro + accel ok", null);
         }
 
         void UpdateMarker()

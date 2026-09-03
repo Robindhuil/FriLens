@@ -50,6 +50,16 @@ namespace FriLens
                     + "walked_m,from_origin_m,since_align_s,spread_cm,spread_deg,event");
                 m_Writer.Flush();
                 Debug.Log($"{nameof(SessionLogger)}: writing {FilePath}", this);
+
+                // Which phone, and does it have the sensors ARCore needs. Without this a log that
+                // shows tracking never starting cannot be told apart from a log taken on hardware
+                // that was never able to track in the first place. Commas are stripped because
+                // this goes in a CSV field.
+                MarkEvent(("device " + SystemInfo.deviceModel
+                    + "; android " + SystemInfo.operatingSystem
+                    + "; gyro " + SystemInfo.supportsGyroscope
+                    + "; accel " + SystemInfo.supportsAccelerometer
+                    + "; gfx " + SystemInfo.graphicsDeviceType).Replace(',', ' '));
             }
             catch (Exception exception)
             {
