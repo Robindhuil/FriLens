@@ -12,6 +12,17 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [0.1.2-alpha] — 2026-09-03
 
+Vydané ako [v0.1.2-alpha](https://github.com/Robindhuil/FriLens/releases/tag/v0.1.2-alpha).
+Obsahuje aj 0.1.1-alpha, ktorá sa samostatne nevydala.
+
+### Testovacie zariadenia
+
+| Telefón | ARCore | Poznámka |
+|---|---|---|
+| **Redmi Note 10 Pro** | ✅ trackuje | zariadenie, na ktorom sa bude testovať ďalej |
+| **Redmi 11T** | ✅ trackuje | log z neho potvrdil chybu s `InputActionManager` |
+| **Redmi 14C** | ❌ netrackuje | session sa spustí, kamera beží, tracking sa nikdy neustáli |
+
 Diagnostika hardvéru. Po 0.1.1-alpha sa kamera konečne zapla — oprava so štartom AR rigu
 zabrala — ale session naďalej neopustila `SessionInitializing` a póza kamery zostala presne
 nulová. Táto verzia nič neopravuje; dáva appke schopnosť povedať prečo.

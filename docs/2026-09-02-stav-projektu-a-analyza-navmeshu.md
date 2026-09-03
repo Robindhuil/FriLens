@@ -227,18 +227,27 @@ tam sa nič nemení a nič sa nedá skrátiť.
 
 ### K6 — Testovacie zariadenie — ✅ vyriešené 2026-09-03
 
-Pôvodne sa zdalo, že Redmi 14C ARCore nepodporuje. Build 0.1.0-alpha na ňom **nabehol do AR
-režimu** — `CheckAvailability()` prešlo, session sa spustila, appka si vypýtala kameru.
-Zariadenie na test teda je.
+| Telefón | ARCore | Poznámka |
+|---|---|---|
+| **Redmi Note 10 Pro** | ✅ trackuje | zariadenie, na ktorom sa bude testovať ďalej |
+| **Redmi 11T** | ✅ trackuje | log z neho potvrdil chybu s `InputActionManager` |
+| **Redmi 14C** | ❌ netrackuje | session sa spustí, kamera beží, tracking sa nikdy neustáli |
 
-Zostáva jedna výhrada. Ak Redmi 14C nie je v
-[Googlom zozname podporovaných zariadení](https://developers.google.com/ar/devices)
-a ARCore na ňom beží len vďaka nainštalovaným **Google Play Services for AR**, nemá overenú
-kalibráciu kamery a IMU. Namerané čísla potom môžu hovoriť o kalibrácii telefónu, nie
-o modeli. Na prvý beh to stačí; na záverečné čísla treba porovnanie s certifikovaným
-zariadením.
+Zariadenie na test teda je a **fáza 6 nie je blokovaná hardvérom**.
 
-Appka zostáva `AR Optional` s Preview režimom pre zariadenia, ktoré ARCore naozaj nemajú —
+Redmi 14C je zvláštny prípad, ktorý stojí za zapamätanie: `CheckAvailability()` na ňom
+prejde a appka skončí v AR režime, hoci trackovať nikdy nezačne. Tá metóda totiž odpovedá
+na „dá sa tu použiť ARCore API", nie „vie toto zariadenie trackovať" — a na prvé stačí mať
+nainštalované Google Play Services for AR. Appka to od 0.1.2-alpha rieši sama: kontroluje
+gyroskop skôr než ARCore a má časový limit na štart session.
+
+Zostáva výhrada k presnosti. Ak testovací telefón nie je v
+[Googlom zozname podporovaných zariadení](https://developers.google.com/ar/devices),
+nemá overenú kalibráciu kamery a IMU a namerané čísla môžu hovoriť o kalibrácii telefónu,
+nie o modeli. Preto sa oplatí zopakovať meranie na oboch fungujúcich telefónoch — ak dajú
+podobné čísla, kalibrácia nie je dominantný zdroj chyby.
+
+Appka zostáva `AR Optional` s Preview režimom pre zariadenia, ktoré ARCore nezvládnu —
 [ADR 004](decisions/004-zariadenia-bez-arcore.md).
 
 ### K7 — Trasa na 100 m priamo neexistuje
