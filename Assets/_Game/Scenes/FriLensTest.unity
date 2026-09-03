@@ -161,6 +161,7 @@ GameObject:
   - component: {fileID: 234078120}
   - component: {fileID: 234078119}
   - component: {fileID: 234078118}
+  - component: {fileID: 234078121}
   m_Layer: 0
   m_Name: HUD
   m_TagString: Untagged
@@ -184,6 +185,7 @@ MonoBehaviour:
   m_Alignment: {fileID: 288061785}
   m_Travel: {fileID: 288061787}
   m_Logger: {fileID: 288061786}
+  m_Placement: {fileID: 234078121}
   m_Overlay: {fileID: 836722132}
   m_InitializingPatienceSeconds: 20
 --- !u!114 &234078119
@@ -224,6 +226,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &234078121
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 234078117}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a24400fca7d66f4fba38f402c31d554, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FriLens.ProvisionalPlacement
+  m_AlignmentRoot: {fileID: 1867842952}
+  m_Overlay: {fileID: 836722132}
+  m_Camera: {fileID: 2512387469332387801}
+  m_Alignment: {fileID: 288061785}
+  m_EyeHeightMeters: 1.5
+  m_PlaceWhenUnaligned: 1
 --- !u!1 &288061782
 GameObject:
   m_ObjectHideFlags: 0
@@ -324,6 +344,8 @@ MonoBehaviour:
   m_MinimumStepMeters: 0.004
   m_MaximumStepSpeed: 4
   m_MaximumStepMeters: 1
+  m_SmoothingSeconds: 0.35
+  m_ResampleStepMeters: 0.3
 --- !u!114 &288061788
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -408,7 +430,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.1
-  far clip plane: 600
+  far clip plane: 120
   field of view: 55
   orthographic: 0
   orthographic size: 5
@@ -859,7 +881,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.1
-  far clip plane: 20
+  far clip plane: 120
   field of view: 60
   orthographic: 0
   orthographic size: 5

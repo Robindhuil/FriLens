@@ -24,6 +24,7 @@ namespace FriLens
         [SerializeField] MarkerAlignment m_Alignment;
         [SerializeField] CameraTravel m_Travel;
         [SerializeField] SessionLogger m_Logger;
+        [SerializeField] ProvisionalPlacement m_Placement;
 
         [Tooltip("Renderer switched off by the overlay button, so you can see what is under it.")]
         [SerializeField] Renderer m_Overlay;
@@ -150,8 +151,14 @@ namespace FriLens
                 return;
             }
 
+            // What the tester needs is the remedy, not the enum. ARCore's own guidance is to turn
+            // a failure into an instruction — the reason is kept alongside it because this is a
+            // measuring instrument and the log has to stay readable against the screen.
+            var advice = TrackingAdvice.For(reason);
             if (reason != NotTrackingReason.None)
-                m_View.SetRow(HudRow.Tracking, $"{state} · {reason}", ValueState.Bad);
+                m_View.SetRow(HudRow.Tracking,
+                    advice.Length > 0 ? advice : $"{state} · {reason}",
+                    TrackingAdvice.IsActionable(reason) ? ValueState.Bad : ValueState.Warn);
             else
                 m_View.SetRow(HudRow.Tracking, state.ToString(), ValueState.Warn);
         }
@@ -164,7 +171,7 @@ namespace FriLens
             var marker = m_Alignment.TrackedMarker;
             if (marker == null)
             {
-                m_View.SetRow(HudRow.Marker, "not seen", ValueState.Idle);
+                m_View.SetRow(HudRow.Marker, "none in view", ValueState.Idle);
                 return;
             }
 
@@ -195,7 +202,14 @@ namespace FriLens
                     break;
 
                 default:
-                    m_View.SetRow(HudRow.Alignment, "none", ValueState.Idle);
+                    // "none" read as a blank on the phone. The row has to say what the state
+                    // costs the tester: an unanchored overlay is scenery, and the offsets you
+                    // can see between it and the wall are not measurements of anything.
+                    m_View.SetRow(HudRow.Alignment,
+                        m_Placement != null && m_Placement.IsProvisional
+                            ? "dropped, not measured"
+                            : "waiting for marker",
+                        ValueState.Idle);
                     break;
             }
         }
@@ -208,6 +222,7 @@ namespace FriLens
             if (!m_Travel.HasOrigin)
             {
                 m_View.SetWalked(0f, ValueState.Idle);
+                m_View.SetWalkedNote("");
                 m_View.SetRow(HudRow.FromMarker, "—", ValueState.Idle);
                 return;
             }
@@ -216,7 +231,14 @@ namespace FriLens
             // wrong, and painting it red during the ordinary few seconds before tracking starts
             // would cry wolf every single run.
             var tracking = ARSession.state == ARSessionState.SessionTracking;
+
+            // The raw sum rides under the headline figure rather than replacing it. Seeing both
+            // is what turns "the distance looks too high" into a number: the gap is the hand
+            // movement and tracker noise that the resampled figure leaves out, and a tester who
+            // watches it grow while standing still learns more about the method in ten seconds
+            // than the documentation can tell them.
             m_View.SetWalked(m_Travel.DistanceWalked, tracking ? ValueState.Ok : ValueState.Warn);
+            m_View.SetWalkedNote($"raw {m_Travel.PathRawMeters:F1} m");
 
             // Jumps ride along on the straight-line row because they are the same kind of fact:
             // how much of what you are looking at came from the tracker rather than from walking.

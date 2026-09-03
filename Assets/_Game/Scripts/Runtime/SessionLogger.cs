@@ -45,9 +45,14 @@ namespace FriLens
             try
             {
                 m_Writer = new StreamWriter(FilePath, false, Encoding.UTF8);
+                // walked_m is resampled, path_raw_m is the frame-by-frame sum. Both are logged
+                // because the gap between them is the hand movement and tracker noise that the
+                // resampling removed, and that gap is worth reading afterwards rather than
+                // taking on trust.
                 m_Writer.WriteLine("time_s,mode,session_state,not_tracking_reason,"
                     + "cam_x,cam_y,cam_z,cam_yaw,cam_pitch,cam_roll,"
-                    + "walked_m,from_origin_m,jumps,jumped_m,since_align_s,spread_cm,spread_deg,event");
+                    + "walked_m,path_raw_m,from_origin_m,jumps,jumped_m,"
+                    + "since_align_s,spread_cm,spread_deg,event");
                 m_Writer.Flush();
                 Debug.Log($"{nameof(SessionLogger)}: writing {FilePath}", this);
 
@@ -102,6 +107,7 @@ namespace FriLens
             var mode = m_Mode != null ? m_Mode.Mode.ToString() : "Unknown";
 
             var walked = m_Travel != null ? m_Travel.DistanceWalked : 0f;
+            var pathRaw = m_Travel != null ? m_Travel.PathRawMeters : 0f;
             var fromOrigin = m_Travel != null ? m_Travel.DistanceFromOrigin : 0f;
             var jumps = m_Travel != null ? m_Travel.RelocalisationJumps : 0;
             var jumped = m_Travel != null ? m_Travel.JumpedMeters : 0f;
@@ -122,6 +128,7 @@ namespace FriLens
                 euler.x.ToString("F2", culture),
                 euler.z.ToString("F2", culture),
                 walked.ToString("F3", culture),
+                pathRaw.ToString("F3", culture),
                 fromOrigin.ToString("F3", culture),
                 jumps.ToString(culture),
                 jumped.ToString("F3", culture),

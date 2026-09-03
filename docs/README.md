@@ -19,6 +19,7 @@ Nie navigačná appka. Nie prekryv miestností. Jedna značka, jedna plocha, vla
 | [ADR 002 — Verzovanie modelov](decisions/002-verzovanie-modelov.md) | čo robiť s 300 MB blend súborom |
 | [ADR 003 — Póza značky z nav polygónov](decisions/003-poza-znacky-z-nav-polygonov.md) | prečo model budovy netreba a čo to znamená pre výber miesta na značku |
 | [ADR 004 — Zariadenia bez ARCore](decisions/004-zariadenia-bez-arcore.md) | AR Optional, runtime detekcia a náhradný Preview režim |
+| [ADR 005 — Ako merať prejdenú vzdialenosť](decisions/005-ako-merat-prejdenu-vzdialenost.md) | prečo sčítavanie snímok po snímku nafukuje menovateľ driftu |
 
 Východiskový návrh testu žije vo FriWorlde:
 [`FriWorld/docs/2026-08-29-frilens-ar-test.md`](../../FriWorld/docs/2026-08-29-frilens-ar-test.md).

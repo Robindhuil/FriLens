@@ -231,6 +231,15 @@
     -unity-font-style: bold;
 }
 
+/* The unfiltered path length, deliberately small and quiet. It is there to be checked
+   against the headline figure, not to compete with it. */
+.walked-note {
+    font-size: 13px;
+    color: var(--label-idle);
+    -unity-text-align: middle-right;
+    -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/JetBrainsMono-Regular SDF.asset");
+}
+
 /* ── Space for the camera ───────────────────────────────────────────── */
 .gap { flex-grow: 1; min-height: 24px; }
 

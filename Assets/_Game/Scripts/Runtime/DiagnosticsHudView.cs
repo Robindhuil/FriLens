@@ -49,6 +49,7 @@ namespace FriLens
         readonly VisualElement[] m_Dots = new VisualElement[RowCount];
 
         readonly Label m_Walked;
+        readonly Label m_WalkedNote;
         readonly VisualElement m_WalkedBand;
         readonly Label m_Footer;
 
@@ -86,6 +87,7 @@ namespace FriLens
             BindRow(HudRow.Device, "device");
 
             m_Walked = m_Root.Q<Label>("value-walked");
+            m_WalkedNote = m_Root.Q<Label>("walked-note");
             m_WalkedBand = m_Root.Q("walked-band");
             m_Footer = m_Root.Q<Label>("footer");
 
@@ -147,6 +149,7 @@ namespace FriLens
                     SetRow(HudRow.Alignment, "not measuring", ValueState.Idle);
                     SetRow(HudRow.FromMarker, "—", ValueState.Idle);
                     SetWalkedText("not measuring", ValueState.Idle);
+                    SetWalkedNote("");
                     break;
             }
         }
@@ -186,6 +189,16 @@ namespace FriLens
         public void SetWalked(float meters, ValueState state)
         {
             SetWalkedText(meters.ToString("0.0") + " m", state);
+        }
+
+        /// <summary>
+        /// Second line under the headline figure. An empty string hides it, so a caller with
+        /// nothing to add does not have to leave a blank line behind.
+        /// </summary>
+        public void SetWalkedNote(string text)
+        {
+            m_WalkedNote.text = text;
+            m_WalkedNote.EnableInClassList("is-hidden", string.IsNullOrEmpty(text));
         }
 
         void SetWalkedText(string text, ValueState state)
