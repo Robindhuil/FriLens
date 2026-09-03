@@ -12,6 +12,8 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [0.1.3-alpha] — 2026-09-03
 
+Vydané ako [v0.1.3-alpha](https://github.com/Robindhuil/FriLens/releases/tag/v0.1.3-alpha).
+
 Prvý beh na **Redmi Note 10 Pro** s 0.1.2-alpha ukázal dve veci: oprava pózy funguje, a meranie
 vzdialenosti má dve chyby, ktoré by v teréne skreslili výsledok.
 
