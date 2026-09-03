@@ -67,6 +67,48 @@ by tým ďalšiu sekundu a prevzorkovanie by to vyúčtovalo ako chôdzu — sko
 jedného čísla a potichu pripočítal do druhého. Pri skoku sa preto o rovnaký vektor posunie
 vyhladená poloha, naposledy podržaný bod aj `Origin`.
 
+## Overenie
+
+Filter sedí v `PathResampler` oddelene od `CameraTravel` a čas dostáva ako argument, takže sa
+dá pustiť na vymyslených dráhach so **známou skutočnou dĺžkou**. Ladiť ho na chodbe a vyhlásiť
+za dobrý by bolo dookola: tá chôdza tiež nemá referenciu.
+
+`FriLens > Verify Travel Filter`:
+
+| dráha | skutočnosť | prevzorkované | raw |
+|---|---:|---:|---:|
+| rovná chôdza, bez šumu, 60 fps | 20 m | 19,45 m | 20,00 m |
+| rovná chôdza, šum 2 cm, 60 fps | 20 m | 19,49 m | **30,74 m** |
+| rovná chôdza, šum 2 cm, 30 fps | 20 m | 19,46 m | 22,96 m |
+| chôdza s 3 m relokalizáciou v polovici | 10 m | 9,44 m | — |
+| státie, mávanie 2 Hz ±25 cm, 20 s | 0 m | 0,00 m | 39,78 m |
+| státie, mávanie 1 Hz ±25 cm, 20 s | 0 m | 0,00 m | 20,00 m |
+
+Dva riadky stoja za prečítanie zvlášť.
+
+**Dvadsať metrov s dvomi centimetrami šumu vyjde ako 30,74 m.** To je nadhodnotenie o 54 %
+z čistého šumu — chôdza je v oboch prípadoch tá istá. Pri 30 fps to je 22,96 m, teda 15 %.
+Presne tá závislosť od hustoty vzorkovania, ktorú popisuje literatúra, len zmeraná na našom
+kóde.
+
+To isté na skutočných dátach. Filter pustený spätne na pózy uložené v CSV z behov s 0.1.3:
+
+| beh | trvanie | appka hlásila | prevzorkované z CSV |
+|---|---:|---:|---:|
+| 214544 | 138 s | — | 65,40 m |
+| 225741 | 191 s | 84,35 m | **65,25 m** |
+| 230108 | 38 s | 19,78 m | 13,34 m |
+
+Rekonštrukcia je hrubá — v CSV sú pózy štyrikrát za sekundu, kým na telefóne filter beží na
+snímkovej frekvencii, takže hodnoty z tabuľky budú skôr mierne nízke. Smer aj rád sú však
+jednoznačné: **tých 84,4 m bolo v skutočnosti okolo 65 m.**
+
+**Státie a mávanie dáva 0,00 m prevzorkovane oproti 20–40 m raw.** To je pozorovanie z terénu
+prepísané do čísla.
+
+Podhodnotenie 0,5 m na dvadsiatich metroch je oneskorenie filtra na konci dráhy. **Nerastie so
+vzdialenosťou** — je to konštantný chvost, nie chyba úmerná dĺžke.
+
 ## Čo to nerieši
 
 **Meriame kameru, nie človeka.** Pomalý oblúk rukou cez pol metra posunie kameru rovnako ako
@@ -75,6 +117,11 @@ súčasťou metodiky, len už nie jedinou poistkou.
 
 Prah 0,30 m znamená, že číslo skáče po tridsiatich centimetroch. Pre meranie driftu na
 desiatkach metrov je to bezvýznamné.
+
+A je hranica, za ktorou filter nepomôže. Pomalý široký oblúk rukou — 0,4 Hz, ±40 cm — prejde
+ako **4,82 m za dvadsať sekúnd státia**. Kamera sa naozaj presúva rovnako ďaleko a rovnako
+rýchlo ako pri chôdzi; žiadne spracovanie pózy tie dva prípady nerozlíši. Rýchle mávanie filter
+zahodí celé, pomalé kývanie nie.
 
 ## Súvisiace
 

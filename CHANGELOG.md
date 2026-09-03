@@ -29,6 +29,27 @@ meranie dráhy stálo na metóde, ktorá číslo systematicky nafukuje.
   percent pri najhustejšom. U nás k šumu pribúda ruka. Rozbor v
   [ADR 005](docs/decisions/005-ako-merat-prejdenu-vzdialenost.md).
 
+- **Filter má vlastný test.** `PathResampler` je oddelený od `CameraTravel` a čas dostáva ako
+  argument, takže sa dá pustiť na vymyslených dráhach so známou dĺžkou —
+  `FriLens > Verify Travel Filter`. Ladiť ho na chodbe a vyhlásiť za dobrý by bolo dookola.
+
+  Dvadsať metrov chôdze s dvomi centimetrami šumu vyjde raw ako **30,74 m**, teda o 54 % viac,
+  a pri 30 fps ako 22,96 m. Prevzorkované je to v oboch prípadoch 19,5 m. Státie s mávaním
+  1 Hz ±25 cm dá raw 20 m a prevzorkovane **0,00 m**.
+
+  **Čísla z behov pred touto verziou sú raw.** Filter pustený spätne na uložené pózy z tých
+  istých logov:
+
+  | beh | trvanie | appka hlásila | prevzorkované z CSV |
+  |---|---:|---:|---:|
+  | 214544 | 138 s | — | 65,40 m |
+  | 225741 | 191 s | 84,35 m | **65,25 m** |
+  | 230108 | 38 s | 19,78 m | 13,34 m |
+
+  Rekonštrukcia je hrubá — v CSV sú pózy štyrikrát za sekundu, kým na telefóne filter beží na
+  snímkovej frekvencii — ale smer aj rád sú jednoznačné. **Tabuľka „namerané v behu 225741"
+  nižšie je preto tiež raw** a skutočné úseky boli kratšie.
+
 - **Do CSV pribudol stĺpec `path_raw_m`** — pôvodný súčet bez filtrovania, hneď vedľa
   `walked_m`. Na obrazovke je pod veľkým číslom drobné `raw`. Rozdiel medzi tými dvomi je
   presne tá ruka a ten šum, ktoré sa doteraz vykazovali ako chôdza.
