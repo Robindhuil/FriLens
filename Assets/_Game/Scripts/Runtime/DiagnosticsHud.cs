@@ -25,6 +25,7 @@ namespace FriLens
         [SerializeField] CameraTravel m_Travel;
         [SerializeField] SessionLogger m_Logger;
         [SerializeField] ProvisionalPlacement m_Placement;
+        [SerializeField] TrackingContinuity m_Continuity;
 
         [Tooltip("Renderer switched off by the overlay button, so you can see what is under it.")]
         [SerializeField] Renderer m_Overlay;
@@ -186,6 +187,20 @@ namespace FriLens
             if (m_Alignment == null || InPreview)
                 return;
 
+            // A tracking loss outranks everything else this row could say. If ARCore lost its place
+            // and failed to find it again, the overlay is wrong by however far the tester moved
+            // while blind, there is no jump in the log to show it, and on screen it looks exactly
+            // like the model being inaccurate. Saying "aligned 90 s ago" over that would be a lie
+            // of omission about the one number the whole test produces.
+            if (m_Continuity != null && !m_Continuity.IsVerified)
+            {
+                var losses = m_Continuity.Losses;
+                m_View.SetRow(HudRow.Alignment,
+                    $"unverified · {losses} loss{(losses == 1 ? "" : "es")} {m_Continuity.BlindSeconds:F0} s",
+                    ValueState.Bad);
+                return;
+            }
+
             switch (m_Alignment.State)
             {
                 case MarkerAlignment.AlignmentState.Sampling:
@@ -296,6 +311,11 @@ namespace FriLens
         void OnAligned()
         {
             m_Travel?.RestartFrom();
+
+            // A marker seen and averaged does not depend on ARCore's map, so it settles whatever
+            // question a tracking loss had opened. This is the only thing that clears the flag.
+            m_Continuity?.MarkVerified();
+
             m_Logger?.MarkEvent("aligned");
         }
 

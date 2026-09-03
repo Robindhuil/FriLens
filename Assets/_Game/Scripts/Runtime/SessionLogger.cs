@@ -24,6 +24,7 @@ namespace FriLens
         [SerializeField] SessionModeController m_Mode;
         [SerializeField] MarkerAlignment m_Alignment;
         [SerializeField] CameraTravel m_Travel;
+        [SerializeField] TrackingContinuity m_Continuity;
         [SerializeField] Transform m_Camera;
 
         [Tooltip("Rows per second while the app is running.")]
@@ -52,6 +53,7 @@ namespace FriLens
                 m_Writer.WriteLine("time_s,mode,session_state,not_tracking_reason,"
                     + "cam_x,cam_y,cam_z,cam_yaw,cam_pitch,cam_roll,"
                     + "walked_m,path_raw_m,from_origin_m,jumps,jumped_m,"
+                    + "blind_s,losses,verified,origin_anchored,"
                     + "since_align_s,spread_cm,spread_deg,event");
                 m_Writer.Flush();
                 Debug.Log($"{nameof(SessionLogger)}: writing {FilePath}", this);
@@ -112,6 +114,15 @@ namespace FriLens
             var jumps = m_Travel != null ? m_Travel.RelocalisationJumps : 0;
             var jumped = m_Travel != null ? m_Travel.JumpedMeters : 0f;
 
+            // Rows written while verified is 0 describe a session that lost its place at least once
+            // and may or may not have found it again. Nothing else in the row can tell the
+            // difference, so nothing after such a row should be quoted as a measurement until an
+            // alignment clears it.
+            var blind = m_Continuity != null ? m_Continuity.BlindSeconds : 0f;
+            var losses = m_Continuity != null ? m_Continuity.Losses : 0;
+            var verified = m_Continuity == null || m_Continuity.IsVerified ? 1 : 0;
+            var originAnchored = m_Travel != null && m_Travel.OriginAnchored ? 1 : 0;
+
             var sinceAlign = m_Alignment != null ? m_Alignment.TimeSinceAlignment : -1f;
             var spreadCm = m_Alignment != null ? m_Alignment.SampleSpreadMeters * 100f : 0f;
             var spreadDeg = m_Alignment != null ? m_Alignment.SampleSpreadDegrees : 0f;
@@ -132,6 +143,10 @@ namespace FriLens
                 fromOrigin.ToString("F3", culture),
                 jumps.ToString(culture),
                 jumped.ToString("F3", culture),
+                blind.ToString("F2", culture),
+                losses.ToString(culture),
+                verified.ToString(culture),
+                originAnchored.ToString(culture),
                 sinceAlign.ToString("F2", culture),
                 spreadCm.ToString("F2", culture),
                 spreadDeg.ToString("F3", culture),

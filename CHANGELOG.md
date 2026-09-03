@@ -50,12 +50,42 @@ Celých 42 % za beh je viac, lebo súčasťou behu bolo aj státie, mierenie a s
   tempom. Cena je, že relokalizácia kratšia než meter sa započíta ako chôdza — čo stojí menej
   než meter na stometrovej dráhe.
 
-### Známe obmedzenia
+### Added
 
-- **Riadok `From marker` po tomto behu nič neznamená.** `Origin` je obyčajná pozícia, nie
-  `ARAnchor`, takže ju ARCore pri relokalizácii neopraví a posúvam ju o skok ručne. Za tento
-  beh sa nazbieralo 43 m posunov a na konci hlásil 1,94 m. Aj po oprave filtra zostane 31 m
-  skutočných relokalizácií. Riešenie je použiť `ARAnchor` a nechať jeho údržbu na ARCore.
+- **Prekryv aj `Origin` sú kotvené na `ARAnchor`.** ARCore pri relokalizácii posúva anchory tak,
+  aby zostali na tom istom fyzickom mieste; obyčajné súradnice v `Transform` neposunie, o tých
+  nevie. Držali sme oboje ako obyčajné súradnice, takže prekryv zostal zle práve vtedy, keď sa
+  tracker trafil.
+
+  Pri `Origin` to bolo vidieť v číslach: bez kotvy som ho pri každom skoku posúval ručne a za
+  beh `001103` sa nazbieralo **43 m takých posunov naprieč 69 skokmi**. Riadok `From marker` na
+  konci hlásil 1,94 m a neznamenal nič.
+
+  Nový `AnchoredRoot` položí koreň na pózu okamžite a kotvu pripojí hneď, ako ju ARCore vytvorí.
+  Keď kotvenie zlyhá, appka beží ďalej s pôvodným správaním a povie to. Do scény pribudol
+  `ARAnchorManager`, ktorý tam dovtedy nebol.
+
+- **Po strate trackingu appka priznáva, že nemeria.** `TrackingContinuity` počíta straty a čas
+  naslepo od posledného zarovnania. Kým nejaká visí, riadok `Alignment` hlási
+  `unverified · N losses M s` a v CSV je `verified = 0`. Vyčistí to jedine zarovnanie na značke.
+
+  Dôvod je v tom, že **zlyhaná relokalizácia je tichá**. Úspešnú zmerať vieme — je to skok
+  a filter ju chytí. Pri neúspešnej nenastane skok vôbec: póza plynulo pokračuje z nesprávneho
+  miesta a na obrazovke to vyzerá presne ako drift, teda ako to, čo má test merať. Z logu sa
+  „model je nepresný" a „ARCore sa nezotavil" doteraz odlíšiť nedalo.
+
+  Zlyhanie tým nedetegujeme. Označíme okno, v ktorom mohlo nastať, čo je maximum, ktoré sa
+  z pózy dá poctivo povedať. Rozbor v
+  [ADR 006](docs/decisions/006-kotvenie-a-strata-trackingu.md).
+
+- **CSV má štyri nové stĺpce:** `blind_s`, `losses`, `verified`, `origin_anchored`.
+
+### Zmena metodiky
+
+Značka nie je len začiatok merania, je to **liek na stratu trackingu** — jediná vec, ktorá
+nezávisí od mapy ARCore. Preto ich má byť **viac, rozmiestnených po trase**: najhoršia možná
+chyba je potom ohraničená úsekom medzi dvomi značkami, nie dĺžkou celého behu. Fáza 3a sa mení
+z „vytlačiť značku" na „vytlačiť značky a rozmiestniť ich".
 
 ## [0.1.4-alpha] — 2026-09-04
 

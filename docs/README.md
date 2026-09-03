@@ -20,6 +20,7 @@ Nie navigačná appka. Nie prekryv miestností. Jedna značka, jedna plocha, vla
 | [ADR 003 — Póza značky z nav polygónov](decisions/003-poza-znacky-z-nav-polygonov.md) | prečo model budovy netreba a čo to znamená pre výber miesta na značku |
 | [ADR 004 — Zariadenia bez ARCore](decisions/004-zariadenia-bez-arcore.md) | AR Optional, runtime detekcia a náhradný Preview režim |
 | [ADR 005 — Ako merať prejdenú vzdialenosť](decisions/005-ako-merat-prejdenu-vzdialenost.md) | prečo sčítavanie snímok po snímku nafukuje menovateľ driftu |
+| [ADR 006 — Kotvenie a strata trackingu](decisions/006-kotvenie-a-strata-trackingu.md) | čo sa stane pri zakrytí kamery, prečo `ARAnchor` a prečo značiek viac |
 
 Východiskový návrh testu žije vo FriWorlde:
 [`FriWorld/docs/2026-08-29-frilens-ar-test.md`](../../FriWorld/docs/2026-08-29-frilens-ar-test.md).

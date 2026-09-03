@@ -24,6 +24,10 @@ namespace FriLens
         [SerializeField] Transform m_Camera;
         [SerializeField] MarkerAlignment m_Alignment;
 
+        [Tooltip("Optional. Anchors the drop so it follows ARCore's corrections, same as a real "
+            + "alignment would.")]
+        [SerializeField] AnchoredRoot m_Anchored;
+
         [Tooltip("Height the camera is assumed to be held at. The model's floor is put this far "
             + "below the camera, so the overlay lies on the real floor rather than at eye level.")]
         [SerializeField] float m_EyeHeightMeters = 1.5f;
@@ -69,7 +73,15 @@ namespace FriLens
             var floorCentre = new Vector3(bounds.center.x, bounds.min.y, bounds.center.z);
 
             var target = m_Camera.position - new Vector3(0f, m_EyeHeightMeters, 0f);
-            m_AlignmentRoot.position += target - floorCentre;
+            var pose = new Pose(m_AlignmentRoot.position + (target - floorCentre),
+                m_AlignmentRoot.rotation);
+
+            // Anchored like a real alignment, even though it measures nothing. A drop that slides
+            // away after every tracking loss would look like drift and be mistaken for it.
+            if (m_Anchored != null)
+                m_Anchored.PlaceAt(pose);
+            else
+                m_AlignmentRoot.SetPositionAndRotation(pose.position, pose.rotation);
 
             Debug.Log($"{nameof(ProvisionalPlacement)}: overlay dropped around the camera. "
                 + "This is not an alignment and the offsets on screen measure nothing.", this);

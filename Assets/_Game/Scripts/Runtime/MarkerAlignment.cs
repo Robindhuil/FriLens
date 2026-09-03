@@ -46,6 +46,10 @@ namespace FriLens
         [Tooltip("Empty object placed at the marker's pose in model coordinates.")]
         [SerializeField] Transform m_MarkerAnchor;
 
+        [Tooltip("Optional. Holds the root on an ARAnchor so it follows ARCore's corrections after "
+            + "a tracking loss. Without it the root is written once and stays put.")]
+        [SerializeField] AnchoredRoot m_Anchored;
+
         [Header("Sampling")]
         [Tooltip("Frames of tracked pose to average before applying an alignment.")]
         [SerializeField, Range(1, 120)] int m_SampleCount = 30;
@@ -226,7 +230,13 @@ namespace FriLens
             SolveRootPose(position, rotation, anchorLocalPosition, anchorLocalRotation,
                 out var rootPosition, out var rootRotation);
 
-            m_AlignmentRoot.SetPositionAndRotation(rootPosition, rootRotation);
+            // Through the anchor when there is one. A pose written straight into the transform is
+            // correct for exactly as long as ARCore's idea of the world does not change, and the
+            // whole point of the marker is to survive the moments when it does.
+            if (m_Anchored != null)
+                m_Anchored.PlaceAt(new Pose(rootPosition, rootRotation));
+            else
+                m_AlignmentRoot.SetPositionAndRotation(rootPosition, rootRotation);
 
             LastAlignmentTime = Time.time;
             State = AlignmentState.Aligned;

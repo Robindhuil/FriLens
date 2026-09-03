@@ -38,6 +38,10 @@ namespace FriLens
     {
         [SerializeField] Transform m_Camera;
 
+        [Tooltip("Optional. Pins the origin to an ARAnchor so \"from marker\" keeps measuring from "
+            + "the same physical place after ARCore corrects itself.")]
+        [SerializeField] ARAnchorManager m_AnchorManager;
+
         [Header("Raw path")]
         [Tooltip("Movement below this in one frame is treated as jitter, not travel.")]
         [SerializeField] float m_MinimumStepMeters = 0.004f;
@@ -62,6 +66,9 @@ namespace FriLens
         Vector3 m_FirstTrackedPosition;
         float m_TrackingSince = -1f;
 
+        ARAnchor m_OriginAnchor;
+        Vector3 m_OriginFallback;
+
         /// <summary>
         /// Path length since the last reset, measured at <see cref="ResampleStepMeters"/>
         /// resolution. This is the figure a drift percentage should be divided by.
@@ -78,8 +85,18 @@ namespace FriLens
         /// <summary>Straight-line distance from where the count was last reset, in metres.</summary>
         public float DistanceFromOrigin { get; private set; }
 
-        /// <summary>Position the count was last reset at.</summary>
-        public Vector3 Origin { get; private set; }
+        /// <summary>
+        /// Position the count was last reset at.
+        ///
+        /// Read from an <see cref="ARAnchor"/> whenever one could be made, because ARCore keeps an
+        /// anchor on the same physical spot across a relocalisation and cannot do that for a plain
+        /// vector. Without the anchor the origin has to be nudged by hand on every jump, and those
+        /// nudges accumulate: one field run collected forty-three metres of them.
+        /// </summary>
+        public Vector3 Origin => m_OriginAnchor != null ? m_OriginAnchor.transform.position : m_OriginFallback;
+
+        /// <summary>Whether the origin is held by an anchor rather than by a bare vector.</summary>
+        public bool OriginAnchored => m_OriginAnchor != null;
 
         public bool HasOrigin => m_Started;
 
@@ -109,8 +126,10 @@ namespace FriLens
                 return;
 
             m_LastPosition = m_Camera.position;
-            Origin = m_LastPosition;
+            m_OriginFallback = m_LastPosition;
             m_Resampler.Restart(m_LastPosition);
+
+            AnchorOrigin(m_LastPosition);
 
             PathRawMeters = 0f;
             DistanceFromOrigin = 0f;
@@ -170,16 +189,16 @@ namespace FriLens
                     // The resampler is carried across the jump rather than left behind to chase
                     // it, and Origin moves with it.
                     //
-                    // Origin is a plain position, not an ARAnchor, so ARCore does not correct it
-                    // when it corrects itself. After a relocalisation it therefore points at the
-                    // wrong place by exactly the jump, and "distance from marker" would step by
-                    // a metre while the tester stood still. Moving it keeps the row measuring
-                    // where the person is. It does mean the correction is not visible in that
-                    // number — which is right, because the drift this test measures is read off
-                    // the overlay against the wall, not off this row.
+                    // An anchored origin needs no help: ARCore moves the anchor with the correction
+                    // and the row keeps measuring from the same physical place. The nudge below is
+                    // only for the case where no anchor could be made, and it is a poor substitute
+                    // — the nudges accumulate, and one field run collected forty-three metres of
+                    // them across sixty-nine jumps.
                     var jump = position - m_LastPosition;
                     m_Resampler.Shift(jump);
-                    Origin += jump;
+
+                    if (m_OriginAnchor == null)
+                        m_OriginFallback += jump;
                 }
                 else
                 {
@@ -195,6 +214,50 @@ namespace FriLens
 
             DistanceFromOrigin = Vector3.Distance(position, Origin);
         }
+
+        /// <summary>
+        /// Replaces the origin anchor with one at the given position. Fire and forget: the origin
+        /// falls back to a plain vector until it lands, and stays on that vector if it never does.
+        /// </summary>
+        async void AnchorOrigin(Vector3 position)
+        {
+            if (m_AnchorManager == null || !m_AnchorManager.enabled)
+                return;
+
+            if (m_OriginAnchor != null)
+            {
+                m_AnchorManager.TryRemoveAnchor(m_OriginAnchor);
+                m_OriginAnchor = null;
+            }
+
+            // Rotation is irrelevant here; only the point is ever read.
+            var generation = ++m_OriginGeneration;
+
+            try
+            {
+                var result = await m_AnchorManager.TryAddAnchorAsync(new Pose(position, Quaternion.identity));
+                if (!result.status.IsSuccess())
+                    return;
+
+                // A second reset while this one was in flight makes this anchor stale, and adopting
+                // it would move the origin back to where the previous count started.
+                if (this == null || generation != m_OriginGeneration)
+                {
+                    if (result.value != null)
+                        m_AnchorManager.TryRemoveAnchor(result.value);
+                    return;
+                }
+
+                m_OriginAnchor = result.value;
+            }
+            catch (System.Exception exception)
+            {
+                Debug.LogWarning($"{nameof(CameraTravel)}: could not anchor the origin. "
+                    + exception.Message, this);
+            }
+        }
+
+        int m_OriginGeneration;
 
         /// <summary>
         /// Holds off until a real pose has arrived.
