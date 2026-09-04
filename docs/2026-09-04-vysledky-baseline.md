@@ -1,6 +1,6 @@
 # Výsledky baseline testu
 
-**Verzia:** 0.1.5-alpha · **Dátum:** 2026-09-04 · **Zariadenie:** Xiaomi Redmi Note 10 Pro (M2101K6G), Android 11
+**Verzia:** 0.1.8-alpha · **Dátum:** 2026-09-04 · **Zariadenie:** Xiaomi Redmi Note 10 Pro (M2101K6G), Android 11
 **Log:** `frilens-20260904-145117.csv` · 465 s, 1763 riadkov
 
 Prvý beh podľa [protokolu](2026-09-04-protokol-baseline-testu.md). Meria sa **samotný tracking**,
@@ -203,6 +203,11 @@ uzamknutá výška, a po nej zmes dvoch referencií — `probe-7` hlásil 56,3 c
 ktoré pri navmeshi zmysel má: **o koľko leží podlaha modelu nižšie než tá, ktorú implikuje
 meraná výška.** To je porovnanie modelu s realitou zhustené do jedného čísla, lebo meraná výška
 je nezávislá referencia — pásmo, nie ARCore.
+
+## 0.1.8-alpha — overené bez pripomienok
+
+Konsolidačná verzia prešla terénnym testom bez nálezov. Tým sa vetva 0.1.x uzatvára: prístroj
+je hotový a overený, a čo mu chýba, nie je softvér.
 
 ## Čo z toho plynie pre ďalší postup
 

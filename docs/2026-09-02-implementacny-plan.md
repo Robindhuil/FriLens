@@ -1,6 +1,6 @@
 # Implementačný plán
 
-**Verzia:** 0.1.5-alpha · **Dátum:** 2026-09-02, dopĺňané · **Stav:** fázy 0–2, 3c, 5 hotové · **Predpoklad:** [analýza stavu](2026-09-02-stav-projektu-a-analyza-navmeshu.md)
+**Verzia:** 0.2.0-alpha · **Dátum:** 2026-09-02, dopĺňané · **Stav:** fázy 0–2, 3c, 5 hotové · **Predpoklad:** [analýza stavu](2026-09-02-stav-projektu-a-analyza-navmeshu.md)
 
 Cieľ testu sa nemení oproti pôvodnému dokumentu: **zistiť, ako presne sedí navmesh na
 skutočnú fakultu a ako rýchlo to odchádza pri chôdzi.** Nie navigácia, nie okluzia.
@@ -17,7 +17,7 @@ Dve veci sa oproti pôvodnému zneniu zmenili a sú rozpísané na svojich miest
 
 ---
 
-## Fáza 0 — Hygiena projektu — ✅ hotové (okrem overenia na zariadení)
+## Fáza 0 — Hygiena projektu — ✅ hotové a overené na zariadení
 
 Krátke veci, ktoré blokujú build alebo špinia repozitár.
 
@@ -60,8 +60,8 @@ ARKit package       : removed
 KeepScreenAwake     : on 'FriLens'
 ```
 
-**Neoverené:** či prázdny build prejde na telefón a spustí sa. Vyžaduje zariadenie
-s ARCore a zapnutým USB ladením (diera K6) a nedá sa odbaviť od stola.
+Overené na zariadení od 0.1.0-alpha; od 0.1.4-alpha beží tracking spoľahlivo na Redmi Note
+10 Pro.
 
 ---
 
@@ -114,7 +114,7 @@ z nich by potreboval vlastné rozhodnutie, čo je ešte jedna plocha.
 
 ---
 
-## Fáza 2 — Vyčistenie scény — ✅ hotové (okrem overenia na zariadení)
+## Fáza 2 — Vyčistenie scény — ✅ hotové a overené na zariadení
 
 Scéna presunutá a premenovaná: `Assets/Scenes/SampleScene.unity` →
 **`Assets/_Game/Scenes/FriLensTest.unity`**. Vlastný obsah patrí do `_Game/`, rovnako ako
@@ -128,7 +128,12 @@ vo FriWorlde. Build settings obsahujú už len ju.
 - `Directional Light` — prekryv je unlit, svetlo nemá čo osvetľovať
 - `ARPlaneManager` — detekcia rovín kreslila prechodové štvorce práve po podlahe, teda po
   ploche, ktorej hranu má test čítať. K tomu stojí CPU.
-- `ARRaycastManager`, `InputActionManager` — existovali len pre tap-to-place
+- `ARRaycastManager` — existoval len pre tap-to-place
+
+> **Oprava 2026-09-03:** `InputActionManager` bol odstránený spolu s nimi a **musel sa
+> vrátiť**. `TrackedPoseDriver` berie pózu cez `InputActionReference`, a tie akcie sa samy
+> nezapnú — bez neho bola pozícia kamery presne `0.0000` po celý beh. Podrobne v CHANGELOG-u
+> pri 0.1.1-alpha.
 
 ### Odpojenie od šablónového prefabu
 
@@ -139,8 +144,9 @@ a `Samples` **zo 16 na 1**.
 
 Tá jedna je `Assets/Samples/…/Starter Assets/XRI Default Input Actions.inputactions`, ktorú
 používa `TrackedPoseDriver` na `Main Camera` na polohu a rotáciu kamery. **Zložka
-`Assets/Samples` sa preto zatiaľ nedá zmazať** — najskôr by ju musel nahradiť vlastný
-`.inputactions`. Bez zariadenia sa to overiť nedá, takže to nechávam tak.
+`Assets/Samples` sa preto nedá zmazať** — najskôr by ju musel nahradiť vlastný
+`.inputactions`. Keďže tadiaľto vedie celá póza kamery, nie je to miesto na upratovanie
+bez dôvodu.
 
 ### Výsledná hierarchia
 
@@ -155,6 +161,23 @@ AlignmentRoot              ← koreň prekryvu, hýbe ním zosúladenie
   ├ NavOverlay             ra0_nav (1 259 tris), NavOverlay.mat, lokálne Y = +0.03
   └ MarkerAnchor           póza značky v súradniciach modelu — zatiaľ nenastavená (fáza 3b)
 ```
+
+Stav k 0.1.8-alpha, po fázach 5 a 6 (mená objektov nezmenené, pribudli komponenty):
+
+```
+XR Origin (AR Rig)         + ARAnchorManager, ARTrackedImageManager, InputActionManager
+  └ Camera Offset
+      └ Main Camera        far clip 120 m (bolo 20 — prekryv má 80 m a nebolo ho vidieť)
+FriLens                    + KeepScreenAwake, SessionModeController, MarkerAlignment,
+                             AnchoredRoot, CameraTravel, TrackingContinuity, FloorProbe,
+                             SessionLogger
+HUD                        + UIDocument, DiagnosticsHud, ProvisionalPlacement
+PreviewRig                 vypnutý; zapne ho až Preview vetva
+AlignmentRoot              + MeshCollider na NavOverlay (jeden lúč za session na podlahu modelu)
+```
+
+Poradie skriptov je pevné: `CameraTravel` (−50) → `SessionLogger` (50) → `DiagnosticsHud` (60).
+Bez toho logger zapisoval aktuálnu pózu spolu s odvodenými hodnotami z predošlého snímku.
 
 Missing scriptov v scéne: 0.
 
@@ -240,7 +263,7 @@ Model budovy sa nedonáša.
    (`ra000` je na `Y = 5.15 m`).
 4. Umiestniť `MarkerAnchor` na výslednú pózu.
 
-### 3c. Skript zosúladenia — ✅ hotové (okrem overenia na zariadení)
+### 3c. Skript zosúladenia — ⚠️ hotové, neoveriteľné bez značky
 
 `Assets/_Game/Scripts/Runtime/MarkerAlignment.cs`, na objekte `FriLens` v scéne. Napojený
 na `ARTrackedImageManager`, `AlignmentRoot` a `MarkerAnchor`.
@@ -343,7 +366,7 @@ z rovnakého miesta trafí to isté (rozdiel pod 1–2 cm). Vyžaduje značku (f
 
 ---
 
-## Fáza 5 — Diagnostika a UI — ✅ hotové (okrem overenia na zariadení)
+## Fáza 5 — Diagnostika a UI — ✅ hotové a overené na zariadení
 
 UI je postavené na **UI Toolkit**, nie uGUI.
 
@@ -431,6 +454,14 @@ stiahnuť.
 ---
 
 ## Fáza 6 — Test v teréne
+
+> **Stav k 0.1.8-alpha:** prístroj je overený, samotné meranie zhody nie. Behy 0.1.5 až 0.1.8
+> odmerali, že prejdená vzdialenosť sedí na −2,7 %, ako sa správa strata trackingu, že kotvy ju
+> prežijú a že relokalizácie nesú metrovú zvislú zložku — všetko o **trackeri**. Zhoda modelu
+> s budovou čaká na fázu 3a a 3b. Podrobne v
+> [protokole](2026-09-04-protokol-baseline-testu.md) a
+> [výsledkoch](2026-09-04-vysledky-baseline.md).
+
 
 Protokol z pôvodného dokumentu, s jednou úpravou (diera K7).
 

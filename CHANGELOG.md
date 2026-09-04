@@ -8,9 +8,20 @@ miesto, kde sa mení.
 Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spustiť
 `FriLens > Build Android <verzia>`.
 
-## [Unreleased]
+## [0.2.0-alpha] — nevydané
+
+Steny a stropy. Od tejto verzie sa pracuje na tom, aby model vedel viac než kadiaľ sa dá
+prejsť — a aby sa tá znalosť dala použiť na korekciu polohy (fáza 7,
+[ADR 007](docs/decisions/007-vyuzitie-modelu-na-lokalizaciu.md)).
+
+Prvý krok je extraktor stien z **hraničných hrán navmeshu**: hrana patriaca jedinému
+trojuholníku je stena, a dvere v nich zostanú otvorené samy, lebo cez ne sieť pokračuje.
+Modelovať sa nemusí nič ([analýza](docs/2026-09-04-analyza-geometrie-a-stien.md)).
 
 ## [0.1.8-alpha] — 2026-09-04
+
+**Otestované v teréne bez pripomienok.** Posledná verzia vetvy 0.1.x.
+
 
 ### Audit pred 0.2.0
 
