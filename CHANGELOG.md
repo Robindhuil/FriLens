@@ -10,7 +10,7 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [Unreleased]
 
-## [0.1.6-alpha]
+## [0.1.6-alpha] — 2026-09-04
 
 ### Namerané na 0.1.5-alpha
 

@@ -187,6 +187,7 @@ MonoBehaviour:
   m_Logger: {fileID: 288061786}
   m_Placement: {fileID: 234078121}
   m_Continuity: {fileID: 288061790}
+  m_FloorProbe: {fileID: 288061791}
   m_Overlay: {fileID: 836722132}
   m_InitializingPatienceSeconds: 20
 --- !u!114 &234078119
@@ -262,6 +263,7 @@ GameObject:
   - component: {fileID: 288061786}
   - component: {fileID: 288061789}
   - component: {fileID: 288061790}
+  - component: {fileID: 288061791}
   m_Layer: 0
   m_Name: FriLens
   m_TagString: Untagged
@@ -396,6 +398,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FriLens.TrackingContinuity
   m_IgnoreShorterThanSeconds: 0.3
+--- !u!114 &288061791
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 288061782}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60435826f212b244499639cf8e002b06, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FriLens.FloorProbe
+  m_Camera: {fileID: 2512387469332387801}
+  m_AnchorManager: {fileID: 2512387470231460732}
+  m_Material: {fileID: 2100000, guid: fd3f708ddb1a70e4f98acb91b70c6614, type: 2}
+  m_EyeHeightMeters: 1.7
+  m_DiscDiameterMeters: 0.3
 --- !u!114 &331264287
 MonoBehaviour:
   m_ObjectHideFlags: 0
