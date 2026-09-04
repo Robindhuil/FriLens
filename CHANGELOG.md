@@ -10,6 +10,35 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [Unreleased]
 
+## [0.1.6-alpha]
+
+### Namerané na 0.1.5-alpha
+
+Prvý beh podľa protokolu, Redmi Note 10 Pro, 465 s. Celé
+vo [výsledkoch baseline](docs/2026-09-04-vysledky-baseline.md).
+
+**Vzdialenosť sedí.** Štyri prechody odmeraného osemmetrového úseku bez skokov a strát dali
+priemer **7,78 m, teda −2,7 %**, pri rozptyle 0,38 m. `raw` bolo pritom len +1,7 % nad pásmom —
+teda pri pokojne držanom telefóne sa obe čísla takmer zhodujú. **Filter nezahadzuje skutočný
+signál**; tých +42 % z behu `001103` bola manipulácia, nie algoritmus.
+
+**Zakrytie kamery je horšie, než ADR 006 predpokladal.** Pätnásťsekundové zakrytie vyvolalo
+skoky **13,36 · 21,56 · 35,68 m**, ktoré prichádzali ešte minútu po obnove trackingu a **rástli**.
+To nie je relokalizácia opravujúca smerom k pravde, ale tracker hľadajúci niť vo vlastnej
+poškodenej mape. Krátke zakrytia (5,6 a 8,0 s) dopadli podstatne miernejšie, takže hranica leží
+niekde medzi ôsmimi a pätnástimi sekundami.
+
+Filter skokov po zmene v 0.1.5-alpha **nerobí falošné poplachy**: osemnásť skokov, najmenší
+1,55 m, žiadny pod meter. A `origin_anchored = 1` je prvé potvrdenie, že kotvenie na `ARAnchor`
+na zariadení beží.
+
+### Fixed
+
+- **Rada pri `InsufficientLight` posielala nesprávnym smerom.** Dlaň na objektíve hlási ten istý
+  stav ako tmavá chodba — v behu z toho boli tri prípady. „Too dark here, find more light" je
+  pri zakrytej kamere nezmysel, tak riadok teraz pokrýva obe príčiny.
+
+
 ## [0.1.5-alpha] — 2026-09-04
 
 Prvý beh na 0.1.4-alpha, Redmi Note 10 Pro, 298 sekúnd. Prekryv bolo konečne vidieť

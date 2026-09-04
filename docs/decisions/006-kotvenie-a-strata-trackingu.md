@@ -2,6 +2,12 @@
 
 **Verzia:** 0.1.5-alpha · **Dátum:** 2026-09-04 · **Stav:** prijaté
 
+> **Doplnené 2026-09-04 po prvom meraní.** Predpoklad nižšie — že chyba zodpovedá tomu, koľko
+> človek prejde naslepo — platí len pre **krátke** zakrytia. Pätnásťsekundové zakrytie vyvolalo
+> skoky 13, 22 a 36 metrov, ktoré prichádzali ešte minútu po obnove trackingu a **rástli**. Pri
+> takej dĺžke sa poškodí samotná mapa a chyba už s prejdenou vzdialenosťou nesúvisí.
+> Čísla vo [výsledkoch baseline](../2026-09-04-vysledky-baseline.md).
+
 ## Kontext
 
 Otázka z praxe: čo sa stane, keď zakryjem kameru, prejdem dva metre a odkryjem?

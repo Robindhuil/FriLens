@@ -28,7 +28,11 @@ namespace FriLens
             {
                 NotTrackingReason.ExcessiveMotion => "move the phone more slowly",
                 NotTrackingReason.InsufficientFeatures => "point at a wall with more detail",
-                NotTrackingReason.InsufficientLight => "too dark here, find more light",
+                // A hand over the lens reports InsufficientLight, exactly like a dark corridor
+                // does — the first field run produced three of these from a deliberately covered
+                // camera. Telling somebody to find more light while their palm is on the lens
+                // sends them the wrong way, so the line has to cover both causes.
+                NotTrackingReason.InsufficientLight => "camera sees nothing — uncover it, or find light",
                 NotTrackingReason.CameraUnavailable => "another app is using the camera",
                 NotTrackingReason.Relocalizing => "hold still, finding its place again",
                 NotTrackingReason.Initializing => "hold still while it starts",
