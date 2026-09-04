@@ -1,13 +1,19 @@
 # Implementačný plán
 
-**Verzia:** 0.1.1-alpha · **Dátum:** 2026-09-02 · **Stav:** fázy 0–2, 3c, 5 hotové · **Predpoklad:** [analýza stavu](2026-09-02-stav-projektu-a-analyza-navmeshu.md)
+**Verzia:** 0.1.5-alpha · **Dátum:** 2026-09-02, dopĺňané · **Stav:** fázy 0–2, 3c, 5 hotové · **Predpoklad:** [analýza stavu](2026-09-02-stav-projektu-a-analyza-navmeshu.md)
 
 Cieľ testu sa nemení oproti pôvodnému dokumentu: **zistiť, ako presne sedí navmesh na
-skutočnú fakultu a ako rýchlo to odchádza pri chôdzi.** Nie navigácia, nie okluzia, jedna
-značka, jedna plocha.
+skutočnú fakultu a ako rýchlo to odchádza pri chôdzi.** Nie navigácia, nie okluzia.
 
 Fázy sú zoradené tak, že každá končí niečím overiteľným. Fázy 1–5 sú práca pri počítači,
 fáza 6 je v teréne.
+
+Dve veci sa oproti pôvodnému zneniu zmenili a sú rozpísané na svojich miestach:
+
+- **Značiek bude viac, nie jedna** (fáza 3a) — značka je jediná vec nezávislá od mapy ARCore,
+  takže je zároveň liekom na stratu trackingu ([ADR 006](decisions/006-kotvenie-a-strata-trackingu.md)).
+- **Pribudla fáza 7** — korekcia polohy pomocou modelu, ako druhá vetva merania oproti fáze 6
+  ([ADR 007](decisions/007-vyuzitie-modelu-na-lokalizaciu.md)).
 
 ---
 
@@ -192,9 +198,15 @@ vyžaduje zariadenie (diera K6).
 Toto je najzdĺhavejšia a najdôležitejšia časť. Kroky 5 a 6 pôvodného dokumentu platia
 nezmenené; sem patrí len to, čo k nim pribudlo.
 
-### 3a. Fyzická značka
+### 3a. Fyzické značky
 
-- [ ] Vybrať miesto lokalizovateľné v modeli — roh miestnosti, zárubňa, roh schodiska
+> **Zmena od 0.1.5-alpha:** značiek má byť **viac, rozmiestnených po trase**, nie jedna.
+> Značka je jediná vec nezávislá od mapy ARCore, takže je to zároveň liek na stratu
+> trackingu: s viacerými je najhoršia možná chyba ohraničená úsekom medzi dvomi značkami,
+> nie dĺžkou celého behu. Dôvod v [ADR 006](decisions/006-kotvenie-a-strata-trackingu.md).
+
+- [ ] Vybrať miesta lokalizovateľné v modeli — roh miestnosti, zárubňa, roh schodiska.
+      Rozmiestniť po plánovanej trase tak, aby jedna bola vždy v dosahu.
 - [ ] Vytlačiť **matne**, nalepiť naplocho na tvrdý podklad
 - [ ] **Odmerať vytlačenú značku pravítkom** a ten rozmer zadať do Reference Image Library.
       Nie rozmer poslaný do tlače. Chyba 5 % v rozmere značky je chyba 5 % v mierke celého
@@ -437,6 +449,28 @@ značky, neplatí. To je informácia, ktorú test má vedieť odovzdať.
 
 ---
 
+## Fáza 7 — Korekcia polohy pomocou modelu
+
+Pribudla po 0.1.5-alpha. Neide o inkrement k fáze 6, ale o **druhú vetvu merania**: fáza 6 dá
+drift bez akejkoľvek pomoci modelu, fáza 7 s ňou, a výsledkom je rozdiel medzi nimi.
+
+Poradie a odôvodnenie sú v [ADR 007](decisions/007-vyuzitie-modelu-na-lokalizaciu.md).
+V skratke:
+
+- [ ] Extraktor stien z hraničných hrán navmeshu — odomyká všetko ostatné
+- [ ] Zarovnanie kurzu na dominantné smery chodieb
+- [ ] Väzba na výšku podlahy
+- [ ] Map matching časticovým filtrom
+- [ ] *(samostatná kapitola)* roviny z ARCore proti stenám modelu
+- [ ] *(samostatná kapitola)* Depth API a ICP proti meshu
+
+**Každá položka je defaultne vypnutý režim.** Beh s korekciou a beh bez nej sa merajú zvlášť.
+Zapnúť všetko naraz a merať jeden beh by znamenalo merať model modelom.
+
+---
+
+---
+
 ## Otvorené otázky
 
 Tieto tri menia poradie práce, nie jej obsah.
@@ -448,6 +482,8 @@ Tieto tri menia poradie práce, nie jej obsah.
    ukáže hranu pri stene. Návrh: nechať portrait, orientáciu zamknúť.
 
 Otázka „kedy doniesť `fri_building`" odpadla — [ADR 003](decisions/003-poza-znacky-z-nav-polygonov.md).
+Rovnako odpadla aj pre steny: dajú sa odvodiť z hraničných hrán navmeshu
+([analýza](2026-09-04-analyza-geometrie-a-stien.md)).
 
 ---
 
