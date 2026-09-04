@@ -245,7 +245,7 @@ MonoBehaviour:
   m_Camera: {fileID: 2512387469332387801}
   m_Alignment: {fileID: 288061785}
   m_Anchored: {fileID: 288061789}
-  m_EyeHeightMeters: 1.5
+  m_CameraHeightMeters: 1.5
   m_PlaceWhenUnaligned: 1
 --- !u!1 &288061782
 GameObject:
@@ -334,6 +334,8 @@ MonoBehaviour:
   m_Alignment: {fileID: 288061785}
   m_Travel: {fileID: 288061787}
   m_Continuity: {fileID: 288061790}
+  m_FloorProbe: {fileID: 288061791}
+  m_AnchoredRoot: {fileID: 288061789}
   m_Camera: {fileID: 2512387469332387801}
   m_SamplesPerSecond: 4
 --- !u!114 &288061787

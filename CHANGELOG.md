@@ -10,7 +10,7 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [Unreleased]
 
-## [0.1.8-alpha]
+## [0.1.8-alpha] — 2026-09-04
 
 ### Audit pred 0.2.0
 
