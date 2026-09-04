@@ -69,7 +69,7 @@
 }
 
 /* ── Mode banner ────────────────────────────────────────────────────── */
-.banner-body { padding: 13px 16px 15px 16px; }
+.banner-body { padding: 11px 14px 13px 14px; }
 
 .hazard {
     height: 10px;
@@ -110,14 +110,14 @@
 
 .mode-title {
     margin-top: 7px;
-    font-size: 22px;
+    font-size: 19px;
     color: var(--ink);
     -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/Fredoka SDF.asset");
     -unity-font-style: bold;
 }
 .mode-reason {
     margin-top: 3px;
-    font-size: 15px;
+    font-size: 13px;
     color: var(--label);
     white-space: normal;
     -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/Nunito SDF.asset");
@@ -127,10 +127,10 @@
 .row {
     flex-direction: row;
     align-items: center;
-    padding: 9px 14px 9px 14px;
+    padding: 7px 12px 7px 12px;
     border-top-width: 1.5px;
     border-top-color: var(--hairline);
-    min-height: 44px;
+    min-height: 38px;
 }
 /* USS has no structural pseudo-classes, so the first row is marked by hand. */
 .row--first { border-top-width: 0; }
@@ -173,7 +173,7 @@
 
 .row-label {
     flex-shrink: 0;
-    font-size: 15px;
+    font-size: 14px;
     color: var(--label);
     -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/Nunito SDF.asset");
     -unity-font-style: bold;
@@ -195,7 +195,7 @@
 /* Monospaced on purpose: these numbers change several times a second and a proportional face
    would make the whole row twitch on every redraw. */
 .row-value {
-    font-size: 19px;
+    font-size: 17px;
     color: var(--value);
     /* Flex items here do not shrink unless told to, so a long value such as the alignment
        readout ran straight off the right edge of the card instead of wrapping inside it. */
@@ -225,7 +225,7 @@
     background-color: var(--accent);
 }
 .walked-value {
-    font-size: 40px;
+    font-size: 32px;
     color: var(--value);
     -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/Fredoka SDF.asset");
     -unity-font-style: bold;
@@ -247,7 +247,7 @@
 .buttons { margin-left: 12px; margin-right: 12px; }
 
 .btn {
-    height: 64px;
+    height: 54px;
     flex-direction: row;
     align-items: center;
     justify-content: center;
@@ -255,7 +255,7 @@
     padding: 0;
     border-width: 1.5px;
     border-color: var(--ink);
-    border-radius: 32px;
+    border-radius: 27px;
     background-color: var(--surface);
 }
 .btn--primary   { background-color: var(--accent); translate: -3px -3px; }
@@ -287,7 +287,7 @@
 .glyph--mark         { background-image: url("project://database/Assets/_Game/UI/Icons/mark.png"); }
 
 .btn-text {
-    font-size: 17px;
+    font-size: 15px;
     color: var(--ink);
     -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/Fredoka SDF.asset");
     -unity-font-style: bold;
@@ -301,7 +301,10 @@
 
 .btn-row { flex-direction: row; margin-top: 10px; }
 .btn--grow { flex-grow: 1; margin-right: 10px; }
-.btn--mark { width: 110px; }
+.btn--mark { width: 96px; }
+/* USS has no :last-child, so the gap between the two fixed-width buttons is put
+   on the second one rather than after the first. */
+.btn--drop { width: 96px; margin-left: 10px; }
 
 /* ── Footer ─────────────────────────────────────────────────────────── */
 .footer {
@@ -343,3 +346,47 @@
    after the dimming rule, with a background dark enough to read on the black card. */
 .hud--preview .v--warn { color: #ffce6a; background-color: rgba(165, 106, 0, 0.35); }
 .hud--preview .v--bad  { color: #ff9a92; background-color: rgba(179, 38, 30, 0.35); }
+
+
+/* ── Compact mode ───────────────────────────────────────────────────── */
+/* The panel exists to be read, but the camera image is what is being judged, and the two
+   compete for the same screen. Compact keeps the mode, the distance and the buttons —
+   the three things needed while walking — and gets everything else out of the way. */
+
+.banner-top {
+    flex-direction: row;
+    align-items: center;
+}
+
+.btn-compact {
+    flex-shrink: 0;
+    height: 26px;
+    margin: 0;
+    padding: 0 12px 0 12px;
+    border-width: 1.5px;
+    border-color: var(--outline-idle);
+    border-radius: 13px;
+    background-color: var(--paper);
+    font-size: 12px;
+    color: var(--label);
+    -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/Nunito SDF.asset");
+    -unity-font-style: bold;
+}
+.btn-compact:hover { background-color: var(--paper); }
+.btn-compact:active { border-color: var(--ink); }
+
+.hud--compact #row-tracking,
+.hud--compact #row-marker,
+.hud--compact #row-alignment,
+.hud--compact #row-from-marker,
+.hud--compact #row-device,
+.hud--compact .mode-title,
+.hud--compact .mode-reason,
+.hud--compact .footer { display: none; }
+
+.hud--compact .banner-body { padding: 8px 12px 8px 12px; }
+.hud--compact .row--walked { padding-top: 6px; padding-bottom: 6px; min-height: 34px; }
+.hud--compact .walked-value { font-size: 24px; }
+.hud--compact .btn { height: 46px; border-radius: 23px; }
+.hud--compact .btn-text { font-size: 14px; }
+.hud--compact .btn-glyph { width: 15px; height: 15px; margin-right: 7px; }

@@ -59,9 +59,23 @@ namespace FriLens
         readonly Label m_OverlayText;
         readonly VisualElement m_OverlayGlyph;
         readonly Button m_Mark;
+        readonly Button m_Drop;
+        readonly Button m_CompactToggle;
 
         public event Action Reanchor;
         public event Action Mark;
+
+        /// <summary>Raised when the floor-probe button is pressed.</summary>
+        public event Action Drop;
+
+        /// <summary>
+        /// Whether the readings are collapsed out of the way of the camera image.
+        ///
+        /// Not persisted anywhere. A test run is short, and a panel that remembered being
+        /// hidden would eventually have somebody staring at a camera feed wondering why no
+        /// numbers appear.
+        /// </summary>
+        public bool IsCompact { get; private set; }
 
         /// <summary>Raised with the overlay's new visibility.</summary>
         public event Action<bool> OverlayToggled;
@@ -97,10 +111,14 @@ namespace FriLens
             m_OverlayText = m_Root.Q<Label>("btn-overlay-text");
             m_OverlayGlyph = m_Root.Q("btn-overlay-glyph");
             m_Mark = m_Root.Q<Button>("btn-mark");
+            m_Drop = m_Root.Q<Button>("btn-drop");
+            m_CompactToggle = m_Root.Q<Button>("btn-compact");
 
             m_Reanchor.clicked += () => Reanchor?.Invoke();
             m_Mark.clicked += () => Mark?.Invoke();
+            m_Drop.clicked += () => Drop?.Invoke();
             m_Overlay.clicked += ToggleOverlay;
+            m_CompactToggle.clicked += () => SetCompact(!IsCompact);
         }
 
         void BindRow(HudRow row, string key)
@@ -216,6 +234,20 @@ namespace FriLens
             label.EnableInClassList("v--warn", state == ValueState.Warn);
             label.EnableInClassList("v--bad", state == ValueState.Bad);
             label.EnableInClassList("v--idle", state == ValueState.Idle);
+        }
+
+        /// <summary>
+        /// Collapses the readings to a single line, or brings them back.
+        ///
+        /// One class on the root does the whole thing; the USS decides what survives. Hiding
+        /// elements one by one from here would put the decision in two files and guarantee they
+        /// disagree the first time a row is added.
+        /// </summary>
+        public void SetCompact(bool compact)
+        {
+            IsCompact = compact;
+            m_Root.EnableInClassList("hud--compact", compact);
+            m_CompactToggle.text = compact ? "full" : "compact";
         }
 
         void ToggleOverlay()

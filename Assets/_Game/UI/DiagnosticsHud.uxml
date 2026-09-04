@@ -18,9 +18,15 @@
         <!-- Hazard stripe, shown only in preview: the difference has to register peripherally. -->
         <ui:VisualElement name="banner-hazard" class="hazard is-hidden" />
         <ui:VisualElement name="banner-body" class="banner-body">
-          <ui:VisualElement name="mode-pill" class="pill">
-            <ui:VisualElement name="mode-dot" class="pill-dot pill-dot--idle" />
-            <ui:Label name="mode-pill-text" class="pill-text" text="CHECKING" />
+          <!-- The pill and the compact toggle share a row: the toggle has to be reachable
+               without the panel it collapses getting in the way of finding it. -->
+          <ui:VisualElement name="banner-top" class="banner-top">
+            <ui:VisualElement name="mode-pill" class="pill">
+              <ui:VisualElement name="mode-dot" class="pill-dot pill-dot--idle" />
+              <ui:Label name="mode-pill-text" class="pill-text" text="CHECKING" />
+            </ui:VisualElement>
+            <ui:VisualElement class="row-spacer" />
+            <ui:Button name="btn-compact" class="btn-compact" text="compact" />
           </ui:VisualElement>
           <ui:Label name="mode-title" class="mode-title" text="CHECKING" />
           <ui:Label name="mode-reason" class="mode-reason" text="Checking what this device can do." />
@@ -125,6 +131,11 @@
         <ui:Button name="btn-mark" class="btn btn--secondary btn--mark" text="">
           <ui:VisualElement class="btn-glyph glyph--mark" />
           <ui:Label class="btn-text" text="Mark" />
+        </ui:Button>
+        <!-- Puts a disc on the floor below the camera. A drift test that needs no printed
+             marker: walk away, come back, see whether the disc stayed put. -->
+        <ui:Button name="btn-drop" class="btn btn--secondary btn--drop" text="">
+          <ui:Label class="btn-text" text="Drop" />
         </ui:Button>
       </ui:VisualElement>
     </ui:VisualElement>

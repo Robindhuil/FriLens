@@ -26,6 +26,7 @@ namespace FriLens
         [SerializeField] SessionLogger m_Logger;
         [SerializeField] ProvisionalPlacement m_Placement;
         [SerializeField] TrackingContinuity m_Continuity;
+        [SerializeField] FloorProbe m_FloorProbe;
 
         [Tooltip("Renderer switched off by the overlay button, so you can see what is under it.")]
         [SerializeField] Renderer m_Overlay;
@@ -46,6 +47,7 @@ namespace FriLens
             {
                 m_View.Reanchor -= OnReanchor;
                 m_View.Mark -= OnMark;
+                m_View.Drop -= OnDrop;
                 m_View.OverlayToggled -= OnOverlayToggled;
                 m_View = null;
             }
@@ -73,6 +75,7 @@ namespace FriLens
             m_View = new DiagnosticsHudView(root);
             m_View.Reanchor += OnReanchor;
             m_View.Mark += OnMark;
+            m_View.Drop += OnDrop;
             m_View.OverlayToggled += OnOverlayToggled;
 
             if (m_Overlay != null)
@@ -253,7 +256,18 @@ namespace FriLens
             // watches it grow while standing still learns more about the method in ten seconds
             // than the documentation can tell them.
             m_View.SetWalked(m_Travel.DistanceWalked, tracking ? ValueState.Ok : ValueState.Warn);
-            m_View.SetWalkedNote($"raw {m_Travel.PathRawMeters:F1} m");
+
+            // The probe figures ride on the same line rather than getting a row of their own.
+            // In compact mode this line is one of the two things still on screen, and it is
+            // where the floor test has to be readable — that test is run while walking.
+            var note = $"raw {m_Travel.PathRawMeters:F1} m";
+            if (m_FloorProbe != null && m_FloorProbe.Count > 0)
+                note += $" · {m_FloorProbe.Count} probe{(m_FloorProbe.Count == 1 ? "" : "s")}"
+                    + (m_FloorProbe.Count > 1
+                        ? $" ±{m_FloorProbe.FloorSpreadMeters * 100f:F0} cm"
+                        : "");
+
+            m_View.SetWalkedNote(note);
 
             // Jumps ride along on the straight-line row because they are the same kind of fact:
             // how much of what you are looking at came from the tracker rather than from walking.
@@ -325,6 +339,25 @@ namespace FriLens
                 m_Overlay.enabled = visible;
 
             m_Logger?.MarkEvent(visible ? "overlay-shown" : "overlay-hidden");
+        }
+
+        /// <summary>
+        /// Puts a disc on the floor below the camera and records where.
+        ///
+        /// The position goes into the log because the disc itself is only evidence while you are
+        /// standing next to it. Afterwards the number is what says whether the fourth disc landed
+        /// at the same height as the first.
+        /// </summary>
+        void OnDrop()
+        {
+            if (m_FloorProbe == null)
+                return;
+
+            m_FloorProbe.Drop();
+
+            var spread = m_FloorProbe.FloorSpreadMeters;
+            m_Logger?.MarkEvent($"probe-{m_FloorProbe.Count} "
+                + $"eye {m_FloorProbe.EyeHeightMeters:F2} m; spread {spread * 100f:F1} cm");
         }
 
         /// <summary>

@@ -34,6 +34,27 @@ na zariadení beží.
 
 ### Added
 
+- **Tlačidlo `Drop` položí disk na podlahu pod telefón.** Drift test, ktorý **nepotrebuje
+  vytlačenú značku**: polož disk, odfoť, prejdi sto metrov, vráť sa a pozri, o koľko je vedľa.
+  Disky sú kotvené na `ARAnchor`, takže sa neposúvajú spolu s driftom — sú to pevné body, voči
+  ktorým ho vidno.
+
+  Výška podlahy pochádza od testujúceho, nie z detekcie rovín. Detekcia rovín išla preč vo
+  fáze 2, lebo kreslila štvorce po tej istej podlahe, ktorej hranu má test čítať, a vrátiť ju
+  kvôli otázke „kde je podlaha" by znamenalo merať odpoveď ARCore pomocou ARCore. Človek, ktorý
+  vie, aký je vysoký, je nezávislá referencia.
+
+  Na rovnej podlahe majú všetky disky ležať v rovnakej výške, takže rozptyl medzi nimi je
+  zvislá chyba nazbieraná medzi položeniami. Ukazuje sa pod prejdenou vzdialenosťou ako
+  `N probes ±M cm`. Postup je [test D v protokole](docs/2026-09-04-protokol-baseline-testu.md).
+
+- **Kompaktný režim HUD-u.** Tlačidlo `compact` v hlavičke zloží panel na jediný riadok —
+  zostane režim, prejdená vzdialenosť a tlačidlá, teda tri veci potrebné pri chôdzi. Zvyšok
+  ustúpi kamere, ktorá je koniec koncov to, čo sa posudzuje.
+
+- **Celý HUD je menší.** Referenčné rozlíšenie 430 → 470 a k tomu menšie tlačidlá (64 → 54 px),
+  písma a odsadenia riadkov. Po zmenšení v 0.1.4-alpha bol stále priveľký.
+
 - **Značky existujú.** `Assets/_Game/AR/Markers/frilens-M1..M4.png`, 1024 × 1024, vygenerované
   a nie prevzaté: ARCore hodnotí hustotu hrán, kontrast a neopakovateľnosť vzoru, na čo je logo
   zlé. Prvý pokus mal veľké čierne plochy — tie nenesú žiadne features, takže vzor je teraz

@@ -73,6 +73,39 @@ metroch, a v 5–6 veľká aj pri dvoch.
 **Pri každom pokuse si všimni, či nastal skok.** Skok znamená, že sa ARCore relokalizoval —
 to je dobrý prípad. Keď prekryv sedí zle a **žiaden skok nebol**, to je tá tichá porucha.
 
+## Test D — disky na podlahe
+
+Od 0.1.6-alpha. **Nepotrebuje vytlačenú značku**, takže sa dá spraviť hneď a kdekoľvek.
+
+Tlačidlo `Drop` položí disk na podlahu presne pod telefón, do hĺbky, ktorá je nastavená ako
+výška očí (`FloorProbe.m_EyeHeightMeters`, štandardne 1,70 m). Výška pochádza od testujúceho,
+nie z detekcie rovín — tá by znamenala merať odpoveď ARCore pomocou ARCore.
+
+**Najprv kalibrácia.** Stoj rovno, telefón v úrovni očí, stlač `Drop`. Ak disk nesedí na
+podlahe, uprav výšku v inspectore a zopakuj. Kým disk nesedí, ostatné čísla z tohto testu
+nehovoria nič.
+
+Potom dve merania:
+
+**D1 — zvislá zhoda.** Prejdi miestnosťou a polož štyri až šesť diskov na rovnú podlahu.
+Na rovnej podlahe majú všetky ležať v rovnakej výške, takže `± N cm` na obrazovke je zvislá
+chyba nazbieraná medzi nimi. Je v nej započítané aj to, ako presne držíš telefón — preto sa
+oplatí sledovať skôr **tvar v čase** než jedno číslo: rast s prejdenou vzdialenosťou je drift,
+náhodné kolísanie o pár centimetrov je ruka.
+
+**D2 — drift bez značky.** Toto je to podstatné.
+
+1. Polož disk a **odfoť ho** aj s okolím, nech je zrejmé, kde presne leží.
+2. Prejdi sa — 20, 50, 100 m, aj cez iné miestnosti.
+3. Vráť sa na to isté miesto a odfoť ten istý disk.
+4. Odčítaj, o koľko sa posunul oproti bodu na podlahe.
+
+Disky sú kotvené na `ARAnchor`, takže sa **nehýbu spolu s driftom** — presne preto ide o pevný
+bod, voči ktorému sa drift dá vidieť. Čo sa posúva, je svet okolo nich.
+
+Zapíš prejdenú vzdialenosť z obrazovky ku každému odčítaniu. Drift ako **percento z prejdenej
+dráhy** je tvar, v akom sa to v literatúre uvádza.
+
 ## Test C — dlhý beh
 
 Jeden súvislý prechod aspoň dvomi podlažiami, 5–10 minút, telefón držať pokojne. Značiť `Mark`
