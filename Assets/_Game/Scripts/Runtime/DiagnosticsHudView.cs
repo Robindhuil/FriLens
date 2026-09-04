@@ -250,6 +250,20 @@ namespace FriLens
             m_CompactToggle.text = compact ? "full" : "compact";
         }
 
+        /// <summary>
+        /// Marks the readings as not to be trusted, which forces the row that says why back on
+        /// screen even in compact.
+        ///
+        /// Compact hides everything but the mode, the distance and the buttons — and the row it
+        /// hides first is the one carrying "unverified". That row exists because a failed
+        /// relocalisation is silent, and hiding it in the mode somebody actually walks around in
+        /// would put the warning exactly where it can never be seen.
+        /// </summary>
+        public void SetAlert(bool alert)
+        {
+            m_Root.EnableInClassList("hud--alert", alert);
+        }
+
         void ToggleOverlay()
         {
             SetOverlayVisible(!OverlayVisible);

@@ -52,6 +52,11 @@ na zariadení beží.
   zostane režim, prejdená vzdialenosť a tlačidlá, teda tri veci potrebné pri chôdzi. Zvyšok
   ustúpi kamere, ktorá je koniec koncov to, čo sa posudzuje.
 
+  **Výnimka:** keď je meranie neoverené po strate trackingu, riadok `Alignment` sa vráti na
+  obrazovku aj v kompakte. Kompakt inak skrýva práve ten riadok, ktorý nesie `unverified` —
+  a to je varovanie, ktoré existuje preto, že zlyhaná relokalizácia je inak tichá. Schovať ho
+  práve v režime, v ktorom sa chodí, by ho umiestnilo tam, kde ho nikto nikdy neuvidí.
+
 - **Celý HUD je menší.** Referenčné rozlíšenie 430 → 470 a k tomu menšie tlačidlá (64 → 54 px),
   písma a odsadenia riadkov. Po zmenšení v 0.1.4-alpha bol stále priveľký.
 

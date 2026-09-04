@@ -390,3 +390,7 @@
 .hud--compact .btn { height: 46px; border-radius: 23px; }
 .hud--compact .btn-text { font-size: 14px; }
 .hud--compact .btn-glyph { width: 15px; height: 15px; margin-right: 7px; }
+
+/* An untrustworthy reading outranks the tester's wish for a clear view. Compact hides the
+   alignment row; this puts it back the moment it has something to say. */
+.hud--compact.hud--alert #row-alignment { display: flex; }

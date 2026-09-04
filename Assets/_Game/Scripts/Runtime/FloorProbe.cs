@@ -63,6 +63,20 @@ namespace FriLens
         /// <summary>Raised with the disc's number and where it was put, for the log.</summary>
         public event Action<int, Vector3> Dropped;
 
+        void Awake()
+        {
+            if (m_Camera == null)
+                Debug.LogError($"{nameof(FloorProbe)}: no camera assigned; the drop button will "
+                    + "do nothing. Run FriLens > Wire Scene.", this);
+
+            // CreatePrimitive hands out the built-in render pipeline's default material, which
+            // under URP draws magenta. Silent in the editor's own scene view, obvious and
+            // baffling on the phone.
+            if (m_Material == null)
+                Debug.LogWarning($"{nameof(FloorProbe)}: no material assigned; the discs will "
+                    + "render magenta under URP. Run FriLens > Wire Scene.", this);
+        }
+
         /// <summary>
         /// Puts a disc on the floor below the camera. Wired to the drop button.
         /// </summary>
@@ -80,9 +94,9 @@ namespace FriLens
             // object exists only to be looked at.
             Destroy(disc.GetComponent<Collider>());
 
-            // Unity's cylinder is two units tall, so the vertical scale is half the thickness.
-            var radius = m_DiscDiameterMeters * 0.5f;
-            disc.transform.localScale = new Vector3(radius * 2f, 0.005f, radius * 2f);
+            // Unity's cylinder is one unit across and two units tall, so the horizontal scale is
+            // the diameter and the vertical one is half the thickness.
+            disc.transform.localScale = new Vector3(m_DiscDiameterMeters, 0.005f, m_DiscDiameterMeters);
             disc.transform.position = position;
 
             if (m_Material != null)

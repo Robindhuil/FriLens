@@ -187,7 +187,7 @@ namespace FriLens
 
         void UpdateAlignment()
         {
-            if (m_Alignment == null || InPreview)
+            if (InPreview)
                 return;
 
             // A tracking loss outranks everything else this row could say. If ARCore lost its place
@@ -201,8 +201,19 @@ namespace FriLens
                 m_View.SetRow(HudRow.Alignment,
                     $"unverified · {losses} loss{(losses == 1 ? "" : "es")} {m_Continuity.BlindSeconds:F0} s",
                     ValueState.Bad);
+
+                // Compact hides this row, and this is the one warning that must not be hidden.
+                m_View.SetAlert(true);
                 return;
             }
+
+            m_View.SetAlert(false);
+
+            // Checked after the warning rather than before it: the continuity flag does not
+            // depend on an alignment existing, and an unassigned reference here must not be able
+            // to swallow the one message that matters.
+            if (m_Alignment == null)
+                return;
 
             switch (m_Alignment.State)
             {

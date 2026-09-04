@@ -82,8 +82,11 @@ výška očí (`FloorProbe.m_EyeHeightMeters`, štandardne 1,70 m). Výška poch
 nie z detekcie rovín — tá by znamenala merať odpoveď ARCore pomocou ARCore.
 
 **Najprv kalibrácia.** Stoj rovno, telefón v úrovni očí, stlač `Drop`. Ak disk nesedí na
-podlahe, uprav výšku v inspectore a zopakuj. Kým disk nesedí, ostatné čísla z tohto testu
-nehovoria nič.
+podlahe, uprav výšku v inspectore a zopakuj.
+
+Dobrá správa je, že na tom až tak nezáleží: zlá výška posunie **všetky** disky o to isté, takže
+rozptyl medzi nimi (D1) ani posun jedného disku voči podlahe (D2) sa tým nezmenia. Kalibrácia
+je preto na to, aby sa disky dali pohodlne posudzovať okom, nie aby čísla platili.
 
 Potom dve merania:
 
