@@ -32,11 +32,6 @@ namespace FriLens
         /// <summary>Whether the root is currently held by an anchor ARCore maintains.</summary>
         public bool IsAnchored => m_Anchor != null;
 
-        /// <summary>Raised once the root has actually been attached to an anchor.</summary>
-        public event Action Anchored;
-
-        public Transform Root => m_Root;
-
         void Awake()
         {
             if (m_Root == null)
@@ -104,8 +99,6 @@ namespace FriLens
 
             m_Anchor = anchor;
             m_Root.SetParent(anchor.transform, true);
-
-            Anchored?.Invoke();
         }
 
         void ReleaseAnchor()

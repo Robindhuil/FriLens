@@ -45,6 +45,7 @@ namespace FriLens
         readonly Label m_ModeReason;
 
         readonly Label[] m_Values = new Label[RowCount];
+        readonly Label[] m_Labels = new Label[RowCount];
         readonly VisualElement[] m_Icons = new VisualElement[RowCount];
         readonly VisualElement[] m_Dots = new VisualElement[RowCount];
 
@@ -135,6 +136,7 @@ namespace FriLens
         {
             var i = (int)row;
             m_Values[i] = m_Root.Q<Label>("value-" + key);
+            m_Labels[i] = m_Root.Q<Label>("label-" + key);
             m_Icons[i] = m_Root.Q("icon-" + key);
             m_Dots[i] = m_Root.Q("dot-" + key);
         }
@@ -156,21 +158,18 @@ namespace FriLens
                     m_ModeTitle.text = "CHECKING";
                     m_PillText.text = "CHECKING";
                     SetPillTone("idle");
-                    SetReanchorAvailable(false);
                     break;
 
                 case HudMode.Ar:
                     m_ModeTitle.text = "AR";
                     m_PillText.text = "MEASURING";
                     SetPillTone("ok");
-                    SetReanchorAvailable(true);
                     break;
 
                 case HudMode.Preview:
                     m_ModeTitle.text = "PREVIEW — NOT A TEST";
                     m_PillText.text = "MEASURING NOTHING";
                     SetPillTone("accent");
-                    SetReanchorAvailable(false);
 
                     SetRow(HudRow.Tracking, "unavailable", ValueState.Idle);
                     SetRow(HudRow.Marker, "not seen", ValueState.Idle);
@@ -189,10 +188,32 @@ namespace FriLens
             m_PillDot.EnableInClassList("pill-dot--accent", tone == "accent");
         }
 
-        void SetReanchorAvailable(bool available)
+        /// <summary>
+        /// Enables the re-anchor button, or disables it and says why.
+        ///
+        /// The reason matters more than the disabling. With an empty reference image library the
+        /// button used to look ready, collect nothing, and time out — which reads as a broken
+        /// alignment rather than as a missing marker.
+        /// </summary>
+        public void SetReanchorAvailable(bool available, string reason = "")
         {
             m_Reanchor.SetEnabled(available);
             m_ReanchorNote.EnableInClassList("is-hidden", available);
+
+            if (!available && reason.Length > 0)
+                m_ReanchorNote.text = reason;
+        }
+
+        /// <summary>
+        /// Renames a row. Used where the honest name depends on the state — "From marker" means
+        /// nothing until a marker has been aligned to, and until then the distance is measured
+        /// from wherever counting happened to start.
+        /// </summary>
+        public void SetRowLabel(HudRow row, string text)
+        {
+            var label = m_Labels[(int)row];
+            if (label != null)
+                label.text = text;
         }
 
         public void SetRow(HudRow row, string text, ValueState state)

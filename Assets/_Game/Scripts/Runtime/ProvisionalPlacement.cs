@@ -28,9 +28,10 @@ namespace FriLens
             + "alignment would.")]
         [SerializeField] AnchoredRoot m_Anchored;
 
-        [Tooltip("Height the camera is assumed to be held at. The model's floor is put this far "
-            + "below the camera, so the overlay lies on the real floor rather than at eye level.")]
-        [SerializeField] float m_EyeHeightMeters = 1.5f;
+        [Tooltip("Height the camera is assumed to be at when the app starts. The model's floor "
+            + "is put this far below it. Not the same number as FloorProbe's: this one is the "
+            + "grip at startup, that one the grip while aiming at the floor.")]
+        [SerializeField] float m_CameraHeightMeters = 1.5f;
 
         [Tooltip("Turn off once a surveyed marker exists. Placement would then be a distraction "
             + "sitting on top of the only thing worth looking at.")]
@@ -72,7 +73,7 @@ namespace FriLens
             var bounds = m_Overlay.bounds;
             var floorCentre = new Vector3(bounds.center.x, bounds.min.y, bounds.center.z);
 
-            var target = m_Camera.position - new Vector3(0f, m_EyeHeightMeters, 0f);
+            var target = m_Camera.position - new Vector3(0f, m_CameraHeightMeters, 0f);
             var pose = new Pose(m_AlignmentRoot.position + (target - floorCentre),
                 m_AlignmentRoot.rotation);
 

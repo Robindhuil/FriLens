@@ -25,6 +25,8 @@ namespace FriLens
         [SerializeField] MarkerAlignment m_Alignment;
         [SerializeField] CameraTravel m_Travel;
         [SerializeField] TrackingContinuity m_Continuity;
+        [SerializeField] FloorProbe m_FloorProbe;
+        [SerializeField] AnchoredRoot m_AnchoredRoot;
         [SerializeField] Transform m_Camera;
 
         [Tooltip("Rows per second while the app is running.")]
@@ -53,8 +55,8 @@ namespace FriLens
                 m_Writer.WriteLine("time_s,mode,session_state,not_tracking_reason,"
                     + "cam_x,cam_y,cam_z,cam_yaw,cam_pitch,cam_roll,"
                     + "walked_m,path_raw_m,from_origin_m,jumps,jumped_m,"
-                    + "blind_s,losses,verified,origin_anchored,"
-                    + "since_align_s,spread_cm,spread_deg,event");
+                    + "blind_s,losses,verified,origin_anchored,overlay_anchored,"
+                    + "probes,eye_m,since_align_s,spread_cm,spread_deg,event");
                 m_Writer.Flush();
                 Debug.Log($"{nameof(SessionLogger)}: writing {FilePath}", this);
 
@@ -62,7 +64,11 @@ namespace FriLens
                 // shows tracking never starting cannot be told apart from a log taken on hardware
                 // that was never able to track in the first place. Commas are stripped because
                 // this goes in a CSV field.
-                MarkEvent(("device " + SystemInfo.deviceModel
+                // The app version goes in the first row. Without it a CSV read a month later
+                // can only be dated by guessing which columns it has, and every fix in this file
+                // changes what a column means.
+                MarkEvent(("frilens " + Application.version
+                    + "; device " + SystemInfo.deviceModel
                     + "; android " + SystemInfo.operatingSystem
                     + "; gyro " + SystemInfo.supportsGyroscope
                     + "; accel " + SystemInfo.supportsAccelerometer
@@ -76,6 +82,42 @@ namespace FriLens
                 FilePath = "";
                 Debug.LogError($"{nameof(SessionLogger)}: could not open the log. {exception.Message}", this);
             }
+        }
+
+        /// <summary>
+        /// Subscribes to the two moments worth a line of their own.
+        ///
+        /// Done here rather than through the HUD so that the log still records them if the HUD
+        /// fails to build — the log is the artefact the test produces, and it should not depend
+        /// on anything that only exists to be looked at.
+        /// </summary>
+        void OnEnable()
+        {
+            if (m_Continuity == null)
+                return;
+
+            m_Continuity.Lost += OnTrackingLost;
+            m_Continuity.Regained += OnTrackingRegained;
+        }
+
+        void OnDisable()
+        {
+            if (m_Continuity == null)
+                return;
+
+            m_Continuity.Lost -= OnTrackingLost;
+            m_Continuity.Regained -= OnTrackingRegained;
+        }
+
+        void OnTrackingLost(UnityEngine.XR.ARSubsystems.NotTrackingReason reason)
+        {
+            MarkEvent($"tracking-lost {reason}");
+        }
+
+        void OnTrackingRegained(float goneSeconds, UnityEngine.XR.ARSubsystems.NotTrackingReason reason)
+        {
+            MarkEvent(string.Format(CultureInfo.InvariantCulture,
+                "tracking-regained after {0:F1} s; was {1}", goneSeconds, reason));
         }
 
         void Update()
@@ -127,6 +169,12 @@ namespace FriLens
             var losses = m_Continuity != null ? m_Continuity.Losses : 0;
             var verified = m_Continuity == null || m_Continuity.IsVerified ? 1 : 0;
             var originAnchored = m_Travel != null && m_Travel.OriginAnchored ? 1 : 0;
+            var overlayAnchored = m_AnchoredRoot != null && m_AnchoredRoot.IsAnchored ? 1 : 0;
+
+            // The assumed height can be retuned mid-run, so it is logged per row rather than
+            // once. Without it a probe's gap figure cannot be reproduced afterwards.
+            var probes = m_FloorProbe != null ? m_FloorProbe.Count : 0;
+            var eye = m_FloorProbe != null ? m_FloorProbe.EyeHeightMeters : 0f;
 
             var sinceAlign = m_Alignment != null ? m_Alignment.TimeSinceAlignment : -1f;
             var spreadCm = m_Alignment != null ? m_Alignment.SampleSpreadMeters * 100f : 0f;
@@ -152,6 +200,9 @@ namespace FriLens
                 losses.ToString(culture),
                 verified.ToString(culture),
                 originAnchored.ToString(culture),
+                overlayAnchored.ToString(culture),
+                probes.ToString(culture),
+                eye.ToString("F2", culture),
                 sinceAlign.ToString("F2", culture),
                 spreadCm.ToString("F2", culture),
                 spreadDeg.ToString("F3", culture),

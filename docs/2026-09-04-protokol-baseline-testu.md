@@ -1,6 +1,6 @@
 # Protokol baseline testu
 
-**Verzia:** 0.1.5-alpha · **Dátum:** 2026-09-04
+**Verzia:** 0.1.8-alpha · **Dátum:** 2026-09-04, dopĺňané
 
 Toto je meranie **bez akejkoľvek pomoci modelu**. Všetko, čo sa tu nameria, je referencia, voči
 ktorej sa neskôr porovná, o koľko znalosť budovy drift potlačí. Bez tohto čísla nemá zmysel
@@ -11,7 +11,7 @@ tracking**: koľko toho ARCore vie a kde sa láme.
 
 ## Pred odchodom
 
-- Zbuildiť `FriLens > Build Android 0.1.5-alpha` a nainštalovať.
+- Spustiť `FriLens > Wire Scene`, potom `FriLens > Build Android <verzia>` a nainštalovať.
 - Zobrať **meracie pásmo alebo krokomer s overenou dĺžkou kroku**. Bez referencie sa
   prejdená vzdialenosť nedá overiť a celý test A padá.
 - Ísť **cez deň**. Predošlý beh mal 30 riadkov `InsufficientLight` a desať relokalizácií;
@@ -113,10 +113,16 @@ Potom dve merania:
 Všetky ležia v uzamknutej výške, takže sa pozeraj na to, či **skutočne sedia na podlahe** —
 ak neskorší disk plá­va alebo sa zarezáva, ARCore medzitým posunul svoj odhad zvislej osi.
 
-Číslo `floor ±N cm` pod prejdenou vzdialenosťou hovorí to isté priebežne: je to rozdiel medzi
-uzamknutou podlahou a tou, ktorú kamera implikuje práve teraz. Čítaj ho **iba postojačky**,
-lebo inak v ňom je hlavne to, ako držíš telefón. Rast s prejdenou vzdialenosťou je drift,
-kolísanie o pár centimetrov je ruka.
+Číslo pod prejdenou vzdialenosťou hovorí to isté priebežne a **znamená niečo iné podľa zdroja**:
+
+- `floor ±N cm` v režime výšky — rozdiel medzi uzamknutou podlahou a tou, ktorú kamera implikuje
+  teraz. Čítaj **iba postojačky**, inak je v ňom hlavne to, ako držíš telefón. Rast s prejdenou
+  vzdialenosťou je drift, kolísanie o pár centimetrov je ruka.
+- `model ±N cm` na navmeshi — o koľko leží podlaha **modelu** nižšie než tá, ktorú implikuje
+  meraná výška. To už je porovnanie modelu s realitou, lebo meraná výška je nezávislá referencia.
+
+Pozor na jedno: po relokalizácii sú obe čísla bezcenné, kým sa neprezarovná na značke. Beh
+`174812` ukázal, že skoky nesú **metrovú zvislú zložku** — 6,86 m so zmenou výšky +2,48 m.
 
 **D2 — drift bez značky.** Toto je to podstatné.
 
@@ -141,16 +147,38 @@ relokalizácie oproti tichým poruchám.
 
 ## Čo poslať
 
-CSV z `Android/data/sk.uniza.fri.frilens/files/`, poznámky a fotky. Nové stĺpce:
+CSV z `Android/data/sk.uniza.fri.frilens/files/`, poznámky a fotky.
+
+Stĺpce:
 
 | stĺpec | čo znamená |
 |---|---|
 | `walked_m` | prevzorkovaná dráha — toto je to číslo |
 | `path_raw_m` | surový súčet, na porovnanie |
+| `from_origin_m` | priama vzdialenosť od miesta, kde počítanie začalo |
 | `jumps`, `jumped_m` | relokalizácie, ktoré appka videla |
 | `blind_s`, `losses` | ako dlho a koľkokrát bol tracking preč |
 | `verified` | 0 = od poslednej straty nebolo prezarovnanie, čísla sú neoverené |
-| `origin_anchored` | 1 = origin drží `ARAnchor`, čo je zmena v tejto verzii |
+| `origin_anchored` | 1 = počiatok drží `ARAnchor` |
+| `overlay_anchored` | 1 = prekryv drží `ARAnchor` |
+| `probes` | počet položených diskov |
+| `eye_m` | predpokladaná výška nad podlahou; dá sa meniť počas behu, preto je v každom riadku |
+| `spread_cm`, `spread_deg` | rozptyl vzoriek pri zarovnaní; nula, kým žiadne nebolo |
+
+Prvý riadok logu nesie **verziu appky**, model telefónu a to, či má gyroskop a akcelerometer.
+Bez verzie sa CSV čítané o mesiac dá datovať len hádaním, ktoré stĺpce má.
+
+Udalosti v stĺpci `event`, ktoré stoja za vyhľadanie:
+
+| udalosť | kedy |
+|---|---|
+| `tracking-lost <dôvod>` | tracking vypadol |
+| `tracking-regained after N s; was <dôvod>` | vrátil sa, aj s tým, ako dlho bol preč |
+| `probe-N via navmesh` / `via height` | položený disk a odkiaľ vzal podlahu |
+| `mark-N` | meracie body počas chôdze |
+| `aligned`, `realign-requested` | zarovnanie na značku |
+| `eye-height N` | doladenie výšky počas behu |
+| `overlay-hidden`, `overlay-shown` | skrytie prekryvu |
 
 ## Čo tento test nezistí
 

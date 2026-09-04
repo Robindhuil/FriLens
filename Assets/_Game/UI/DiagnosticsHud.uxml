@@ -42,7 +42,7 @@
           <ui:VisualElement name="icon-tracking" class="row-icon">
             <ui:VisualElement class="row-glyph glyph--tracking" />
           </ui:VisualElement>
-          <ui:Label class="row-label" text="Tracking" />
+          <ui:Label name="label-tracking" class="row-label" text="Tracking" />
           <ui:VisualElement class="row-spacer" />
           <ui:VisualElement name="dot-tracking" class="dot is-hidden" />
           <ui:Label name="value-tracking" class="row-value v--idle" text="—" />
@@ -52,7 +52,7 @@
           <ui:VisualElement name="icon-marker" class="row-icon">
             <ui:VisualElement class="row-glyph glyph--marker" />
           </ui:VisualElement>
-          <ui:Label class="row-label" text="Marker" />
+          <ui:Label name="label-marker" class="row-label" text="Marker" />
           <ui:VisualElement class="row-spacer" />
           <ui:VisualElement name="dot-marker" class="dot is-hidden" />
           <ui:Label name="value-marker" class="row-value v--idle" text="—" />
@@ -62,7 +62,7 @@
           <ui:VisualElement name="icon-alignment" class="row-icon">
             <ui:VisualElement class="row-glyph glyph--alignment" />
           </ui:VisualElement>
-          <ui:Label class="row-label" text="Alignment" />
+          <ui:Label name="label-alignment" class="row-label" text="Alignment" />
           <ui:VisualElement class="row-spacer" />
           <ui:VisualElement name="dot-alignment" class="dot is-hidden" />
           <ui:Label name="value-alignment" class="row-value v--idle" text="—" />
@@ -89,7 +89,7 @@
           <ui:VisualElement name="icon-from-marker" class="row-icon">
             <ui:VisualElement class="row-glyph glyph--from-marker" />
           </ui:VisualElement>
-          <ui:Label class="row-label" text="From marker" />
+          <ui:Label name="label-from-marker" class="row-label" text="From marker" />
           <ui:VisualElement class="row-spacer" />
           <ui:VisualElement name="dot-from-marker" class="dot is-hidden" />
           <ui:Label name="value-from-marker" class="row-value v--idle" text="—" />
@@ -101,7 +101,7 @@
           <ui:VisualElement name="icon-device" class="row-icon">
             <ui:VisualElement class="row-glyph glyph--device" />
           </ui:VisualElement>
-          <ui:Label class="row-label" text="Device" />
+          <ui:Label name="label-device" class="row-label" text="Device" />
           <ui:VisualElement class="row-spacer" />
           <ui:VisualElement name="dot-device" class="dot is-hidden" />
           <ui:Label name="value-device" class="row-value v--idle" text="—" />

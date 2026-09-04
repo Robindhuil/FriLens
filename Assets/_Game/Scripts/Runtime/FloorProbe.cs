@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
@@ -75,13 +74,9 @@ namespace FriLens
 
         float m_FloorY;
         bool m_FloorKnown;
-        float m_WorstOffset;
 
         /// <summary>Discs dropped since the app started.</summary>
         public int Count => m_Probes.Count;
-
-        /// <summary>Whether the floor's height has been fixed by a first drop.</summary>
-        public bool FloorKnown => m_FloorKnown;
 
         /// <summary>
         /// How far the floor implied by the camera right now sits from the locked floor, in
@@ -92,9 +87,6 @@ namespace FriLens
             m_FloorKnown && m_Camera != null
                 ? m_Camera.position.y - m_EyeHeightMeters - m_FloorY
                 : 0f;
-
-        /// <summary>Largest offset seen at the moment of a drop, in metres.</summary>
-        public float WorstOffsetMeters => m_WorstOffset;
 
         public float EyeHeightMeters => m_EyeHeightMeters;
 
@@ -116,9 +108,6 @@ namespace FriLens
         /// logged relocalisation jumps carrying more than two metres of vertical correction.
         /// </summary>
         public float LastNavGapMeters { get; private set; }
-
-        /// <summary>Raised with the disc's number and where it was put, for the log.</summary>
-        public event Action<int, Vector3> Dropped;
 
         void Awake()
         {
@@ -162,8 +151,6 @@ namespace FriLens
             m_Probes.Add(disc.transform);
 
             AnchorTo(disc.transform, position);
-
-            Dropped?.Invoke(m_Probes.Count, position);
         }
 
         /// <summary>
@@ -196,11 +183,6 @@ namespace FriLens
                 m_FloorY = implied;
                 m_FloorKnown = true;
             }
-            else
-            {
-                m_WorstOffset = Mathf.Max(m_WorstOffset, Mathf.Abs(implied - m_FloorY));
-            }
-
             return new Vector3(camera.x, m_FloorY, camera.z);
         }
 
@@ -216,7 +198,6 @@ namespace FriLens
         {
             m_EyeHeightMeters = Mathf.Clamp(m_EyeHeightMeters + deltaMeters, 0.6f, 2.4f);
             m_FloorKnown = false;
-            m_WorstOffset = 0f;
         }
 
         /// <summary>
@@ -241,7 +222,7 @@ namespace FriLens
 
                 disc.SetParent(result.value.transform, true);
             }
-            catch (Exception exception)
+            catch (System.Exception exception)
             {
                 Debug.LogWarning($"{nameof(FloorProbe)}: could not anchor a disc. "
                     + exception.Message, this);

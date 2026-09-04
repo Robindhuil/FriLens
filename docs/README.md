@@ -1,6 +1,13 @@
 # FriLens — dokumentácia
 
-**Verzia:** 0.1.4-alpha · **Stav:** fázy 0–2, 3c a 5 hotové; tracking overený v teréne na Redmi Note 10 Pro. Metóda merania prejdenej vzdialenosti prepracovaná — čísla z behov pred 0.1.4-alpha sú nadhodnotené, pozri [ADR 005](decisions/005-ako-merat-prejdenu-vzdialenost.md). Chýba vytlačená značka (fáza 3a) a jej zameraná póza (3b), bez nich sa drift nemeria.
+**Verzia:** 0.1.8-alpha · **Stav:** fázy 0–2, 3c a 5 hotové
+
+Prístroj je overený v teréne na Redmi Note 10 Pro: prejdená vzdialenosť sedí na −2,7 %, kotvy
+prežijú stratu trackingu a kladenie diskov na navmesh funguje. **Chýba vytlačená a zameraná
+značka** (fázy 3a, 3b) — dovtedy sa meria tracker, nie zhoda modelu s budovou.
+
+Čísla z behov pred 0.1.4-alpha sú nadhodnotené: metóda merania dráhy sa vtedy zmenila
+([ADR 005](decisions/005-ako-merat-prejdenu-vzdialenost.md)).
 
 Samostatný Unity projekt oddelený od `FriWorld`. Jediná otázka, na ktorú má odpovedať:
 **ako presne sa navmesh premietne do skutočnej fakulty a ako rýchlo to odchádza, keď sa
@@ -15,8 +22,8 @@ Nie navigačná appka. Nie prekryv miestností. Jedna značka, jedna plocha, vla
 | [Stav projektu a analýza navmeshu](2026-09-02-stav-projektu-a-analyza-navmeshu.md) | čo v projekte skutočne je, čo obsahuje `navmesh.blend`, kritické diery |
 | [Implementačný plán](2026-09-02-implementacny-plan.md) | fázy 0–6, od hygieny projektu po test v teréne |
 | [Brief pre návrh UI](2026-09-03-brief-navrh-ui.md) | zadanie pre návrhára HUD-u: podmienky v teréne, mantinely UI Toolkitu, čo sa nesmie meniť |
-| [Protokol baseline testu](2026-09-04-protokol-baseline-testu.md) | čo odmerať v teréne s 0.1.5-alpha, kým neexistuje značka |
-| [Výsledky baseline testu](2026-09-04-vysledky-baseline.md) | prvý beh 0.1.5-alpha: vzdialenosť sedí na −2,7 %, dlhé zakrytie kamery rozbije mapu na desiatky metrov |
+| [Protokol baseline testu](2026-09-04-protokol-baseline-testu.md) | čo odmerať v teréne, kým neexistuje značka, a čo znamená každý stĺpec CSV |
+| [Výsledky baseline testu](2026-09-04-vysledky-baseline.md) | čo namerali behy 0.1.5 až 0.1.7: vzdialenosť sedí na −2,7 %, dlhé zakrytie rozbije mapu, relokalizácie sú aj zvislé |
 | [Analýza geometrie a stien](2026-09-04-analyza-geometrie-a-stien.md) | čo `navmesh.blend` naozaj obsahuje a prečo sa steny dajú odvodiť z hraníc navmeshu |
 | [ADR 001 — Zdroj navigačnej geometrie](decisions/001-zdroj-navmesh-geometrie.md) | prečo nepiecť navmesh, ale extrahovať existujúce plochy |
 | [ADR 002 — Verzovanie modelov](decisions/002-verzovanie-modelov.md) | čo robiť s 300 MB blend súborom |
@@ -51,8 +58,10 @@ Nový build:
 
 1. zdvihnúť `Version` **aj** `VersionCode` v `AndroidBuilder.cs`,
 2. dopísať, čo sa zmenilo, do [`CHANGELOG.md`](../CHANGELOG.md),
-3. spustiť menu položku,
-4. **vydať na GitHub Releases** (nižšie).
+3. spustiť **`FriLens > Wire Scene`**, ak pribudol komponent alebo referencia — default
+   v zdroji sa na komponent, ktorý už v scéne je, nevzťahuje,
+4. spustiť menu položku buildu,
+5. **vydať na GitHub Releases** (nižšie).
 
 Prvý IL2CPP build trvá aj desiatky minút a editor je počas neho nereagujúci. Ďalšie sú
 podstatne rýchlejšie.

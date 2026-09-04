@@ -12,6 +12,60 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [0.1.8-alpha]
 
+### Audit pred 0.2.0
+
+Prechod cez všetko, čo sa nazbieralo — tlačidlá, riadky, log, mŕtvy kód, dokumentácia.
+
+#### Tlačidlá a riadky
+
+- **`Re-anchor` vyzeralo pripravené a nefungovalo.** Knižnica referenčných obrázkov je prázdna,
+  takže ARCore nemal čo rozpoznať: stlačenie nenazbieralo ani jednu vzorku a po dvoch sekundách
+  vypršalo. To sa číta ako pokazené zarovnanie, nie ako chýbajúca značka. Tlačidlo je teraz
+  vypnuté s dôvodom — `no markers yet`, respektíve `no AR session`.
+
+- **Riadok `From marker` meral od miesta, kde sa začalo počítať, nie od značky.** Žiadna značka
+  neexistuje, takže názov klamal o tom, čo číslo znamená. Volá sa `From start`, kým nie je
+  zarovnané, a `From marker` až potom.
+
+- **Číslo pod prejdenou vzdialenosťou znamená niečo iné podľa zdroja diskov** — `floor ±N cm`
+  pri režime výšky, `model ±N cm` na navmeshi. Doteraz sa obe volali rovnako.
+
+#### Logovanie
+
+- **Prvý riadok nesie verziu appky.** CSV čítané o mesiac sa dalo datovať len hádaním, ktoré
+  stĺpce má — a význam stĺpcov sa v tomto projekte menil takmer každou verziou.
+
+- **Strata a obnova trackingu majú vlastné udalosti**: `tracking-lost <dôvod>`
+  a `tracking-regained after N s; was <dôvod>`. Stav bol v stĺpci štyrikrát za sekundu, ale
+  hľadať v tisícke riadkov moment, kde sa hodnota zmenila, je spôsob, ako stratu prehliadnuť.
+
+  Dôvod sa priebežne obnovuje, kým je session dole: v snímku, keď tracking vypadne, je ešte
+  `None` — ARCore príde na to prečo až o snímok či dva neskôr.
+
+- **Nové stĺpce:** `overlay_anchored`, `probes`, `eye_m`. Posledný preto, že výška sa dá meniť
+  počas behu a bez nej sa údaj o diskoch spätne nedá zreprodukovať.
+
+- Logger číta tieto veci priamo, nie cez HUD, takže sa zapisujú aj keby sa HUD nepostavil.
+
+#### Kód
+
+- **Zmazaných sedem mŕtvych členov**: `FloorProbe.Dropped`, `AnchoredRoot.Anchored` a `.Root`,
+  `CameraTravel.ResampleStepMeters`, `FloorProbe.WorstOffsetMeters` a `.FloorKnown`,
+  `TrackingContinuity.SecondsSinceLoss`. Žiadny z nich nemal odberateľa ani čitateľa.
+
+- **`ProvisionalPlacement.m_EyeHeightMeters` premenované na `m_CameraHeightMeters`.** Rovnaké
+  meno v dvoch komponentoch s inou hodnotou aj iným významom — jeden je držanie telefónu pri
+  štarte appky, druhý pri mierení na podlahu.
+
+- `Wire Scene` prepíše výšku diskov, **len keď v nej ešte je pôvodný odhad 1,70 m**, aby
+  nezmazal hodnotu, ktorú niekto medzitým doladil.
+
+#### Dokumentácia
+
+- Protokol má úplný zoznam stĺpcov aj udalostí a hovorí, kedy sú čísla o podlahe bezcenné —
+  po relokalizácii, ktorá podľa behu `174812` nesie metrovú zvislú zložku.
+- Hlavičky dokumentov aktualizované, postup nového buildu doplnený o `Wire Scene`.
+
 ### Namerané na 0.1.7-alpha
 
 Beh `174812`, 466 s, 195 m. Kladenie na navmesh funguje — šesť z deviatich diskov padlo na

@@ -57,15 +57,29 @@ namespace FriLens.EditorTools
             Set(probe, "m_NavCollider", navCollider);
             Set(hud, "m_FloorProbe", probe);
 
-            // The default in the source only reaches components that did not exist yet; one
-            // already in the scene keeps whatever was serialised. The first value shipped was a
-            // guess at eye level and the measured one is lower, so it is written here rather than
-            // left to be noticed. Tune it in the app, not in the inspector — the error it
-            // corrects is only visible from several metres away.
-            SetFloat(probe, "m_EyeHeightMeters", 1.25f);
-            report.AppendLine("probe eye height set to 1.25 m (measured at the moment of a drop)");
+            // The log reads these directly rather than through the HUD, so it keeps recording
+            // them even if the HUD fails to build.
+            var logger = Object.FindFirstObjectByType<SessionLogger>(FindObjectsInactive.Include);
+            var anchoredRoot = Object.FindFirstObjectByType<AnchoredRoot>(FindObjectsInactive.Include);
+            if (logger != null)
+            {
+                Set(logger, "m_FloorProbe", probe);
+                Set(logger, "m_AnchoredRoot", anchoredRoot);
+            }
 
-            report.AppendLine("wired: probe(camera, anchors, material), hud.m_FloorProbe");
+            // A default in the source only reaches components that did not exist yet; one already
+            // in the scene keeps whatever was serialised, which is how the first shipped guess of
+            // 1.70 m outlived being corrected. It is rewritten here only when it still holds that
+            // old guess, so a value somebody has since tuned by hand is left alone.
+            var eye = new SerializedObject(probe).FindProperty("m_EyeHeightMeters");
+            if (eye != null && Mathf.Approximately(eye.floatValue, 1.70f))
+            {
+                SetFloat(probe, "m_EyeHeightMeters", 1.25f);
+                report.AppendLine("probe height 1.70 -> 1.25 m (measured at the moment of a drop)");
+            }
+
+            report.AppendLine("wired: probe(camera, anchors, material, nav collider), "
+                + "hud.m_FloorProbe, logger.m_FloorProbe, logger.m_AnchoredRoot");
 
             var scene = hud.gameObject.scene;
             EditorSceneManager.MarkSceneDirty(scene);

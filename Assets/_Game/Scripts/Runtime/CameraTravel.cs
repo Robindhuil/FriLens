@@ -70,8 +70,8 @@ namespace FriLens
         Vector3 m_OriginFallback;
 
         /// <summary>
-        /// Path length since the last reset, measured at <see cref="ResampleStepMeters"/>
-        /// resolution. This is the figure a drift percentage should be divided by.
+        /// Path length since the last reset, measured at a fixed spatial
+        /// resolution (0.30 m). This is the figure a drift percentage should be divided by.
         /// </summary>
         public float DistanceWalked => m_Resampler.Length;
 
@@ -99,8 +99,6 @@ namespace FriLens
         public bool OriginAnchored => m_OriginAnchor != null;
 
         public bool HasOrigin => m_Started;
-
-        public float ResampleStepMeters => m_ResampleStepMeters;
 
         /// <summary>
         /// Steps discarded as too far to be walking. Each one is ARCore correcting itself, and

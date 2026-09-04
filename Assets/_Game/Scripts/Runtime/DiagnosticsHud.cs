@@ -104,6 +104,7 @@ namespace FriLens
             UpdateTracking();
             UpdateMarker();
             UpdateAlignment();
+            UpdateReanchorButton();
             UpdateTravel();
             UpdateDevice();
             UpdateLog();
@@ -248,6 +249,31 @@ namespace FriLens
             }
         }
 
+        /// <summary>
+        /// Decides whether re-anchoring is possible at all, and says why when it is not.
+        ///
+        /// Two things have to be true: an AR session, and at least one reference image for ARCore
+        /// to recognise. The second was the trap. With an empty library the button looked ready,
+        /// collected no samples and timed out after two seconds — which reads as a broken
+        /// alignment rather than as "the markers have not been made yet".
+        /// </summary>
+        void UpdateReanchorButton()
+        {
+            if (m_Mode == null || m_Mode.Mode != SessionModeController.SessionMode.Ar)
+            {
+                m_View.SetReanchorAvailable(false, "no AR session");
+                return;
+            }
+
+            if (m_Alignment == null || m_Alignment.ReferenceImageCount == 0)
+            {
+                m_View.SetReanchorAvailable(false, "no markers yet");
+                return;
+            }
+
+            m_View.SetReanchorAvailable(true);
+        }
+
         void UpdateTravel()
         {
             if (m_Travel == null || InPreview)
@@ -289,6 +315,14 @@ namespace FriLens
             }
 
             m_View.SetWalkedNote(note);
+
+            // The row is named for what it is actually measuring. Until a marker has been aligned
+            // to, the distance is from wherever counting happened to start — which is a fact
+            // about the tracker, not about the building, and calling it "from marker" invited
+            // exactly the wrong reading of every run so far.
+            var aligned = m_Alignment != null
+                && m_Alignment.State == MarkerAlignment.AlignmentState.Aligned;
+            m_View.SetRowLabel(HudRow.FromMarker, aligned ? "From marker" : "From start");
 
             // Jumps ride along on the straight-line row because they are the same kind of fact:
             // how much of what you are looking at came from the tracker rather than from walking.

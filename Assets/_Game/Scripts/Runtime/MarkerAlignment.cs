@@ -99,6 +99,18 @@ namespace FriLens
         /// <summary>The marker currently being tracked, or null.</summary>
         public ARTrackedImage TrackedMarker { get; private set; }
 
+        /// <summary>
+        /// How many images the tracker has been given to look for.
+        ///
+        /// Zero until the printed markers exist, and that is not a detail: with an empty library
+        /// ARCore has nothing to recognise, so pressing re-anchor collects no samples and times
+        /// out. The button has to say that rather than look ready and do nothing.
+        /// </summary>
+        public int ReferenceImageCount =>
+            m_TrackedImageManager != null && m_TrackedImageManager.referenceLibrary != null
+                ? m_TrackedImageManager.referenceLibrary.count
+                : 0;
+
         void Awake()
         {
             m_Enabled = true;

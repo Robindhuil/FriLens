@@ -1,5 +1,7 @@
+using System;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
+using UnityEngine.XR.ARSubsystems;
 
 namespace FriLens
 {
@@ -31,6 +33,19 @@ namespace FriLens
 
         bool m_Tracking;
         float m_LostSince = -1f;
+        NotTrackingReason m_LostReason;
+
+        /// <summary>
+        /// Raised when tracking drops out, with the reason ARCore gave.
+        ///
+        /// The state column already records this four times a second, but scanning a thousand
+        /// rows for the moment a value changed is how a loss gets missed. An event puts the two
+        /// moments that matter on their own lines.
+        /// </summary>
+        public event Action<NotTrackingReason> Lost;
+
+        /// <summary>Raised when tracking comes back, with how long it was gone.</summary>
+        public event Action<float, NotTrackingReason> Regained;
 
         /// <summary>Seconds spent not tracking since the last alignment.</summary>
         public float BlindSeconds { get; private set; }
@@ -38,16 +53,11 @@ namespace FriLens
         /// <summary>Number of tracking losses since the last alignment.</summary>
         public int Losses { get; private set; }
 
-        /// <summary>Seconds since tracking last came back, or -1 if it has not been lost.</summary>
-        public float SecondsSinceLoss => m_LastRecoveryTime < 0f ? -1f : Time.time - m_LastRecoveryTime;
-
         /// <summary>
         /// Whether everything measured since the last alignment can be trusted. False from the
         /// first tracking loss until the next alignment.
         /// </summary>
         public bool IsVerified => Losses == 0;
-
-        float m_LastRecoveryTime = -1f;
 
         /// <summary>
         /// Clears the record. Called when an alignment is applied: a marker seen and averaged is
@@ -57,7 +67,6 @@ namespace FriLens
         {
             BlindSeconds = 0f;
             Losses = 0;
-            m_LastRecoveryTime = -1f;
         }
 
         void Update()
@@ -67,7 +76,17 @@ namespace FriLens
             if (tracking == m_Tracking)
             {
                 if (!tracking && m_LostSince >= 0f)
+                {
                     BlindSeconds += Time.deltaTime;
+
+                    // The reason is refreshed for as long as the session is down. On the frame
+                    // tracking drops it is usually still None — ARCore works out why a frame or
+                    // two later — so a reason captured only at the transition would report
+                    // nothing useful for most losses.
+                    var reason = ARSession.notTrackingReason;
+                    if (reason != NotTrackingReason.None)
+                        m_LostReason = reason;
+                }
 
                 return;
             }
@@ -77,15 +96,21 @@ namespace FriLens
             if (!tracking)
             {
                 m_LostSince = Time.time;
+                m_LostReason = ARSession.notTrackingReason;
+                Lost?.Invoke(m_LostReason);
                 return;
             }
 
             // Tracking came back. Whether it came back in the right place is exactly what cannot be
             // known from here, which is the point of counting these at all.
-            if (m_LostSince >= 0f && Time.time - m_LostSince >= m_IgnoreShorterThanSeconds)
+            if (m_LostSince >= 0f)
             {
-                Losses++;
-                m_LastRecoveryTime = Time.time;
+                var gone = Time.time - m_LostSince;
+                if (gone >= m_IgnoreShorterThanSeconds)
+                {
+                    Losses++;
+                    Regained?.Invoke(gone, m_LostReason);
+                }
             }
 
             m_LostSince = -1f;
