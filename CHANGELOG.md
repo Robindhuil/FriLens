@@ -10,7 +10,7 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [Unreleased]
 
-## [0.1.5-alpha]
+## [0.1.5-alpha] — 2026-09-04
 
 Prvý beh na 0.1.4-alpha, Redmi Note 10 Pro, 298 sekúnd. Prekryv bolo konečne vidieť
 a tlačidlo na jeho skrytie sa použilo štyrikrát. Prevzorkovanie funguje. Filter skokov nie.
