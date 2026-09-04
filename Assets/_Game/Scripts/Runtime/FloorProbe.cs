@@ -23,9 +23,20 @@ namespace FriLens
     /// bringing it back to answer "where is the floor" would mean measuring ARCore's answer with
     /// ARCore. A person who knows how tall they are is the independent reference.
     ///
-    /// <see cref="FloorSpreadMeters"/> is the honest summary: on a flat floor every disc should
-    /// land at the same height, so the spread between them is the vertical error accumulated
-    /// between drops — mixed, unavoidably, with how consistently the phone was held.
+    /// The floor's height is learned once and then held. The first field run showed why: the
+    /// phone gets tilted down to look at the floor, and it gets *lowered* at the same time — the
+    /// log has the camera 42 cm below where it started. Subtracting a fixed eye height from that
+    /// put every disc well below the real floor, and a point below the floor projects lower in
+    /// the image than the floor does, so from a distance the disc appeared closer than it was.
+    /// The error is proportional: at 8 m a disc 42 cm too low reads about 2 m short. Underfoot
+    /// it looks perfect, which is exactly why it went unnoticed.
+    ///
+    /// So only the first drop reads the camera's height. After that the floor is a known
+    /// horizontal plane and every disc goes on it, however the phone is being held.
+    ///
+    /// <see cref="FloorOffsetMeters"/> is what that costs in information: the gap between the
+    /// locked floor and the one the camera implies right now. It is vertical drift mixed with
+    /// how the phone is held, and it is only worth reading while standing upright.
     /// </summary>
     public class FloorProbe : MonoBehaviour
     {
@@ -46,17 +57,28 @@ namespace FriLens
 
         readonly List<Transform> m_Probes = new();
 
-        float m_MinY = float.MaxValue;
-        float m_MaxY = float.MinValue;
+        float m_FloorY;
+        bool m_FloorKnown;
+        float m_WorstOffset;
 
         /// <summary>Discs dropped since the app started.</summary>
         public int Count => m_Probes.Count;
 
+        /// <summary>Whether the floor's height has been fixed by a first drop.</summary>
+        public bool FloorKnown => m_FloorKnown;
+
         /// <summary>
-        /// Difference in height between the highest and lowest disc, in metres. On one flat floor
-        /// this should be zero and is not.
+        /// How far the floor implied by the camera right now sits from the locked floor, in
+        /// metres. Zero would mean the phone is exactly one eye height above the plane the discs
+        /// are on; it never is, because nobody holds a phone that steadily.
         /// </summary>
-        public float FloorSpreadMeters => m_Probes.Count < 2 ? 0f : m_MaxY - m_MinY;
+        public float FloorOffsetMeters =>
+            m_FloorKnown && m_Camera != null
+                ? m_Camera.position.y - m_EyeHeightMeters - m_FloorY
+                : 0f;
+
+        /// <summary>Largest offset seen at the moment of a drop, in metres.</summary>
+        public float WorstOffsetMeters => m_WorstOffset;
 
         public float EyeHeightMeters => m_EyeHeightMeters;
 
@@ -85,7 +107,21 @@ namespace FriLens
             if (m_Camera == null)
                 return;
 
-            var position = m_Camera.position + Vector3.down * m_EyeHeightMeters;
+            var implied = m_Camera.position.y - m_EyeHeightMeters;
+
+            // The first drop decides where the floor is. Every one after it uses that height,
+            // so a disc lands on the floor even when the phone was held low to look at it.
+            if (!m_FloorKnown)
+            {
+                m_FloorY = implied;
+                m_FloorKnown = true;
+            }
+            else
+            {
+                m_WorstOffset = Mathf.Max(m_WorstOffset, Mathf.Abs(implied - m_FloorY));
+            }
+
+            var position = new Vector3(m_Camera.position.x, m_FloorY, m_Camera.position.z);
 
             var disc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             disc.name = $"FloorProbe {m_Probes.Count + 1}";
@@ -103,12 +139,25 @@ namespace FriLens
                 disc.GetComponent<Renderer>().sharedMaterial = m_Material;
 
             m_Probes.Add(disc.transform);
-            m_MinY = Mathf.Min(m_MinY, position.y);
-            m_MaxY = Mathf.Max(m_MaxY, position.y);
 
             AnchorTo(disc.transform, position);
 
             Dropped?.Invoke(m_Probes.Count, position);
+        }
+
+        /// <summary>
+        /// Changes the assumed height of the camera above the floor and forgets the locked floor,
+        /// because the floor was derived from the old value.
+        ///
+        /// Adjustable at runtime rather than in the inspector because the error it corrects is
+        /// invisible at the moment of the drop and only shows up metres away — which means it can
+        /// only be tuned in the field, by walking away and watching whether the disc stays put.
+        /// </summary>
+        public void AdjustEyeHeight(float deltaMeters)
+        {
+            m_EyeHeightMeters = Mathf.Clamp(m_EyeHeightMeters + deltaMeters, 0.6f, 2.4f);
+            m_FloorKnown = false;
+            m_WorstOffset = 0f;
         }
 
         /// <summary>

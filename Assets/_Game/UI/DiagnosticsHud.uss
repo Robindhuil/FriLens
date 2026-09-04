@@ -307,8 +307,41 @@
 .btn--drop { width: 96px; margin-left: 10px; }
 
 /* ── Footer ─────────────────────────────────────────────────────────── */
-.footer {
+.footer-row {
+    flex-direction: row;
+    align-items: center;
     margin: 10px 12px 12px 12px;
+}
+
+.btn-step {
+    flex-shrink: 0;
+    width: 34px;
+    height: 30px;
+    margin: 0;
+    padding: 0;
+    border-width: 1.5px;
+    border-color: var(--outline-idle);
+    border-radius: 15px;
+    background-color: var(--paper);
+    font-size: 17px;
+    color: var(--ink);
+    -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/Fredoka SDF.asset");
+    -unity-font-style: bold;
+}
+.btn-step:hover { background-color: var(--paper); }
+.btn-step:active { border-color: var(--ink); }
+
+.eye-value {
+    flex-shrink: 0;
+    width: 62px;
+    font-size: 13px;
+    color: var(--label);
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/_Game/UI/Fonts/JetBrainsMono-Medium SDF.asset");
+}
+
+.footer {
+    margin: 0;
     padding: 6px 12px 6px 12px;
     border-width: 1.5px;
     border-color: rgba(27, 27, 27, 0.2);
@@ -382,7 +415,7 @@
 .hud--compact #row-device,
 .hud--compact .mode-title,
 .hud--compact .mode-reason,
-.hud--compact .footer { display: none; }
+.hud--compact .footer-row { display: none; }
 
 .hud--compact .banner-body { padding: 8px 12px 8px 12px; }
 .hud--compact .row--walked { padding-top: 6px; padding-bottom: 6px; min-height: 34px; }

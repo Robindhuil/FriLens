@@ -107,6 +107,63 @@ Zároveň to potvrdzuje, že **filter skokov po zmene v 0.1.5-alpha nerobí falo
 osemnásť skokov, najmenší 1,55 m, žiadny pod jeden meter. Predošlá verzia by ich pri tomto behu
 nahlásila desiatky.
 
+## Beh `165910` — disky na podlahe (0.1.6-alpha)
+
+212 s, `walked` 91,2 m, `raw` 118,4 m. Päť skokov v objeme 27,8 m, dve straty trackingu,
+15,9 s naslepo. `origin_anchored = 1`.
+
+### Kotvy prežili stratu trackingu
+
+Testujúci zakryl kameru, potriasol telefónom, prešiel asi 8 m, vrátil sa — a **disk bol stále
+na správnom mieste**.
+
+To je priame potvrdenie toho, čo bolo v [ADR 006](decisions/006-kotvenie-a-strata-trackingu.md)
+otvorené: [hlásená chyba v ARCore 1.38](https://github.com/google-ar/arcore-android-sdk/issues/1601),
+podľa ktorej sa anchory po strate trackingu nevrátia, sa tu **neprejavila**. ARCore sa
+relokalizoval a kotvy posunul so sebou.
+
+Kontrast s behom `001103`, kde pätnásťsekundové zakrytie rozhodilo všetko, je pritom veľký.
+Rozdiel je v tom, že tam nešlo o kotvy — tam sa merala surová póza.
+
+### Disk sa pri vzdialení „približoval"
+
+Pozorovanie: disk umiestnený priamo pod telefónom sedí, ale so vzdialenosťou sa zdanlivo
+posúva **smerom k pozorovateľovi**, a to len na zvislej osi. Pri návrate sa vráti na miesto.
+
+Nie je to drift ani chyba uhla. Je to geometria a log ju potvrdzuje:
+
+| | `cam_y` |
+|---|---:|
+| štart appky | 0,000 |
+| probe-1 | −0,419 |
+| probe-2 | −0,323 |
+
+`cam_y` je voči polohe telefónu pri štarte. Testujúci teda mal pri kladení diskov telefón asi
+**42 cm nižšie** než na začiatku — prirodzene, mieril ním dole na podlahu.
+
+Disk sa však kládol vždy 1,70 m **pod kameru**, takže skončil 42 cm **pod podlahou**. A bod pod
+podlahou sa z diaľky premieta nižšie v obraze než skutočná podlaha, teda bližšie k pozorovateľovi.
+Chyba je pomerová:
+
+> zdanlivá vzdialenosť / skutočná = h / (h + Δ) = 1,28 / 1,70 ≈ 0,75
+
+Disk na 8 m teda vyzerá, akoby bol na 6 m. Rastie so vzdialenosťou, vodorovne sa neprejaví
+a priamo nad diskom ju nevidno — presne ako to bolo popísané.
+
+**Oprava v 0.1.7-alpha:** výška podlahy sa uzamkne pri prvom disku a všetky ďalšie sa kladú na
+ňu, nech je telefón držaný akokoľvek. Výška sa dá doladiť priamo v appke.
+
+Vedľajší nález: **zdanlivý posun disku je citlivé meradlo chyby výšky.** Rozdiel 15 cm nie je
+pri nohách vidieť, ale na 10 m robí skoro meter. Kalibrovať sa preto oplatí chôdzou, nie
+pohľadom pod seba.
+
+### Chyba v logu
+
+Udalosti sa rozsekli: `probe-1 eye 1` namiesto `probe-1 eye 1.70 m; ...`. Desatinné číslo sa
+formátovalo v lokálnej kultúre, takže „1,70" obsahovalo čiarku a tá rozdelila CSV stĺpec.
+Opravené na oboch stranách — volajúci používa invariantnú kultúru a `SessionLogger` čiarky
+z každej menovky zahadzuje.
+
 ## Čo z toho plynie pre ďalší postup
 
 **Značky po trase nie sú vylepšenie, sú nutnosť.** Softvérová oprava na pätnásť sekúnd slepoty

@@ -93,7 +93,12 @@ namespace FriLens
             if (m_Writer == null)
                 return;
 
-            Write(label);
+            // Commas are stripped from every label, not just the device line. A label built with
+            // string interpolation picks up the device's culture, and on a Slovak phone a decimal
+            // point is a comma — which split "probe-1 eye 1.70 m" across two CSV columns and made
+            // the rest of the row unreadable. The callers were fixed; this is the backstop, because
+            // the next label will be written by somebody who has forgotten this ever happened.
+            Write(label.Replace(',', ' '));
             m_Writer.Flush();
         }
 

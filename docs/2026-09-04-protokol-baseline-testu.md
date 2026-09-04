@@ -81,20 +81,31 @@ Tlačidlo `Drop` položí disk na podlahu presne pod telefón, do hĺbky, ktorá
 výška očí (`FloorProbe.m_EyeHeightMeters`, štandardne 1,70 m). Výška pochádza od testujúceho,
 nie z detekcie rovín — tá by znamenala merať odpoveď ARCore pomocou ARCore.
 
-**Najprv kalibrácia.** Stoj rovno, telefón v úrovni očí, stlač `Drop`. Ak disk nesedí na
-podlahe, uprav výšku v inspectore a zopakuj.
+**Najprv kalibrácia, a rob ju chôdzou, nie pohľadom pod seba.**
 
-Dobrá správa je, že na tom až tak nezáleží: zlá výška posunie **všetky** disky o to isté, takže
-rozptyl medzi nimi (D1) ani posun jedného disku voči podlahe (D2) sa tým nezmenia. Kalibrácia
-je preto na to, aby sa disky dali pohodlne posudzovať okom, nie aby čísla platili.
+Prvý disk uzamkne výšku podlahy; všetky ďalšie sa kladú na ňu, nech držíš telefón akokoľvek.
+Preto na prvom záleží.
+
+1. Postav sa rovno, **telefón nechaj v úrovni očí a len ho nakloň dole** — neznižuj ho.
+   Zníženie telefónu o 40 cm položí disk 40 cm pod podlahu.
+2. `Drop`.
+3. **Odíď 8–10 metrov a pozri sa naň.** Ak sa disk zdá bližšie, než v skutočnosti je, leží pod
+   podlahou — uber výšku tlačidlom `-` v pätičke. Ak sa zdá ďalej, pridaj.
+4. Zmena výšky zabudne uzamknutú podlahu, takže po nej polož nový disk a zopakuj.
+
+Kalibrovať sa musí z diaľky, lebo pri nohách chybu nevidno. Rozdiel 15 cm je pod tebou
+neviditeľný, ale na 10 m robí skoro meter — zdanlivá vzdialenosť je `h / (h + Δ)` skutočnej.
 
 Potom dve merania:
 
 **D1 — zvislá zhoda.** Prejdi miestnosťou a polož štyri až šesť diskov na rovnú podlahu.
-Na rovnej podlahe majú všetky ležať v rovnakej výške, takže `± N cm` na obrazovke je zvislá
-chyba nazbieraná medzi nimi. Je v nej započítané aj to, ako presne držíš telefón — preto sa
-oplatí sledovať skôr **tvar v čase** než jedno číslo: rast s prejdenou vzdialenosťou je drift,
-náhodné kolísanie o pár centimetrov je ruka.
+Všetky ležia v uzamknutej výške, takže sa pozeraj na to, či **skutočne sedia na podlahe** —
+ak neskorší disk plá­va alebo sa zarezáva, ARCore medzitým posunul svoj odhad zvislej osi.
+
+Číslo `floor ±N cm` pod prejdenou vzdialenosťou hovorí to isté priebežne: je to rozdiel medzi
+uzamknutou podlahou a tou, ktorú kamera implikuje práve teraz. Čítaj ho **iba postojačky**,
+lebo inak v ňom je hlavne to, ako držíš telefón. Rast s prejdenou vzdialenosťou je drift,
+kolísanie o pár centimetrov je ruka.
 
 **D2 — drift bez značky.** Toto je to podstatné.
 

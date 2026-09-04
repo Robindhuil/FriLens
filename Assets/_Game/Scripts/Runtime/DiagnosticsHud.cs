@@ -48,6 +48,7 @@ namespace FriLens
                 m_View.Reanchor -= OnReanchor;
                 m_View.Mark -= OnMark;
                 m_View.Drop -= OnDrop;
+                m_View.EyeHeightAdjusted -= OnEyeHeightAdjusted;
                 m_View.OverlayToggled -= OnOverlayToggled;
                 m_View = null;
             }
@@ -76,7 +77,11 @@ namespace FriLens
             m_View.Reanchor += OnReanchor;
             m_View.Mark += OnMark;
             m_View.Drop += OnDrop;
+            m_View.EyeHeightAdjusted += OnEyeHeightAdjusted;
             m_View.OverlayToggled += OnOverlayToggled;
+
+            if (m_FloorProbe != null)
+                m_View.SetEyeHeight(m_FloorProbe.EyeHeightMeters);
 
             if (m_Overlay != null)
                 m_View.SetOverlayVisible(m_Overlay.enabled);
@@ -273,10 +278,13 @@ namespace FriLens
             // where the floor test has to be readable — that test is run while walking.
             var note = $"raw {m_Travel.PathRawMeters:F1} m";
             if (m_FloorProbe != null && m_FloorProbe.Count > 0)
+            {
+                // The offset is live rather than a per-drop record, because that is how it gets
+                // used: stand upright over a disc and this number says how far the camera thinks
+                // the floor has moved since it was locked.
                 note += $" · {m_FloorProbe.Count} probe{(m_FloorProbe.Count == 1 ? "" : "s")}"
-                    + (m_FloorProbe.Count > 1
-                        ? $" ±{m_FloorProbe.FloorSpreadMeters * 100f:F0} cm"
-                        : "");
+                    + $" · floor {m_FloorProbe.FloorOffsetMeters * 100f:+0;-0;0} cm";
+            }
 
             m_View.SetWalkedNote(note);
 
@@ -366,9 +374,34 @@ namespace FriLens
 
             m_FloorProbe.Drop();
 
-            var spread = m_FloorProbe.FloorSpreadMeters;
-            m_Logger?.MarkEvent($"probe-{m_FloorProbe.Count} "
-                + $"eye {m_FloorProbe.EyeHeightMeters:F2} m; spread {spread * 100f:F1} cm");
+            // Invariant culture, because this string ends up in a CSV field. On a Slovak phone
+            // the default formatter writes "1,70", and that comma split the column in the first
+            // run that used this button.
+            var culture = System.Globalization.CultureInfo.InvariantCulture;
+            m_Logger?.MarkEvent(string.Format(culture,
+                "probe-{0} eye {1:F2} m; floor offset {2:F1} cm",
+                m_FloorProbe.Count,
+                m_FloorProbe.EyeHeightMeters,
+                m_FloorProbe.FloorOffsetMeters * 100f));
+        }
+
+        /// <summary>
+        /// Retunes how far below the camera the floor is assumed to be, and says so in the log.
+        ///
+        /// This throws away the locked floor, so the next drop sets it again. Anything already on
+        /// the floor stays where it was: those discs are anchored to physical places and moving
+        /// them to match a new guess would destroy the very thing they were dropped to show.
+        /// </summary>
+        void OnEyeHeightAdjusted(float delta)
+        {
+            if (m_FloorProbe == null)
+                return;
+
+            m_FloorProbe.AdjustEyeHeight(delta);
+            m_View.SetEyeHeight(m_FloorProbe.EyeHeightMeters);
+
+            m_Logger?.MarkEvent(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "eye-height {0:F2} m", m_FloorProbe.EyeHeightMeters));
         }
 
         /// <summary>

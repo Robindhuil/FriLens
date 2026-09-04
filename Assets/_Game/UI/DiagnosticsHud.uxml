@@ -140,8 +140,17 @@
       </ui:VisualElement>
     </ui:VisualElement>
 
-    <!-- The only proof that the run is being recorded at all. -->
-    <ui:Label name="footer" class="footer" text="log: not writing" />
+    <!-- Log state on the left, floor calibration on the right. The stepper lives down here
+         rather than beside the drop button because it is touched once at the start of a run
+         and never again, while Drop is pressed throughout. -->
+    <ui:VisualElement name="footer-row" class="footer-row">
+      <!-- The only proof that the run is being recorded at all. -->
+      <ui:Label name="footer" class="footer" text="log: not writing" />
+      <ui:VisualElement class="row-spacer" />
+      <ui:Button name="btn-eye-down" class="btn-step" text="-" />
+      <ui:Label name="eye-value" class="eye-value" text="1.70 m" />
+      <ui:Button name="btn-eye-up" class="btn-step" text="+" />
+    </ui:VisualElement>
 
   </ui:VisualElement>
 </ui:UXML>

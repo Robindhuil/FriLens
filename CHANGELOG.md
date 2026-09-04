@@ -10,6 +10,35 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [Unreleased]
 
+## [0.1.7-alpha]
+
+Prvý beh s diskami dopadol dobre — kotvy prežili zakrytie kamery aj osemmetrovú prechádzku
+a disk zostal na mieste. Ukázali sa dve veci, obe v [výsledkoch](docs/2026-09-04-vysledky-baseline.md).
+
+### Fixed
+
+- **Disky sa kládli pod podlahu, takže sa pri vzdialení zdanlivo približovali.** Disk sa kládol
+  vždy 1,70 m pod kameru, lenže telefón sa pri mierení na podlahu **znižuje** — log ukazuje
+  kameru 42 cm pod tým, kde bola pri štarte. Disk teda skončil 42 cm pod podlahou, a bod pod
+  podlahou sa z diaľky premieta nižšie než skutočná podlaha, teda bližšie k pozorovateľovi.
+
+  Chyba je pomerová, `h / (h + Δ)`, čo pri 1,28 a 0,42 m znamená, že disk na 8 m vyzerá byť na
+  6 m. Vodorovne sa neprejaví a priamo nad diskom ju nevidno — preto to pôsobilo ako zle
+  počítaný uhol.
+
+  **Podlaha sa teraz uzamkne pri prvom disku** a všetky ďalšie sa kladú na ňu, nech je telefón
+  držaný akokoľvek. Pribudlo aj `floor ±N cm` pod prejdenou vzdialenosťou: rozdiel medzi
+  uzamknutou podlahou a tou, ktorú kamera implikuje práve teraz.
+
+- **Výška sa dá doladiť priamo v appke**, krok 1 cm, v pätičke vedľa stavu logu. Chyba, ktorú
+  to opravuje, je pri nohách neviditeľná a prejaví sa až na diaľku, takže ladiť sa dá jedine
+  v teréne — chôdzou od disku, nie pohľadom pod seba.
+
+- **Udalosti v CSV sa rozbíjali na slovenskom telefóne.** `probe-1 eye 1` namiesto celej
+  menovky: desatinné číslo sa formátovalo v lokálnej kultúre, takže „1,70" obsahovalo čiarku
+  a tá rozsekla stĺpec. Volajúci teraz používa invariantnú kultúru a `SessionLogger` čiarky
+  z každej menovky zahadzuje.
+
 ## [0.1.6-alpha] — 2026-09-04
 
 ### Namerané na 0.1.5-alpha

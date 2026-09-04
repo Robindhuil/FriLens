@@ -52,6 +52,7 @@ namespace FriLens
         readonly Label m_WalkedNote;
         readonly VisualElement m_WalkedBand;
         readonly Label m_Footer;
+        readonly Label m_EyeValue;
 
         readonly Button m_Reanchor;
         readonly Label m_ReanchorNote;
@@ -67,6 +68,9 @@ namespace FriLens
 
         /// <summary>Raised when the floor-probe button is pressed.</summary>
         public event Action Drop;
+
+        /// <summary>Raised with the change in assumed eye height, in metres.</summary>
+        public event Action<float> EyeHeightAdjusted;
 
         /// <summary>
         /// Whether the readings are collapsed out of the way of the camera image.
@@ -104,6 +108,7 @@ namespace FriLens
             m_WalkedNote = m_Root.Q<Label>("walked-note");
             m_WalkedBand = m_Root.Q("walked-band");
             m_Footer = m_Root.Q<Label>("footer");
+            m_EyeValue = m_Root.Q<Label>("eye-value");
 
             m_Reanchor = m_Root.Q<Button>("btn-reanchor");
             m_ReanchorNote = m_Root.Q<Label>("btn-reanchor-note");
@@ -119,6 +124,11 @@ namespace FriLens
             m_Drop.clicked += () => Drop?.Invoke();
             m_Overlay.clicked += ToggleOverlay;
             m_CompactToggle.clicked += () => SetCompact(!IsCompact);
+
+            // A centimetre a press. Coarser would overshoot the thing being tuned; finer would
+            // mean standing in a corridor pressing a button forty times.
+            m_Root.Q<Button>("btn-eye-down").clicked += () => EyeHeightAdjusted?.Invoke(-0.01f);
+            m_Root.Q<Button>("btn-eye-up").clicked += () => EyeHeightAdjusted?.Invoke(0.01f);
         }
 
         void BindRow(HudRow row, string key)
@@ -277,6 +287,12 @@ namespace FriLens
             m_OverlayText.text = visible ? "Hide overlay" : "Show overlay";
             m_OverlayGlyph.EnableInClassList("glyph--overlay-hide", visible);
             m_OverlayGlyph.EnableInClassList("glyph--overlay-show", !visible);
+        }
+
+        /// <summary>Shows the assumed height of the camera above the floor.</summary>
+        public void SetEyeHeight(float meters)
+        {
+            m_EyeValue.text = meters.ToString("0.00") + " m";
         }
 
         public void SetLog(string fileName, int rows, int marks)
