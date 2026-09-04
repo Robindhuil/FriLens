@@ -413,7 +413,8 @@ MonoBehaviour:
   m_Camera: {fileID: 2512387469332387801}
   m_AnchorManager: {fileID: 2512387470231460732}
   m_Material: {fileID: 2100000, guid: fd3f708ddb1a70e4f98acb91b70c6614, type: 2}
-  m_EyeHeightMeters: 1.7
+  m_NavCollider: {fileID: 836722134}
+  m_EyeHeightMeters: 1.25
   m_DiscDiameterMeters: 0.3
 --- !u!114 &331264287
 MonoBehaviour:
@@ -587,6 +588,7 @@ GameObject:
   - component: {fileID: 836722131}
   - component: {fileID: 836722133}
   - component: {fileID: 836722132}
+  - component: {fileID: 836722134}
   m_Layer: 0
   m_Name: NavOverlay
   m_TagString: Untagged
@@ -665,6 +667,28 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 836722130}
+  m_Mesh: {fileID: 4300000, guid: 7bbbab3c3d1b5e043a219b6763765dc6, type: 2}
+--- !u!64 &836722134
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 836722130}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
   m_Mesh: {fileID: 4300000, guid: 7bbbab3c3d1b5e043a219b6763765dc6, type: 2}
 --- !u!1 &1323550131
 GameObject:

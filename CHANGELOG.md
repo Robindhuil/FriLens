@@ -10,7 +10,7 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [Unreleased]
 
-## [0.1.7-alpha]
+## [0.1.7-alpha] — 2026-09-04
 
 Prvý beh s diskami dopadol dobre — kotvy prežili zakrytie kamery aj osemmetrovú prechádzku
 a disk zostal na mieste. Ukázali sa dve veci, obe v [výsledkoch](docs/2026-09-04-vysledky-baseline.md).
