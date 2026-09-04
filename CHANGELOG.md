@@ -15,6 +15,29 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 Prvý beh s diskami dopadol dobre — kotvy prežili zakrytie kamery aj osemmetrovú prechádzku
 a disk zostal na mieste. Ukázali sa dve veci, obe v [výsledkoch](docs/2026-09-04-vysledky-baseline.md).
 
+### Added
+
+- **Disky sa kladú na navmesh, keď je pod telefónom.** To je režim pre test na fakulte: disk
+  potom leží tam, kde **model** tvrdí, že je podlaha, takže pohľad na to, či sedí na skutočnej
+  podlahe, je porovnanie modelu s realitou — po jednom štvorčeku naraz. Presne otázka, na ktorú
+  je celý projekt.
+
+  Bez zarovnaného meshu pod telefónom sa použije meraná výška, čo je každý beh, kým nie sú
+  značky zamerané. Vtedy sa meria tracker, nie model. **Ktorý zdroj disk položil, je v logu**
+  (`via navmesh` / `via height`) aj na obrazovke — sú to dve rôzne merania a zameniť ich by
+  znamenalo napísať do práce nesprávnu vetu.
+
+  Detekcia rovín zostáva mimo hry: išla preč vo fáze 2, lebo kreslila štvorce po tej istej
+  podlahe, ktorej hranu má test čítať, a pýtať sa jej „kde je podlaha" by znamenalo overovať
+  odpoveď ARCore odpoveďou ARCore.
+
+### Changed
+
+- **Výška pri kladení je 1,25 m, nie 1,70.** Pôvodná hodnota bola odhad „telefón v úrovni očí";
+  odmeraná hodnota v okamihu kladenia je 1,25 m, lebo telefón sa pri mierení na podlahu drží
+  nižšie. `FriLens > Wire Scene` ju do scény zapíše — default v zdroji sa na komponent, ktorý
+  už v scéne existuje, nevzťahuje.
+
 ### Fixed
 
 - **Disky sa kládli pod podlahu, takže sa pri vzdialení zdanlivo približovali.** Disk sa kládol

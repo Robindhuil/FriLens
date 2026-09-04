@@ -282,8 +282,10 @@ namespace FriLens
                 // The offset is live rather than a per-drop record, because that is how it gets
                 // used: stand upright over a disc and this number says how far the camera thinks
                 // the floor has moved since it was locked.
-                note += $" · {m_FloorProbe.Count} probe{(m_FloorProbe.Count == 1 ? "" : "s")}"
-                    + $" · floor {m_FloorProbe.FloorOffsetMeters * 100f:+0;-0;0} cm";
+                note += $" · {m_FloorProbe.Count} probe{(m_FloorProbe.Count == 1 ? "" : "s")}";
+                note += m_FloorProbe.LastSource == FloorProbe.FloorSource.NavMesh
+                    ? " on navmesh"
+                    : $" · floor {m_FloorProbe.FloorOffsetMeters * 100f:+0;-0;0} cm";
             }
 
             m_View.SetWalkedNote(note);
@@ -377,10 +379,14 @@ namespace FriLens
             // Invariant culture, because this string ends up in a CSV field. On a Slovak phone
             // the default formatter writes "1,70", and that comma split the column in the first
             // run that used this button.
+            // Which source placed the disc is the first thing to know when reading it back. A
+            // disc on the nav mesh says something about the model; one placed by height says
+            // something about the tracker. They are not the same measurement.
             var culture = System.Globalization.CultureInfo.InvariantCulture;
             m_Logger?.MarkEvent(string.Format(culture,
-                "probe-{0} eye {1:F2} m; floor offset {2:F1} cm",
+                "probe-{0} via {1}; eye {2:F2} m; floor offset {3:F1} cm",
                 m_FloorProbe.Count,
+                m_FloorProbe.LastSource == FloorProbe.FloorSource.NavMesh ? "navmesh" : "height",
                 m_FloorProbe.EyeHeightMeters,
                 m_FloorProbe.FloorOffsetMeters * 100f));
         }

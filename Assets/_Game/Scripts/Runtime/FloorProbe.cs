@@ -18,12 +18,23 @@ namespace FriLens
     /// whether the disc is still where you put it. That is drift, in the only units that matter —
     /// centimetres off a spot on a real floor.
     ///
-    /// Height comes from the tester, not from plane detection. Plane detection was removed in
-    /// phase 2 because it drew squares over the very floor whose edges the test has to read, and
-    /// bringing it back to answer "where is the floor" would mean measuring ARCore's answer with
-    /// ARCore. A person who knows how tall they are is the independent reference.
+    /// Where the floor is comes from one of two places, and which one it was is recorded with
+    /// every drop because it changes what the disc means.
     ///
-    /// The floor's height is learned once and then held. The first field run showed why: the
+    /// **On the nav mesh**, once the overlay has been aligned to the building. The disc then sits
+    /// where the *model* says the floor is, so looking at whether it rests on the real floor is
+    /// the model-against-reality comparison this whole project exists to make, done one square
+    /// foot at a time. This is what the test at the faculty will use.
+    ///
+    /// **Below the camera by a measured height**, when there is no aligned mesh under the phone —
+    /// which is every run until the markers are surveyed. It measures the tracker rather than the
+    /// model, and it is how the drift tests get run in the meantime.
+    ///
+    /// Plane detection is deliberately not a third option. It was removed in phase 2 because it
+    /// drew squares over the very floor whose edges the test has to read, and bringing it back to
+    /// answer "where is the floor" would mean checking ARCore's answer against ARCore's answer.
+    ///
+    /// In the height mode the floor is learned once and then held. The first field run showed why: the
     /// phone gets tilted down to look at the floor, and it gets *lowered* at the same time — the
     /// log has the camera 42 cm below where it started. Subtracting a fixed eye height from that
     /// put every disc well below the real floor, and a point below the floor projects lower in
@@ -49,9 +60,14 @@ namespace FriLens
         [Tooltip("Material for the discs. Unlit and obvious; this is not meant to look real.")]
         [SerializeField] Material m_Material;
 
-        [Tooltip("Distance from the camera down to the floor when the phone is held at eye "
-            + "level. Measure it rather than guessing — it is the reference the test rests on.")]
-        [SerializeField] float m_EyeHeightMeters = 1.70f;
+        [Tooltip("Collider on the navigation overlay. When a drop lands on it the disc goes "
+            + "where the model says the floor is, which is the comparison the test is for. "
+            + "Empty, or not aligned yet, falls back to the measured height below.")]
+        [SerializeField] Collider m_NavCollider;
+
+        [Tooltip("Distance from the camera down to the floor at the moment of a drop. Measured, "
+            + "not guessed: 1.25 m is a phone held to look at the floor, not one at eye level.")]
+        [SerializeField] float m_EyeHeightMeters = 1.25f;
 
         [SerializeField] float m_DiscDiameterMeters = 0.30f;
 
@@ -82,6 +98,12 @@ namespace FriLens
 
         public float EyeHeightMeters => m_EyeHeightMeters;
 
+        /// <summary>Where the last disc's height came from.</summary>
+        public enum FloorSource { Height, NavMesh }
+
+        /// <summary>How the most recent disc was placed.</summary>
+        public FloorSource LastSource { get; private set; } = FloorSource.Height;
+
         /// <summary>Raised with the disc's number and where it was put, for the log.</summary>
         public event Action<int, Vector3> Dropped;
 
@@ -107,21 +129,7 @@ namespace FriLens
             if (m_Camera == null)
                 return;
 
-            var implied = m_Camera.position.y - m_EyeHeightMeters;
-
-            // The first drop decides where the floor is. Every one after it uses that height,
-            // so a disc lands on the floor even when the phone was held low to look at it.
-            if (!m_FloorKnown)
-            {
-                m_FloorY = implied;
-                m_FloorKnown = true;
-            }
-            else
-            {
-                m_WorstOffset = Mathf.Max(m_WorstOffset, Mathf.Abs(implied - m_FloorY));
-            }
-
-            var position = new Vector3(m_Camera.position.x, m_FloorY, m_Camera.position.z);
+            var position = FindFloor();
 
             var disc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             disc.name = $"FloorProbe {m_Probes.Count + 1}";
@@ -143,6 +151,43 @@ namespace FriLens
             AnchorTo(disc.transform, position);
 
             Dropped?.Invoke(m_Probes.Count, position);
+        }
+
+        /// <summary>
+        /// Decides where the disc goes: on the nav mesh if there is one under the phone, on the
+        /// remembered height otherwise.
+        /// </summary>
+        Vector3 FindFloor()
+        {
+            var camera = m_Camera.position;
+
+            // Straight down from the camera. Aiming along the phone's forward axis would put the
+            // disc wherever it happened to be pointing, and "directly below me" is the one place
+            // a person can check by looking at their own feet.
+            if (m_NavCollider != null && m_NavCollider.enabled
+                && m_NavCollider.Raycast(new Ray(camera, Vector3.down), out var hit, 20f))
+            {
+                LastSource = FloorSource.NavMesh;
+                return hit.point;
+            }
+
+            LastSource = FloorSource.Height;
+
+            var implied = camera.y - m_EyeHeightMeters;
+
+            // The first drop decides where the floor is. Every one after it uses that height, so
+            // a disc lands on the same plane even when the phone was held differently.
+            if (!m_FloorKnown)
+            {
+                m_FloorY = implied;
+                m_FloorKnown = true;
+            }
+            else
+            {
+                m_WorstOffset = Mathf.Max(m_WorstOffset, Mathf.Abs(implied - m_FloorY));
+            }
+
+            return new Vector3(camera.x, m_FloorY, camera.z);
         }
 
         /// <summary>

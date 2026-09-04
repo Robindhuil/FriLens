@@ -77,9 +77,20 @@ to je dobrý prípad. Keď prekryv sedí zle a **žiaden skok nebol**, to je tá
 
 Od 0.1.6-alpha. **Nepotrebuje vytlačenú značku**, takže sa dá spraviť hneď a kdekoľvek.
 
-Tlačidlo `Drop` položí disk na podlahu presne pod telefón, do hĺbky, ktorá je nastavená ako
-výška očí (`FloorProbe.m_EyeHeightMeters`, štandardne 1,70 m). Výška pochádza od testujúceho,
-nie z detekcie rovín — tá by znamenala merať odpoveď ARCore pomocou ARCore.
+Tlačidlo `Drop` položí disk na podlahu presne pod telefón. Kde je podlaha, sa berie z dvoch
+miest a **na obrazovke aj v logu je vidno, ktoré to bolo** — sú to dve rôzne merania:
+
+| zdroj | kedy | čo sa tým meria |
+|---|---|---|
+| **navmesh** | keď je pod telefónom zarovnaný mesh | zhoda **modelu** so skutočnou podlahou |
+| **výška** | vždy inak, teda kým nie sú zamerané značky | **tracker**, nie model |
+
+Výška je meraná vzdialenosť od podlahy v okamihu kladenia, **1,25 m** — telefón sa pri mierení
+na podlahu drží nižšie než v úrovni očí. Detekcia rovín sa nepoužíva ani ako tretia možnosť:
+išla preč vo fáze 2, lebo kreslila štvorce po tej istej podlahe, ktorej hranu má test čítať.
+
+Nižšie popísaná kalibrácia sa týka **len režimu výšky**. Na fakulte, so zameranou značkou
+a zarovnaným modelom, budú disky padať na navmesh a tieto centimetre riešiť netreba.
 
 **Najprv kalibrácia, a rob ju chôdzou, nie pohľadom pod seba.**
 

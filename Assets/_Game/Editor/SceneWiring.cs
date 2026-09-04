@@ -49,11 +49,21 @@ namespace FriLens.EditorTools
             }
 
             var material = LoadOrCreateProbeMaterial(report);
+            var navCollider = EnsureNavCollider(report);
 
             Set(probe, "m_Camera", arCamera.transform);
             Set(probe, "m_AnchorManager", anchors);
             Set(probe, "m_Material", material);
+            Set(probe, "m_NavCollider", navCollider);
             Set(hud, "m_FloorProbe", probe);
+
+            // The default in the source only reaches components that did not exist yet; one
+            // already in the scene keeps whatever was serialised. The first value shipped was a
+            // guess at eye level and the measured one is lower, so it is written here rather than
+            // left to be noticed. Tune it in the app, not in the inspector — the error it
+            // corrects is only visible from several metres away.
+            SetFloat(probe, "m_EyeHeightMeters", 1.25f);
+            report.AppendLine("probe eye height set to 1.25 m (measured at the moment of a drop)");
 
             report.AppendLine("wired: probe(camera, anchors, material), hud.m_FloorProbe");
 
@@ -63,6 +73,31 @@ namespace FriLens.EditorTools
             report.AppendLine("scene saved: " + scene.path);
 
             Debug.Log(report.ToString());
+        }
+
+        /// <summary>
+        /// Puts a collider on the navigation overlay so a disc can be dropped onto it.
+        ///
+        /// Nothing in the app does physics, and this collider is never used for collision — it
+        /// exists so one ray a session can ask the model where its floor is. That is why it goes
+        /// on quietly here rather than being something to remember in the inspector.
+        /// </summary>
+        static Collider EnsureNavCollider(StringBuilder report)
+        {
+            var overlay = GameObject.Find("NavOverlay");
+            if (overlay == null)
+            {
+                report.AppendLine("no NavOverlay in the scene; probes will use the height instead.");
+                return null;
+            }
+
+            var collider = overlay.GetComponent<MeshCollider>();
+            if (collider != null)
+                return collider;
+
+            collider = Undo.AddComponent<MeshCollider>(overlay);
+            report.AppendLine("added MeshCollider to NavOverlay");
+            return collider;
         }
 
         /// <summary>
@@ -90,6 +125,20 @@ namespace FriLens.EditorTools
             AssetDatabase.SaveAssets();
             report.AppendLine("created " + ProbeMaterialPath);
             return material;
+        }
+
+        static void SetFloat(Object target, string field, float value)
+        {
+            var so = new SerializedObject(target);
+            var property = so.FindProperty(field);
+            if (property == null)
+            {
+                Debug.LogError($"FriLens: {target.GetType().Name} has no field '{field}'.");
+                return;
+            }
+
+            property.floatValue = value;
+            so.ApplyModifiedProperties();
         }
 
         static void Set(Object target, string field, Object value)
