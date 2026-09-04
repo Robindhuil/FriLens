@@ -10,6 +10,34 @@ Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spusti
 
 ## [Unreleased]
 
+## [0.1.8-alpha]
+
+### Namerané na 0.1.7-alpha
+
+Beh `174812`, 466 s, 195 m. Kladenie na navmesh funguje — šesť z deviatich diskov padlo na
+podlahu modelu. Celé vo [výsledkoch](docs/2026-09-04-vysledky-baseline.md).
+
+**Relokalizácie sú aj zvislé.** `cam_y` skončil skoro tri metre pod štartom a sedí to na
+skokoch: 6,86 m so zmenou výšky **+2,48 m**, 9,89 m s **+2,15 m**, 8,32 m s **−1,82 m**.
+Doteraz sa merala len dĺžka skoku a to, že podstatná časť je zvislá, nebolo vidieť.
+
+Znamená to, že disk položený pred relokalizáciou po nej pláva alebo sa zarezáva o desiatky
+centimetrov až metre — nie preto, že by bol zle položený. A že zvislá zhoda modelu s budovou je
+po relokalizácii bezcenná, kým sa neprezarovná na značke.
+
+**Zarovnanie musí pokrývať celú trasu.** Tri disky spadli späť na meranú výšku, lebo testujúci
+vyšiel mimo pôdorysu provizórne položeného meshu. Inak časť behu meria niečo iné než zvyšok.
+
+### Fixed
+
+- **`floor offset` sa logoval aj pri navmesh diskoch, kde neznamená nič.** Hlásil `0.0 cm`, kým
+  nebola uzamknutá výška, a po nej zmes dvoch referencií — `probe-7` z toho behu hlásil 56,3 cm,
+  čo vyzeralo ako meranie a nebolo ním.
+
+  Pri navmeshi sa teraz hlási **o koľko leží podlaha modelu nižšie než tá, ktorú implikuje meraná
+  výška**. To je porovnanie modelu s realitou v jednom čísle, lebo meraná výška je nezávislá
+  referencia — pásmo, nie ARCore.
+
 ## [0.1.7-alpha] — 2026-09-04
 
 Prvý beh s diskami dopadol dobre — kotvy prežili zakrytie kamery aj osemmetrovú prechádzku

@@ -284,7 +284,7 @@ namespace FriLens
                 // the floor has moved since it was locked.
                 note += $" · {m_FloorProbe.Count} probe{(m_FloorProbe.Count == 1 ? "" : "s")}";
                 note += m_FloorProbe.LastSource == FloorProbe.FloorSource.NavMesh
-                    ? " on navmesh"
+                    ? $" · model {m_FloorProbe.LastNavGapMeters * 100f:+0;-0;0} cm"
                     : $" · floor {m_FloorProbe.FloorOffsetMeters * 100f:+0;-0;0} cm";
             }
 
@@ -382,13 +382,18 @@ namespace FriLens
             // Which source placed the disc is the first thing to know when reading it back. A
             // disc on the nav mesh says something about the model; one placed by height says
             // something about the tracker. They are not the same measurement.
+            // Each source gets the number that means something for it. Logging the height mode's
+            // offset next to a nav mesh drop produced "floor offset 0.0 cm" while the floor was
+            // still unknown, and a mix of two references once it was — a figure that looked like
+            // a measurement and was not one.
             var culture = System.Globalization.CultureInfo.InvariantCulture;
-            m_Logger?.MarkEvent(string.Format(culture,
-                "probe-{0} via {1}; eye {2:F2} m; floor offset {3:F1} cm",
-                m_FloorProbe.Count,
-                m_FloorProbe.LastSource == FloorProbe.FloorSource.NavMesh ? "navmesh" : "height",
-                m_FloorProbe.EyeHeightMeters,
-                m_FloorProbe.FloorOffsetMeters * 100f));
+            var onNav = m_FloorProbe.LastSource == FloorProbe.FloorSource.NavMesh;
+
+            m_Logger?.MarkEvent(onNav
+                ? string.Format(culture, "probe-{0} via navmesh; eye {1:F2} m; model floor {2:F1} cm below height",
+                    m_FloorProbe.Count, m_FloorProbe.EyeHeightMeters, m_FloorProbe.LastNavGapMeters * 100f)
+                : string.Format(culture, "probe-{0} via height; eye {1:F2} m; floor offset {2:F1} cm",
+                    m_FloorProbe.Count, m_FloorProbe.EyeHeightMeters, m_FloorProbe.FloorOffsetMeters * 100f));
         }
 
         /// <summary>

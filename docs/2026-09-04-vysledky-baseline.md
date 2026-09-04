@@ -164,6 +164,46 @@ formátovalo v lokálnej kultúre, takže „1,70" obsahovalo čiarku a tá rozd
 Opravené na oboch stranách — volajúci používa invariantnú kultúru a `SessionLogger` čiarky
 z každej menovky zahadzuje.
 
+## Beh `174812` — relokalizácie sú aj zvislé (0.1.7-alpha)
+
+466 s, `walked` 195,1 m, `raw` 256,5 m. Desať skokov v objeme 43,2 m, štyri straty, 23,2 s
+naslepo. Deväť diskov, z toho šesť na navmeshi.
+
+### Zvislá zložka relokalizácie
+
+`cam_y` skončil skoro **tri metre** pod tým, kde beh začal (rozsah −2,94 až +0,02 m). Nie sú to
+schody ani plynulý drift — sedí to na skokoch:
+
+| čas | skok | zmena `cam_y` |
+|---:|---:|---:|
+| 161,1 s | 6,86 m | **+2,48 m** |
+| 369,6 s | 9,89 m | **+2,15 m** |
+| 407,4 s | 8,32 m | **−1,82 m** |
+
+**Relokalizácia nepresúva pózu len vodorovne; nesie metrovú zvislú zložku.** Doteraz sa merala
+len dĺžka skoku, teda 3D vzdialenosť, a to, že podstatná časť z nej je zvislá, nebolo vidieť.
+
+Pre test to má dva dôsledky. Prvý: disk položený pred relokalizáciou po nej pláva alebo sa
+zarezáva do podlahy, a to o desiatky centimetrov až metre — nie preto, že by bol zle položený.
+Druhý: akékoľvek meranie zvislej zhody modelu s budovou je po relokalizácii bezcenné, kým sa
+neprezarovná na značke.
+
+### Kladenie na navmesh funguje
+
+Disky 1–5 a 7 padli na navmesh, teda prvýkrát sa použila podlaha z modelu. Disky 6, 8 a 9
+spadli späť na meranú výšku, lebo testujúci vyšiel mimo pôdorysu provizórne položeného meshu.
+
+Očakávané, ale pre fázu 6 podstatné: **zarovnanie musí pokrývať celú trasu**, inak časť behu
+meria niečo iné než zvyšok.
+
+### Chyba v hlásení, opravená
+
+`floor offset` sa logoval aj pri navmesh diskoch, kde neznamená nič: `0.0 cm`, kým nebola
+uzamknutá výška, a po nej zmes dvoch referencií — `probe-7` hlásil 56,3 cm. Nahradené číslom,
+ktoré pri navmeshi zmysel má: **o koľko leží podlaha modelu nižšie než tá, ktorú implikuje
+meraná výška.** To je porovnanie modelu s realitou zhustené do jedného čísla, lebo meraná výška
+je nezávislá referencia — pásmo, nie ARCore.
+
 ## Čo z toho plynie pre ďalší postup
 
 **Značky po trase nie sú vylepšenie, sú nutnosť.** Softvérová oprava na pätnásť sekúnd slepoty

@@ -104,6 +104,19 @@ namespace FriLens
         /// <summary>How the most recent disc was placed.</summary>
         public FloorSource LastSource { get; private set; } = FloorSource.Height;
 
+        /// <summary>
+        /// For a disc placed on the nav mesh: how far the model's floor sits below the floor the
+        /// measured height implies, in metres. Positive means the model's floor is lower.
+        ///
+        /// This is the model-against-reality comparison reduced to one number, and it is the
+        /// reason the nav mesh mode is worth having. The measured height is an independent
+        /// reference — a tape measure, not ARCore — so the gap is the model's vertical error at
+        /// that spot, plus however far off the height was and however much the tracker has
+        /// drifted vertically since the session started. The last of those is not small: one run
+        /// logged relocalisation jumps carrying more than two metres of vertical correction.
+        /// </summary>
+        public float LastNavGapMeters { get; private set; }
+
         /// <summary>Raised with the disc's number and where it was put, for the log.</summary>
         public event Action<int, Vector3> Dropped;
 
@@ -168,6 +181,7 @@ namespace FriLens
                 && m_NavCollider.Raycast(new Ray(camera, Vector3.down), out var hit, 20f))
             {
                 LastSource = FloorSource.NavMesh;
+                LastNavGapMeters = camera.y - m_EyeHeightMeters - hit.point.y;
                 return hit.point;
             }
 
