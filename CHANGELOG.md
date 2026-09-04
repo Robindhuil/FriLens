@@ -32,6 +32,23 @@ Filter skokov po zmene v 0.1.5-alpha **nerobí falošné poplachy**: osemnásť 
 1,55 m, žiadny pod meter. A `origin_anchored = 1` je prvé potvrdenie, že kotvenie na `ARAnchor`
 na zariadení beží.
 
+### Added
+
+- **Značky existujú.** `Assets/_Game/AR/Markers/frilens-M1..M4.png`, 1024 × 1024, vygenerované
+  a nie prevzaté: ARCore hodnotí hustotu hrán, kontrast a neopakovateľnosť vzoru, na čo je logo
+  zlé. Prvý pokus mal veľké čierne plochy — tie nenesú žiadne features, takže vzor je teraz
+  hustý, z malých tvarov a s vyváženými tónmi.
+
+  Štyri, každá s vlastným seedom. ARCore ich musí od seba odlíšiť, inak by prezarovnanie pri M3
+  posadilo prekryv na zameranú pózu M1. Vľavo hore je nesymetrická rohová značka na ručné
+  zarovnanie pri lepení; zároveň znemožňuje, aby vzor sadol sám na seba otočený o 90°.
+
+- **`FriLens > Marker Library`** naplní knižnicu obrázkov z tých PNG, nastaví ich ako readable
+  a zadá fyzický rozmer. Rozmer sa zadáva na jednom mieste s vysvetlením prečo: je to jediné
+  číslo v celom teste, ktoré potichu škáluje každý výsledok. Značka deklarovaná ako 20 cm
+  a vytlačená na 18 cm robí prekryv o desatinu väčší všade a na obrazovke to nie je vidieť —
+  zarovnanie vyzerá čisto a rozptyl vzoriek je malý.
+
 ### Fixed
 
 - **Rada pri `InsufficientLight` posielala nesprávnym smerom.** Dlaň na objektíve hlási ten istý

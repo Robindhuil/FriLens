@@ -205,9 +205,22 @@ nezmenené; sem patrí len to, čo k nim pribudlo.
 > trackingu: s viacerými je najhoršia možná chyba ohraničená úsekom medzi dvomi značkami,
 > nie dĺžkou celého behu. Dôvod v [ADR 006](decisions/006-kotvenie-a-strata-trackingu.md).
 
+**Obrázky sú hotové** — `Assets/_Game/AR/Markers/frilens-M1..M4.png`, 1024 × 1024.
+Vygenerované, nie prevzaté: ARCore hodnotí hustotu hrán, kontrast a to, aby sa vzor
+neopakoval, a logo je na to zlé. Každý má vlastný seed, lebo ARCore ich musí od seba
+odlíšiť — inak by prezarovnanie pri M3 posadilo prekryv na zameranú pózu M1.
+
+Vľavo hore je hrubá nesymetrická rohová značka. Slúži na ručné zarovnanie pri lepení
+a znemožňuje, aby vzor sadol sám na seba otočený o 90°.
+
 - [ ] Vybrať miesta lokalizovateľné v modeli — roh miestnosti, zárubňa, roh schodiska.
       Rozmiestniť po plánovanej trase tak, aby jedna bola vždy v dosahu.
-- [ ] Vytlačiť **matne**, nalepiť naplocho na tvrdý podklad
+- [ ] Vytlačiť **matne** na tvrdý papier, **bez prispôsobenia mierke** („actual size",
+      nie „fit to page") — tlačiareň inak zmenší okraje a s nimi celý vzor
+- [ ] **Odmerať pravítkom čierny rám** vytlačenej značky a to číslo zadať v
+      `FriLens > Marker Library`. Nie rozmer poslaný do tlače. Chyba 5 % v tomto čísle je
+      chyba 5 % v mierke celého prekryvu a na obrazovke ju nič neukáže.
+- [ ] Nalepiť naplocho na tvrdý podklad
 - [ ] **Odmerať vytlačenú značku pravítkom** a ten rozmer zadať do Reference Image Library.
       Nie rozmer poslaný do tlače. Chyba 5 % v rozmere značky je chyba 5 % v mierke celého
       prekryvu.
