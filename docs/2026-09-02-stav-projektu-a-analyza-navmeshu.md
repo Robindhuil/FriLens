@@ -1,6 +1,6 @@
 # Stav projektu a analýza `navmesh.blend`
 
-**Verzia:** 0.1.0-alpha · **Dátum:** 2026-09-02 · **Unity:** 6000.4.11f1 · **Stav:** prieskum dokončený
+**Verzia:** 0.1.8-alpha · **Dátum:** 2026-09-02, stav dier aktualizovaný 2026-09-04 · **Unity:** 6000.4.11f1
 
 Východiskový dokument: [`FriWorld/docs/2026-08-29-frilens-ar-test.md`](../../FriWorld/docs/2026-08-29-frilens-ar-test.md).
 Tento dokument opisuje, čo v projekte skutočne je — nie čo bolo naplánované. Kde sa
@@ -213,35 +213,62 @@ Unity číta `.blend` tak, že na pozadí spustí Blender. Na stroji bez Blender
 neotvorí korektne — mesh assety budú prázdne. Pre repozitár, ktorý má prežiť viac ako
 jeden počítač, je to krehké. Riešenie tiež v ADR 002.
 
-### K4 — Rotácia koreňa 270° okolo X
+### K4 — Rotácia koreňa 270° okolo X — ✅ vyriešené 2026-09-02
+
+Extraktor rotáciu zapeká cez `filter.transform.localToWorldMatrix`. Overené číslom:
+560 z 1 933 vrcholov `ra0_nav` leží do 5 cm od jednej vodorovnej roviny. Keby sa
+nezapiekla, bola by to nula.
 
 Importér natáča koreňový objekt o 270° v X, aby preložil Blenderov Z-up do Unity Y-up.
 Pri extrakcii meshu sa táto rotácia **musí zapiecť do vrcholov**. Ak sa na to zabudne,
 prekryv bude v AR otočený o 90° a nebude zjavné prečo.
 
-### K5 — Značka neexistuje
+### K5 — Značka neexistuje — ⚠️ čiastočne, stav k 0.1.8-alpha
 
-Žiadna Reference Image Library v projekte, žiadny vytlačený obrázok, žiadne zmerané rozmery.
-Toto je tvrdá podmienka testu a je celá pred nami. Pozri kroky 5–6 pôvodného dokumentu —
-tam sa nič nemení a nič sa nedá skrátiť.
+**Hotové pri stole:** štyri obrázky (`Assets/_Game/AR/Markers/frilens-M1..M4.png`) a nástroj
+`FriLens > Marker Library`, ktorý naplní knižnicu a zadá fyzický rozmer.
+
+**Chýba to fyzické:** vytlačiť, nalepiť, odmerať rám pravítkom a zamerať pózu do `MarkerAnchor`.
+
+Kým to nie je, appka **meria tracker, nie zhodu modelu s budovou** — a `Re-anchor` je vypnuté
+s poznámkou `no markers yet`, aby to nevyzeralo ako pokazené zarovnanie.
+
+Oproti pôvodnému zneniu pribudlo jedno: **značiek má byť viac, rozmiestnených po trase**.
+Je to jediná vec nezávislá od mapy ARCore, takže je zároveň liekom na stratu trackingu
+([ADR 006](decisions/006-kotvenie-a-strata-trackingu.md)).
 
 ### K6 — Testovacie zariadenie — ✅ vyriešené 2026-09-03
 
-Pôvodne sa zdalo, že Redmi 14C ARCore nepodporuje. Build 0.1.0-alpha na ňom **nabehol do AR
-režimu** — `CheckAvailability()` prešlo, session sa spustila, appka si vypýtala kameru.
-Zariadenie na test teda je.
+| Telefón | ARCore | Poznámka |
+|---|---|---|
+| **Redmi Note 10 Pro** | ✅ trackuje | zariadenie, na ktorom sa bude testovať ďalej |
+| **Redmi 11T** | ✅ trackuje | log z neho potvrdil chybu s `InputActionManager` |
+| **Redmi 14C** | ❌ netrackuje | session sa spustí, kamera beží, tracking sa nikdy neustáli |
 
-Zostáva jedna výhrada. Ak Redmi 14C nie je v
-[Googlom zozname podporovaných zariadení](https://developers.google.com/ar/devices)
-a ARCore na ňom beží len vďaka nainštalovaným **Google Play Services for AR**, nemá overenú
-kalibráciu kamery a IMU. Namerané čísla potom môžu hovoriť o kalibrácii telefónu, nie
-o modeli. Na prvý beh to stačí; na záverečné čísla treba porovnanie s certifikovaným
-zariadením.
+Zariadenie na test teda je a **fáza 6 nie je blokovaná hardvérom**.
 
-Appka zostáva `AR Optional` s Preview režimom pre zariadenia, ktoré ARCore naozaj nemajú —
+Redmi 14C je zvláštny prípad, ktorý stojí za zapamätanie: `CheckAvailability()` na ňom
+prejde a appka skončí v AR režime, hoci trackovať nikdy nezačne. Tá metóda totiž odpovedá
+na „dá sa tu použiť ARCore API", nie „vie toto zariadenie trackovať" — a na prvé stačí mať
+nainštalované Google Play Services for AR. Appka to od 0.1.2-alpha rieši sama: kontroluje
+gyroskop skôr než ARCore a má časový limit na štart session.
+
+Zostáva výhrada k presnosti. Ak testovací telefón nie je v
+[Googlom zozname podporovaných zariadení](https://developers.google.com/ar/devices),
+nemá overenú kalibráciu kamery a IMU a namerané čísla môžu hovoriť o kalibrácii telefónu,
+nie o modeli. Preto sa oplatí zopakovať meranie na oboch fungujúcich telefónoch — ak dajú
+podobné čísla, kalibrácia nie je dominantný zdroj chyby.
+
+Appka zostáva `AR Optional` s Preview režimom pre zariadenia, ktoré ARCore nezvládnu —
 [ADR 004](decisions/004-zariadenia-bez-arcore.md).
 
-### K7 — Trasa na 100 m priamo neexistuje
+### K7 — Trasa na 100 m priamo neexistuje — ✅ obídené 2026-09-04
+
+Protokol sa upravil presne tak, ako to odsek nižšie navrhoval: meria sa **prejdená
+vzdialenosť**, nie vzdialenosť od značky. V praxi to stačí — behy `174812` a `145117` prešli
+195 m, respektíve 228 m, cez viac chodieb.
+
+Pôvodná analýza:
 
 Pôvodný dokument chce merať odchýlku po 10, 25, 50 a 100 metroch. Najdlhšia rovná chodba
 v modeli je `ra000_corridor_3_nav_1` s dĺžkou **30.8 m**; celé podlažie `ra` má pôdorys
@@ -253,10 +280,10 @@ Zároveň to znamená, že riadok „chyba rastie s dĺžkou chodby" z tabuľky 
 overiť len na 30-metrovom úseku — chyba mierky sa tam prejaví trikrát slabšie, než dokument
 predpokladal.
 
-### K8 — Šablónové zvyšky
+### K8 — Šablónové zvyšky — ✅ vyriešené 2026-09-02
 
-Bundle identifier je stále `com.unity.template.ar_mobile`, aktívny build target je Windows,
-scéna je plná šablónového UI. Nič z toho nie je ťažké, ale nič z toho sa nespraví samo.
+Fáza 0 a 2. Bundle identifier je `sk.uniza.fri.frilens`, build target Android, šablónové UI
+a `Object Spawner` sú preč a závislosti scény na `MobileARTemplateAssets` klesli zo 16 na 1.
 
 ---
 

@@ -8,7 +8,594 @@ miesto, kde sa mení.
 Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spustiť
 `FriLens > Build Android <verzia>`.
 
-## [Unreleased]
+## [0.2.0-alpha] — nevydané
+
+Steny a stropy. Od tejto verzie sa pracuje na tom, aby model vedel viac než kadiaľ sa dá
+prejsť — a aby sa tá znalosť dala použiť na korekciu polohy (fáza 7,
+[ADR 007](docs/decisions/007-vyuzitie-modelu-na-lokalizaciu.md)).
+
+Prvý krok je extraktor stien z **hraničných hrán navmeshu**: hrana patriaca jedinému
+trojuholníku je stena, a dvere v nich zostanú otvorené samy, lebo cez ne sieť pokračuje.
+Modelovať sa nemusí nič ([analýza](docs/2026-09-04-analyza-geometrie-a-stien.md)).
+
+### Rozsah projektu sa rozšíril
+
+FriLens sa stáva **inžinierskym projektom na tri semestre**: lokalizácia voči modelu budovy,
+navigácia k miestnostiam a hra na deň otvorených dverí. Meranie sa nezrušilo — diagnostický HUD,
+CSV telemetria a vypínateľné korekčné režimy zostávajú natrvalo a sú tým, čím sa práca obhajuje.
+Herné stanovište je zároveň zameraná značka, takže hra a meranie sú tá istá vec.
+
+Dôvody a obmedzenia v [ADR 008](docs/decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md),
+rozpis práce v [pláne inžinierskeho projektu](docs/2026-09-05-plan-inzinierskeho-projektu.md).
+Veta „Nie navigačná appka. Nie prekryv miestností." z hlavičky dokumentácie tým prestáva platiť.
+
+## [0.1.8-alpha] — 2026-09-04
+
+**Otestované v teréne bez pripomienok.** Posledná verzia vetvy 0.1.x.
+
+
+### Audit pred 0.2.0
+
+Prechod cez všetko, čo sa nazbieralo — tlačidlá, riadky, log, mŕtvy kód, dokumentácia.
+
+#### Tlačidlá a riadky
+
+- **`Re-anchor` vyzeralo pripravené a nefungovalo.** Knižnica referenčných obrázkov je prázdna,
+  takže ARCore nemal čo rozpoznať: stlačenie nenazbieralo ani jednu vzorku a po dvoch sekundách
+  vypršalo. To sa číta ako pokazené zarovnanie, nie ako chýbajúca značka. Tlačidlo je teraz
+  vypnuté s dôvodom — `no markers yet`, respektíve `no AR session`.
+
+- **Riadok `From marker` meral od miesta, kde sa začalo počítať, nie od značky.** Žiadna značka
+  neexistuje, takže názov klamal o tom, čo číslo znamená. Volá sa `From start`, kým nie je
+  zarovnané, a `From marker` až potom.
+
+- **Číslo pod prejdenou vzdialenosťou znamená niečo iné podľa zdroja diskov** — `floor ±N cm`
+  pri režime výšky, `model ±N cm` na navmeshi. Doteraz sa obe volali rovnako.
+
+#### Logovanie
+
+- **Prvý riadok nesie verziu appky.** CSV čítané o mesiac sa dalo datovať len hádaním, ktoré
+  stĺpce má — a význam stĺpcov sa v tomto projekte menil takmer každou verziou.
+
+- **Strata a obnova trackingu majú vlastné udalosti**: `tracking-lost <dôvod>`
+  a `tracking-regained after N s; was <dôvod>`. Stav bol v stĺpci štyrikrát za sekundu, ale
+  hľadať v tisícke riadkov moment, kde sa hodnota zmenila, je spôsob, ako stratu prehliadnuť.
+
+  Dôvod sa priebežne obnovuje, kým je session dole: v snímku, keď tracking vypadne, je ešte
+  `None` — ARCore príde na to prečo až o snímok či dva neskôr.
+
+- **Nové stĺpce:** `overlay_anchored`, `probes`, `eye_m`. Posledný preto, že výška sa dá meniť
+  počas behu a bez nej sa údaj o diskoch spätne nedá zreprodukovať.
+
+- Logger číta tieto veci priamo, nie cez HUD, takže sa zapisujú aj keby sa HUD nepostavil.
+
+#### Kód
+
+- **Zmazaných sedem mŕtvych členov**: `FloorProbe.Dropped`, `AnchoredRoot.Anchored` a `.Root`,
+  `CameraTravel.ResampleStepMeters`, `FloorProbe.WorstOffsetMeters` a `.FloorKnown`,
+  `TrackingContinuity.SecondsSinceLoss`. Žiadny z nich nemal odberateľa ani čitateľa.
+
+- **`ProvisionalPlacement.m_EyeHeightMeters` premenované na `m_CameraHeightMeters`.** Rovnaké
+  meno v dvoch komponentoch s inou hodnotou aj iným významom — jeden je držanie telefónu pri
+  štarte appky, druhý pri mierení na podlahu.
+
+- `Wire Scene` prepíše výšku diskov, **len keď v nej ešte je pôvodný odhad 1,70 m**, aby
+  nezmazal hodnotu, ktorú niekto medzitým doladil.
+
+#### Dokumentácia
+
+- Protokol má úplný zoznam stĺpcov aj udalostí a hovorí, kedy sú čísla o podlahe bezcenné —
+  po relokalizácii, ktorá podľa behu `174812` nesie metrovú zvislú zložku.
+- Hlavičky dokumentov aktualizované, postup nového buildu doplnený o `Wire Scene`.
+
+### Namerané na 0.1.7-alpha
+
+Beh `174812`, 466 s, 195 m. Kladenie na navmesh funguje — šesť z deviatich diskov padlo na
+podlahu modelu. Celé vo [výsledkoch](docs/2026-09-04-vysledky-baseline.md).
+
+**Relokalizácie sú aj zvislé.** `cam_y` skončil skoro tri metre pod štartom a sedí to na
+skokoch: 6,86 m so zmenou výšky **+2,48 m**, 9,89 m s **+2,15 m**, 8,32 m s **−1,82 m**.
+Doteraz sa merala len dĺžka skoku a to, že podstatná časť je zvislá, nebolo vidieť.
+
+Znamená to, že disk položený pred relokalizáciou po nej pláva alebo sa zarezáva o desiatky
+centimetrov až metre — nie preto, že by bol zle položený. A že zvislá zhoda modelu s budovou je
+po relokalizácii bezcenná, kým sa neprezarovná na značke.
+
+**Zarovnanie musí pokrývať celú trasu.** Tri disky spadli späť na meranú výšku, lebo testujúci
+vyšiel mimo pôdorysu provizórne položeného meshu. Inak časť behu meria niečo iné než zvyšok.
+
+### Fixed
+
+- **`floor offset` sa logoval aj pri navmesh diskoch, kde neznamená nič.** Hlásil `0.0 cm`, kým
+  nebola uzamknutá výška, a po nej zmes dvoch referencií — `probe-7` z toho behu hlásil 56,3 cm,
+  čo vyzeralo ako meranie a nebolo ním.
+
+  Pri navmeshi sa teraz hlási **o koľko leží podlaha modelu nižšie než tá, ktorú implikuje meraná
+  výška**. To je porovnanie modelu s realitou v jednom čísle, lebo meraná výška je nezávislá
+  referencia — pásmo, nie ARCore.
+
+## [0.1.7-alpha] — 2026-09-04
+
+Prvý beh s diskami dopadol dobre — kotvy prežili zakrytie kamery aj osemmetrovú prechádzku
+a disk zostal na mieste. Ukázali sa dve veci, obe v [výsledkoch](docs/2026-09-04-vysledky-baseline.md).
+
+### Added
+
+- **Disky sa kladú na navmesh, keď je pod telefónom.** To je režim pre test na fakulte: disk
+  potom leží tam, kde **model** tvrdí, že je podlaha, takže pohľad na to, či sedí na skutočnej
+  podlahe, je porovnanie modelu s realitou — po jednom štvorčeku naraz. Presne otázka, na ktorú
+  je celý projekt.
+
+  Bez zarovnaného meshu pod telefónom sa použije meraná výška, čo je každý beh, kým nie sú
+  značky zamerané. Vtedy sa meria tracker, nie model. **Ktorý zdroj disk položil, je v logu**
+  (`via navmesh` / `via height`) aj na obrazovke — sú to dve rôzne merania a zameniť ich by
+  znamenalo napísať do práce nesprávnu vetu.
+
+  Detekcia rovín zostáva mimo hry: išla preč vo fáze 2, lebo kreslila štvorce po tej istej
+  podlahe, ktorej hranu má test čítať, a pýtať sa jej „kde je podlaha" by znamenalo overovať
+  odpoveď ARCore odpoveďou ARCore.
+
+### Changed
+
+- **Výška pri kladení je 1,25 m, nie 1,70.** Pôvodná hodnota bola odhad „telefón v úrovni očí";
+  odmeraná hodnota v okamihu kladenia je 1,25 m, lebo telefón sa pri mierení na podlahu drží
+  nižšie. `FriLens > Wire Scene` ju do scény zapíše — default v zdroji sa na komponent, ktorý
+  už v scéne existuje, nevzťahuje.
+
+### Fixed
+
+- **Disky sa kládli pod podlahu, takže sa pri vzdialení zdanlivo približovali.** Disk sa kládol
+  vždy 1,70 m pod kameru, lenže telefón sa pri mierení na podlahu **znižuje** — log ukazuje
+  kameru 42 cm pod tým, kde bola pri štarte. Disk teda skončil 42 cm pod podlahou, a bod pod
+  podlahou sa z diaľky premieta nižšie než skutočná podlaha, teda bližšie k pozorovateľovi.
+
+  Chyba je pomerová, `h / (h + Δ)`, čo pri 1,28 a 0,42 m znamená, že disk na 8 m vyzerá byť na
+  6 m. Vodorovne sa neprejaví a priamo nad diskom ju nevidno — preto to pôsobilo ako zle
+  počítaný uhol.
+
+  **Podlaha sa teraz uzamkne pri prvom disku** a všetky ďalšie sa kladú na ňu, nech je telefón
+  držaný akokoľvek. Pribudlo aj `floor ±N cm` pod prejdenou vzdialenosťou: rozdiel medzi
+  uzamknutou podlahou a tou, ktorú kamera implikuje práve teraz.
+
+- **Výška sa dá doladiť priamo v appke**, krok 1 cm, v pätičke vedľa stavu logu. Chyba, ktorú
+  to opravuje, je pri nohách neviditeľná a prejaví sa až na diaľku, takže ladiť sa dá jedine
+  v teréne — chôdzou od disku, nie pohľadom pod seba.
+
+- **Udalosti v CSV sa rozbíjali na slovenskom telefóne.** `probe-1 eye 1` namiesto celej
+  menovky: desatinné číslo sa formátovalo v lokálnej kultúre, takže „1,70" obsahovalo čiarku
+  a tá rozsekla stĺpec. Volajúci teraz používa invariantnú kultúru a `SessionLogger` čiarky
+  z každej menovky zahadzuje.
+
+## [0.1.6-alpha] — 2026-09-04
+
+### Namerané na 0.1.5-alpha
+
+Prvý beh podľa protokolu, Redmi Note 10 Pro, 465 s. Celé
+vo [výsledkoch baseline](docs/2026-09-04-vysledky-baseline.md).
+
+**Vzdialenosť sedí.** Štyri prechody odmeraného osemmetrového úseku bez skokov a strát dali
+priemer **7,78 m, teda −2,7 %**, pri rozptyle 0,38 m. `raw` bolo pritom len +1,7 % nad pásmom —
+teda pri pokojne držanom telefóne sa obe čísla takmer zhodujú. **Filter nezahadzuje skutočný
+signál**; tých +42 % z behu `001103` bola manipulácia, nie algoritmus.
+
+**Zakrytie kamery je horšie, než ADR 006 predpokladal.** Pätnásťsekundové zakrytie vyvolalo
+skoky **13,36 · 21,56 · 35,68 m**, ktoré prichádzali ešte minútu po obnove trackingu a **rástli**.
+To nie je relokalizácia opravujúca smerom k pravde, ale tracker hľadajúci niť vo vlastnej
+poškodenej mape. Krátke zakrytia (5,6 a 8,0 s) dopadli podstatne miernejšie, takže hranica leží
+niekde medzi ôsmimi a pätnástimi sekundami.
+
+Filter skokov po zmene v 0.1.5-alpha **nerobí falošné poplachy**: osemnásť skokov, najmenší
+1,55 m, žiadny pod meter. A `origin_anchored = 1` je prvé potvrdenie, že kotvenie na `ARAnchor`
+na zariadení beží.
+
+### Added
+
+- **Tlačidlo `Drop` položí disk na podlahu pod telefón.** Drift test, ktorý **nepotrebuje
+  vytlačenú značku**: polož disk, odfoť, prejdi sto metrov, vráť sa a pozri, o koľko je vedľa.
+  Disky sú kotvené na `ARAnchor`, takže sa neposúvajú spolu s driftom — sú to pevné body, voči
+  ktorým ho vidno.
+
+  Výška podlahy pochádza od testujúceho, nie z detekcie rovín. Detekcia rovín išla preč vo
+  fáze 2, lebo kreslila štvorce po tej istej podlahe, ktorej hranu má test čítať, a vrátiť ju
+  kvôli otázke „kde je podlaha" by znamenalo merať odpoveď ARCore pomocou ARCore. Človek, ktorý
+  vie, aký je vysoký, je nezávislá referencia.
+
+  Na rovnej podlahe majú všetky disky ležať v rovnakej výške, takže rozptyl medzi nimi je
+  zvislá chyba nazbieraná medzi položeniami. Ukazuje sa pod prejdenou vzdialenosťou ako
+  `N probes ±M cm`. Postup je [test D v protokole](docs/2026-09-04-protokol-baseline-testu.md).
+
+- **Kompaktný režim HUD-u.** Tlačidlo `compact` v hlavičke zloží panel na jediný riadok —
+  zostane režim, prejdená vzdialenosť a tlačidlá, teda tri veci potrebné pri chôdzi. Zvyšok
+  ustúpi kamere, ktorá je koniec koncov to, čo sa posudzuje.
+
+  **Výnimka:** keď je meranie neoverené po strate trackingu, riadok `Alignment` sa vráti na
+  obrazovku aj v kompakte. Kompakt inak skrýva práve ten riadok, ktorý nesie `unverified` —
+  a to je varovanie, ktoré existuje preto, že zlyhaná relokalizácia je inak tichá. Schovať ho
+  práve v režime, v ktorom sa chodí, by ho umiestnilo tam, kde ho nikto nikdy neuvidí.
+
+- **Celý HUD je menší.** Referenčné rozlíšenie 430 → 470 a k tomu menšie tlačidlá (64 → 54 px),
+  písma a odsadenia riadkov. Po zmenšení v 0.1.4-alpha bol stále priveľký.
+
+- **Značky existujú.** `Assets/_Game/AR/Markers/frilens-M1..M4.png`, 1024 × 1024, vygenerované
+  a nie prevzaté: ARCore hodnotí hustotu hrán, kontrast a neopakovateľnosť vzoru, na čo je logo
+  zlé. Prvý pokus mal veľké čierne plochy — tie nenesú žiadne features, takže vzor je teraz
+  hustý, z malých tvarov a s vyváženými tónmi.
+
+  Štyri, každá s vlastným seedom. ARCore ich musí od seba odlíšiť, inak by prezarovnanie pri M3
+  posadilo prekryv na zameranú pózu M1. Vľavo hore je nesymetrická rohová značka na ručné
+  zarovnanie pri lepení; zároveň znemožňuje, aby vzor sadol sám na seba otočený o 90°.
+
+- **`FriLens > Marker Library`** naplní knižnicu obrázkov z tých PNG, nastaví ich ako readable
+  a zadá fyzický rozmer. Rozmer sa zadáva na jednom mieste s vysvetlením prečo: je to jediné
+  číslo v celom teste, ktoré potichu škáluje každý výsledok. Značka deklarovaná ako 20 cm
+  a vytlačená na 18 cm robí prekryv o desatinu väčší všade a na obrazovke to nie je vidieť —
+  zarovnanie vyzerá čisto a rozptyl vzoriek je malý.
+
+### Fixed
+
+- **Rada pri `InsufficientLight` posielala nesprávnym smerom.** Dlaň na objektíve hlási ten istý
+  stav ako tmavá chodba — v behu z toho boli tri prípady. „Too dark here, find more light" je
+  pri zakrytej kamere nezmysel, tak riadok teraz pokrýva obe príčiny.
+
+
+## [0.1.5-alpha] — 2026-09-04
+
+Prvý beh na 0.1.4-alpha, Redmi Note 10 Pro, 298 sekúnd. Prekryv bolo konečne vidieť
+a tlačidlo na jeho skrytie sa použilo štyrikrát. Prevzorkovanie funguje. Filter skokov nie.
+
+### Namerané
+
+| | |
+|---|---:|
+| walked | 105,94 m |
+| path_raw | 150,23 m |
+| nafúknutie | **+42 %** |
+| skoky | 69 (43,29 m) |
+
+Najčistejší úsek behu — 44,9 s súvislej chôdze bez jediného skoku — dáva **walked 16,79 m
+oproti raw 20,46 m, teda +22 %**. To je najlepší odhad samotného skreslenia, aký zatiaľ máme:
+bez relokalizácií, bez manipulácie, len chôdza s telefónom v ruke.
+
+Celých 42 % za beh je viac, lebo súčasťou behu bolo aj státie, mierenie a stláčanie tlačidiel.
+
+### Fixed
+
+- **Filter skokov označoval kroky za relokalizácie aj po oprave v 0.1.4-alpha.** Tá oprava
+  fungovala len keď človek stojí. Delil som časom od poslednej zmeny pózy, lenže ten čas sa
+  resetuje pri každom posune nad 4 mm — a pri chôdzi sa póza hýbe každý snímok, takže delič
+  bol zase jeden snímok.
+
+  Beh to ukázal ako učebnicový príklad. Skoky sa rozpadli na dve skupiny s medzerou medzi nimi:
+
+  | | počet | spolu |
+  |---|---:|---:|
+  | ≥ 1 m — od 1,13 do 6,71 m | 10 | 31,61 m |
+  | < 1 m — 59× medzi 0,19 a 0,93 m | 59 | 11,68 m |
+
+  Tých 59 sú kroky. Absolútny strop na jeden meter trafil všetkých desať skutočných a ani
+  jeden falošný, takže **rýchlostný test je preč**. Nedal sa spraviť správne: čas, za ktorý
+  sa krok stal, sa z vykresľovacej slučky zmerať nedá, lebo ARCore dodáva pózy vlastným
+  tempom. Cena je, že relokalizácia kratšia než meter sa započíta ako chôdza — čo stojí menej
+  než meter na stometrovej dráhe.
+
+### Added
+
+- **Prekryv aj `Origin` sú kotvené na `ARAnchor`.** ARCore pri relokalizácii posúva anchory tak,
+  aby zostali na tom istom fyzickom mieste; obyčajné súradnice v `Transform` neposunie, o tých
+  nevie. Držali sme oboje ako obyčajné súradnice, takže prekryv zostal zle práve vtedy, keď sa
+  tracker trafil.
+
+  Pri `Origin` to bolo vidieť v číslach: bez kotvy som ho pri každom skoku posúval ručne a za
+  beh `001103` sa nazbieralo **43 m takých posunov naprieč 69 skokmi**. Riadok `From marker` na
+  konci hlásil 1,94 m a neznamenal nič.
+
+  Nový `AnchoredRoot` položí koreň na pózu okamžite a kotvu pripojí hneď, ako ju ARCore vytvorí.
+  Keď kotvenie zlyhá, appka beží ďalej s pôvodným správaním a povie to. Do scény pribudol
+  `ARAnchorManager`, ktorý tam dovtedy nebol.
+
+- **Po strate trackingu appka priznáva, že nemeria.** `TrackingContinuity` počíta straty a čas
+  naslepo od posledného zarovnania. Kým nejaká visí, riadok `Alignment` hlási
+  `unverified · N losses M s` a v CSV je `verified = 0`. Vyčistí to jedine zarovnanie na značke.
+
+  Dôvod je v tom, že **zlyhaná relokalizácia je tichá**. Úspešnú zmerať vieme — je to skok
+  a filter ju chytí. Pri neúspešnej nenastane skok vôbec: póza plynulo pokračuje z nesprávneho
+  miesta a na obrazovke to vyzerá presne ako drift, teda ako to, čo má test merať. Z logu sa
+  „model je nepresný" a „ARCore sa nezotavil" doteraz odlíšiť nedalo.
+
+  Zlyhanie tým nedetegujeme. Označíme okno, v ktorom mohlo nastať, čo je maximum, ktoré sa
+  z pózy dá poctivo povedať. Rozbor v
+  [ADR 006](docs/decisions/006-kotvenie-a-strata-trackingu.md).
+
+- **CSV má štyri nové stĺpce:** `blind_s`, `losses`, `verified`, `origin_anchored`.
+
+### Zmena metodiky
+
+Značka nie je len začiatok merania, je to **liek na stratu trackingu** — jediná vec, ktorá
+nezávisí od mapy ARCore. Preto ich má byť **viac, rozmiestnených po trase**: najhoršia možná
+chyba je potom ohraničená úsekom medzi dvomi značkami, nie dĺžkou celého behu. Fáza 3a sa mení
+z „vytlačiť značku" na „vytlačiť značky a rozmiestniť ich".
+
+## [0.1.4-alpha] — 2026-09-04
+
+Prvé tri behy na Redmi Note 10 Pro s 0.1.3. Tracking funguje, prejdená vzdialenosť sa počíta
+— **84,4 m za 195 sekúnd** v najdlhšom behu. Ale filter skokov robil falošné poplachy a samotné
+meranie dráhy stálo na metóde, ktorá číslo systematicky nafukuje.
+
+### Changed
+
+- **Prejdená vzdialenosť sa už nesčítava snímok po snímku.** Poloha sa najprv vyhladí
+  a segment sa pripočíta až vtedy, keď sa vyhladená poloha vzdiali o 0,30 m od naposledy
+  podržaného bodu. Mávanie telefónom v stoji kmitá okolo stojacej strednej hodnoty, takže ho
+  filter utlmí a prah zahodí; chôdza strednú hodnotu posúva a prejde.
+
+  Nie je to kozmetika. Sčítavanie každého snímku je z definície správne a **systematicky
+  nadhodnocuje**, lebo šum sa pri sčítavaní absolútnych hodnôt nikdy nevykráti. Pri GPS
+  záznamoch trajektórií je to zmerané na jednotky percent pri bežnom vzorkovaní a až dvadsať
+  percent pri najhustejšom. U nás k šumu pribúda ruka. Rozbor v
+  [ADR 005](docs/decisions/005-ako-merat-prejdenu-vzdialenost.md).
+
+- **Filter má vlastný test.** `PathResampler` je oddelený od `CameraTravel` a čas dostáva ako
+  argument, takže sa dá pustiť na vymyslených dráhach so známou dĺžkou —
+  `FriLens > Verify Travel Filter`. Ladiť ho na chodbe a vyhlásiť za dobrý by bolo dookola.
+
+  Dvadsať metrov chôdze s dvomi centimetrami šumu vyjde raw ako **30,74 m**, teda o 54 % viac,
+  a pri 30 fps ako 22,96 m. Prevzorkované je to v oboch prípadoch 19,5 m. Státie s mávaním
+  1 Hz ±25 cm dá raw 20 m a prevzorkovane **0,00 m**.
+
+  **Čísla z behov pred touto verziou sú raw.** Filter pustený spätne na uložené pózy z tých
+  istých logov:
+
+  | beh | trvanie | appka hlásila | prevzorkované z CSV |
+  |---|---:|---:|---:|
+  | 214544 | 138 s | — | 65,40 m |
+  | 225741 | 191 s | 84,35 m | **65,25 m** |
+  | 230108 | 38 s | 19,78 m | 13,34 m |
+
+  Rekonštrukcia je hrubá — v CSV sú pózy štyrikrát za sekundu, kým na telefóne filter beží na
+  snímkovej frekvencii — ale smer aj rád sú jednoznačné. **Tabuľka „namerané v behu 225741"
+  nižšie je preto tiež raw** a skutočné úseky boli kratšie.
+
+- **Do CSV pribudol stĺpec `path_raw_m`** — pôvodný súčet bez filtrovania, hneď vedľa
+  `walked_m`. Na obrazovke je pod veľkým číslom drobné `raw`. Rozdiel medzi tými dvomi je
+  presne tá ruka a ten šum, ktoré sa doteraz vykazovali ako chôdza.
+
+- **Riadok `Tracking` hovorí, čo robiť, nie ako sa volá porucha.** `ExcessiveMotion` je teraz
+  „move the phone more slowly", `InsufficientFeatures` „point at a wall with more detail".
+  Je to odporúčanie priamo z dokumentácie ARCore a tu má váhu navyše: každý taký stav končí
+  relokalizáciou, a relokalizácia je ten metrový skok overlayu.
+
+  Tým sa vysvetľuje aj pozorovanie „agresívnejším mávaním sa gyroskop rozladil o meter".
+  Gyroskop sa nerozladil. ARCore stratil tracking na `ExcessiveMotion` a relokalizoval sa —
+  sú to tie isté metrové skoky, ktoré v logu behu `225741` sedia na 1,46 · 3,36 · 1,80 · 1,70 m.
+
+- **UI je menšie.** Referenčné rozlíšenie panelu 360×780 → 430×930, čo celý HUD zmenší
+  približne o šestinu.
+
+### Fixed
+
+- **Overlay nebolo vidieť, takže „Hide overlay" nemalo čo skryť.** Model má 80 m a leží desiatky
+  metrov od počiatku sveta, kým AR session svoj svet vždy začína pri kamere. Bez značky tak
+  overlay ostal 19 m nabok a 5 m nad hlavou — a `far clip plane` bola 20 m. Nikto ho nikdy
+  nevidel; tlačidlo pritom fungovalo celý čas.
+
+  Dve opravy: far plane na 120 m a `ProvisionalPlacement`, ktorý pri chýbajúcej značke položí
+  podlahu modelu pod kameru. **Nie je to zarovnanie a nemeria to nič** — je to na to, aby sa
+  dalo overiť, že sa overlay kreslí, dá skryť a že pri chôdzi ujde. Riadok `Alignment` to
+  priznáva textom „dropped, not measured".
+
+- **Riadky `Marker` a `Alignment` sa nedali prečítať.** Hodnota „none" vyzerala ako prázdno.
+  Teraz je tam „waiting for marker", respektíve „dropped, not measured" — teda čo daný stav
+  znamená pre dôveryhodnosť toho, čo je na obrazovke.
+
+- **`far clip plane` bola 20 m na oboch kamerách.** Aj po správnom zarovnaní by sa z 80-metrovej
+  chodby kreslila len štvrtina.
+
+- **Filter skokov označoval bežnú chôdzu za relokalizáciu.** Medzi 65. a 69. sekundou jedného
+  behu je zhluk 24 „skokov", každý 0,13–0,20 m, všetky rovnaké, všetky pri `SessionTracking`
+  bez hlásenej poruchy. To nie sú relokalizácie, to sú kroky.
+
+  Príčina bola v tom, ako som počítal rýchlosť. ARCore dodáva pózy tempom kamery, teda výrazne
+  pomalšie, než sa vykresľuje. Na snímku, keď nová póza dorazí, sa objaví pohyb za celý
+  medzičas naraz — a delením jedným `Time.deltaTime` vyjde rýchlosť niekoľkonásobne vyššia,
+  než aká naozaj bola. Teraz sa delí časom od poslednej **skutočnej zmeny pózy**.
+
+  Skutočné relokalizácie boli v tom behu štyri, každá metrová: 1,46 · 3,36 · 1,80 · 1,70 m.
+  Tie absolútny strop na dĺžku kroku zachytí ďalej.
+
+- **Počítadlo sa spúšťalo skôr, než dorazila prvá póza.** Session hlási `SessionTracking`
+  o snímok či dva skôr, než driver zapíše pózu, a dovtedy je kamera na počiatku sveta. V behu
+  `230108` sa tak `Origin` zafixoval na (0,0,0), `From marker` meral od miesta, kde nikto
+  nestál, a skok na prvú skutočnú pózu sa započítal ako relokalizácia. Teraz sa čaká, kým sa
+  póza naozaj pohne.
+
+- **Re-anchor bez značky tvrdil „sampling 0/30" donekonečna.** Keď sa za dve sekundy nenazbiera
+  ani jedna vzorka, stav sa vráti na `none`.
+
+- **Riadok v logu miešal dva snímky.** `SessionLogger` mohol bežať skôr než `CameraTravel`,
+  takže zapísal aktuálnu pozíciu kamery spolu s odvodenými hodnotami z predošlého snímku.
+  V behu `230108` to vidno na dvoch riadkoch s rovnakou pozíciou a inou `from_origin`. Poradie
+  skriptov je teraz pevné: `CameraTravel` (−50) → `SessionLogger` (50) → `DiagnosticsHud` (60).
+
+### Namerané v behu 225741
+
+Po štarte je odometria čistá. Medzi značkami, teda počas súvislej chôdze:
+
+| úsek | čas | prejdené | skoky |
+|---|---:|---:|---:|
+| mark-2 → mark-3 | 4,7 s | 0,76 m | 0 |
+| mark-3 → mark-4 | 14,1 s | 8,06 m | 0 |
+| mark-4 → mark-5 | 30,1 s | 13,62 m | 0 |
+| mark-5 → mark-6 | 36,5 s | 21,07 m | 0 |
+
+**43 metrov súvislej chôdze bez jediného skoku.** Zhluk falošných skokov aj skutočné
+relokalizácie padli do prvých 85 sekúnd, keď sa telefónom manipulovalo.
+
+## [0.1.3-alpha] — 2026-09-03
+
+Vydané ako [v0.1.3-alpha](https://github.com/Robindhuil/FriLens/releases/tag/v0.1.3-alpha).
+
+Prvý beh na **Redmi Note 10 Pro** s 0.1.2-alpha ukázal dve veci: oprava pózy funguje, a meranie
+vzdialenosti má dve chyby, ktoré by v teréne skreslili výsledok.
+
+### Fixed
+
+- **Prejdená vzdialenosť zostávala nulová.** `CameraTravel` začínal počítať až po zosúladení
+  a bez vytlačenej značky k zosúladeniu nikdy nedôjde. V logu z 55-minútového behu tak bolo
+  `walked_m = 0.000`, hoci póza kamery sa preukázateľne hýbala v rozsahu 8 metrov. Počítadlo sa
+  teraz spustí samo pri prvom snímku; zosúladenie ho naďalej vynuluje, takže číslo, ktoré test
+  číta, je stále „od zosúladenia".
+
+  Vedľajší efekt je dôležitejší než samotná oprava: **desaťmetrová kontrola sa dá spraviť bez
+  značky**, teda ešte pred fázami 3a a 3b.
+
+- **Relokalizácie ARCore sa počítali ako chôdza.** V tom istom behu boli tri skoky rýchlejšie
+  než 3 m/s — najrýchlejší 2.85 m za 0.26 s, teda 10 m/s. Spolu **5.43 m zo 77 m, sedem percent
+  dráhy**. Drift sa meria ako percento prejdenej vzdialenosti, takže sedem percent chyby ide
+  priamo do osi merania. Kroky nad 4 m/s sa už do vzdialenosti nerátajú.
+
+### Added
+
+- **Počítadlo skokov.** Zahodené kroky sa nestrácajú — počítajú sa zvlášť a HUD ich ukáže vedľa
+  priamej vzdialenosti (`6.2 m · 3 jumps 5.4 m`). Sú to momenty, keď ARCore opravil sám seba,
+  a na obrazovke práve vtedy prekryv viditeľne skočí. Odlišuje to nález „prekryv sa vzďaľoval
+  postupne" od „tracker sa prelokalizoval", čo sú dve rôzne príčiny.
+- Stĺpce `jumps` a `jumped_m` v CSV, medzi `from_origin_m` a `since_align_s`.
+
+### Opravené po review
+
+Prehliadka logiky pred buildom našla štyri veci, z toho dve by pokazili meranie:
+
+- **`CameraTravel` začínal počítať skôr, než naskočil tracking.** Kamera je dovtedy na
+  počiatku sveta, takže `Origin` sa zafixoval na (0,0,0) a `From marker` by ukazoval
+  vzdialenosť od nuly, nie od miesta, kde človek stál. Skok na prvú skutočnú pózu sa navyše
+  započítal ako relokalizácia. Počítadlo teraz čaká na `SessionTracking`.
+- **Zber vzoriek pre zosúladenie nemal časový limit.** Keď značka zmizla zo záberu uprostred
+  série, rozobraté vzorky tam zostali a po návrate sa spriemerovali s novými — možno cez
+  relokalizáciu, z inej vzdialenosti a uhla. Vyšlo by z toho zosúladenie, ktoré vyzerá
+  odmerane a nie je. Po dvoch sekundách bez použiteľnej vzorky sa séria zahodí.
+- **Filter skokov stál len na rýchlosti.** Dlhý snímok — zadrhnutie alebo prvý snímok po
+  návrate z pozadia — spraví z dvojmetrového skoku zdanlivú prechádzku. Pribudol absolútny
+  strop na dĺžku kroku.
+- **`CameraTravel.Reset()` sa volalo ako Unity správa.** Editor volá `Reset()` sám pri
+  pridaní komponentu alebo pri „Reset" v inšpektore. Premenované na `RestartFrom()`.
+
+### Zmenené UI
+
+HUD prekreslený podľa návrhu, ktorý preberá vizuálny jazyk z FriWorld-Hub: papier a inkoust,
+tvrdé obrysy, tieň ako plná posunutá vrstva. Celé UI je po anglicky, rovnako ako CSV a logy.
+
+- **Farby sú tokeny v USS a nikde inde.** C# nastavuje triedy, nikdy farby — aj bodka
+  v tabletke režimu má triedy `pill-dot--ok` / `--idle` / `--accent`. Prefarbenie je jeden
+  súbor, nie hľadanie po kóde.
+- **`DiagnosticsHudView`** je jediná trieda, ktorá siaha na vizuálny strom. Nič nevytvára, len
+  prepína triedy a texty na hierarchii, ktorá už existuje v UXML. `DiagnosticsHud` vie, čo
+  čísla znamenajú; view vie, ako vyzerajú.
+- **Preview prepína celý HUD jedným volaním** — banner do čierna so šrafou, číselník stlmený,
+  hodnoty neutrálne, hlavné číslo na *not measuring*, Re-anchor vypnutý. Nedá sa skončiť
+  napoly v Preview a vyzerať ako AR.
+- Riadok `Device` a počítadlo skokov doplnené do návrhu, ktorý ich ešte nemal.
+- Písma: Fredoka (nadpisy), Nunito (texty), JetBrains Mono (hodnoty). Mono má funkčný dôvod —
+  hodnoty sa menia niekoľkokrát za sekundu a proporcionálne písmo by riadkami trhalo.
+  Google dnes dáva Fredoka a Nunito len ako variabilné, takže rez 700 robí `-unity-font-style`.
+- Deväť ikon z návrhu plus vygenerovaná ikona pre `Device`.
+
+#### Štyri pasce UI Toolkitu, na ktoré sa narazilo
+
+Všetky tiché — nič nevypíše chybu, len to vyzerá zle:
+
+1. **UI Toolkit chce `UnityEngine.TextCore.Text.FontAsset`, nie `TMPro.TMP_FontAsset`.** TMP
+   asset na tej istej ceste sa nenačíta a text sa jednoducho nevykreslí. Bez varovania, bez
+   náhradného rezu.
+2. **`var()` funguje pre farby, ale nie pre `-unity-font-definition`.** Font za premennou
+   zmizne rovnako ticho. Cesty k fontom sú preto vypísané celé pri každom použití.
+3. **`border-radius` kláti vodorovný a zvislý polomer zvlášť**, takže `999px` na širokom
+   nízkom prvku spraví elipsu, nie pilulku. Polomery sú polovica výšky prvku.
+4. **Prvky sa v riadku samy nezmenšujú.** Dlhá hodnota stlačila ikonu z 26 px na 3 px a jej
+   glyf vyliezol von; hodnota `Alignment` zase pretiekla kartu o 30 px. Pevné rozmery
+   dostali `flex-shrink: 0`, hodnota `flex-shrink: 1`.
+
+## [0.1.2-alpha] — 2026-09-03
+
+Vydané ako [v0.1.2-alpha](https://github.com/Robindhuil/FriLens/releases/tag/v0.1.2-alpha).
+Obsahuje aj 0.1.1-alpha, ktorá sa samostatne nevydala.
+
+### Testovacie zariadenia
+
+| Telefón | ARCore | Poznámka |
+|---|---|---|
+| **Redmi Note 10 Pro** | ✅ trackuje | zariadenie, na ktorom sa bude testovať ďalej |
+| **Redmi 11T** | ✅ trackuje | log z neho potvrdil chybu s `InputActionManager` |
+| **Redmi 14C** | ❌ netrackuje | session sa spustí, kamera beží, tracking sa nikdy neustáli |
+
+Diagnostika hardvéru. Po 0.1.1-alpha sa kamera konečne zapla — oprava so štartom AR rigu
+zabrala — ale session naďalej neopustila `SessionInitializing` a póza kamery zostala presne
+nulová. Táto verzia nič neopravuje; dáva appke schopnosť povedať prečo.
+
+### Added
+
+- **Riadok `Device` v HUD-e.** ARCore robí motion tracking cez VIO, čo bez gyroskopu nejde.
+  Bez neho sa session otvorí, kamera nabehne a tracking sa nikdy neustáli — na obrazovke
+  na nerozoznanie od session, ktorá je len pomalá. Ak `SystemInfo.supportsGyroscope` hlási
+  nepravdu, HUD napíše **„no gyroscope — AR cannot track"** načerveno.
+- **Časovač na zaseknutú session.** `SessionInitializing` nehlási žiadne zlyhanie —
+  `notTrackingReason` zostáva `None`, lebo sa nič nepokazilo, tracking len nikdy
+  nedokonverguje. Ako oranžové slovo to vyzeralo ako „ešte pracujem" donekonečna. Po 20
+  sekundách HUD prepne na **„stuck initializing N s"** načerveno. Je to nález, nie stav.
+- **Model telefónu a senzory do prvého riadku logu** — `device`, `android`, `gyro`, `accel`,
+  `gfx`. Bez toho sa log, kde tracking nikdy nenaskočil, nedá odlíšiť od logu zo zariadenia,
+  ktoré trackovať nikdy nevedelo.
+
+### Changed
+
+- **Appka už neverí `CheckAvailability()` naslepo.** Tá metóda odpovedá na otázku „dá sa tu
+  použiť ARCore API", nie „vie toto zariadenie trackovať" — a na prvú stačí mať nainštalované
+  Google Play Services for AR, čo ide aj na telefón bez potrebného hardvéru. Pribudli dve
+  poistky:
+
+  1. **Chýbajúci gyroskop sa kontroluje skôr než ARCore.** Motion tracking je vizuálno-
+     inerciálny, takže bez gyroskopu niet z čoho počítať inerciálnu polovicu. Appka ide rovno
+     do Preview a napíše prečo, namiesto toho, aby čakala na session, ktorá nikdy nenabehne.
+  2. **Časový limit na `SessionInitializing`.** Zariadenie môže gyroskop mať a aj tak nikdy
+     nedokonvergovať — necertifikovaný telefón bez kalibračného profilu robí presne to. Po 25
+     sekundách appka AR vzdá a prepne do Preview s vysvetlením. Zostať v AR režime navždy
+     znamená živý obraz z kamery a zamrznutý prekryv, čo vyzerá ako rozbitá appka namiesto
+     nevhodného telefónu.
+
+### Poznámka k 0.1.1-alpha
+
+Oprava so štartom AR rigu bola v 0.1.1-alpha označená ako príčina toho, že session neopúšťala
+`SessionInitializing`. **Nebola.** Build 0.1.0-alpha z releases — teda bez oboch opráv —
+na inom telefóne trackuje správne, takže príčinou bol hardvér, nie poradie zapínania rigu.
+Zmena v kóde zostáva, lebo vypínať `ARCameraManager` pod bežiacou session je aj tak zlé, ale
+ako oprava tohto problému bola pripísaná neprávom.
+
+### Oprava `InputActionManager` je potvrdená
+
+Log z telefónu, ktorý ARCore zvláda, s buildom **0.1.0-alpha z releases** — teda bez oboch
+opráv:
+
+```
+0.270   Ar, SessionInitializing, None
+4.572   Ar, SessionTracking,     None      ← ARCore trackuje
+…       55 sekúnd v SessionTracking
+59.982  Ar, SessionInitializing, InsufficientLight
+```
+
+Po celý ten čas, vrátane 55 sekúnd v `SessionTracking`:
+
+```
+cam_x = cam_y = cam_z = 0.0000
+cam_yaw = cam_pitch = cam_roll = 0.00
+walked_m = 0.000
+```
+
+**ARCore trackoval bezchybne a póza sa aj tak do aplikácie nedostala.** Presne to je chyba,
+ktorú `InputActionManager` opravuje: `TrackedPoseDriver` číta pózu cez `InputActionReference`
+do `XRI Default Input Actions` a tie akcie bez neho nikto nezapne. Diagnóza sedela.
+
+Zároveň sa ukázalo, že stĺpec `not_tracking_reason` funguje — pri zhoršenom svetle sa objaví
+`InsufficientLight`. Na Redmi tam bolo `None` počas celej doby, čo teda naozaj znamenalo
+„nič nezlyhalo", nie „appka to nevie prečítať". Dve rôzne poruchy, dva rôzne obrazy.
 
 ## [0.1.1-alpha] — 2026-09-03
 
@@ -36,6 +623,12 @@ oboje spôsobili zmeny z fáz 2 a 5.
 - APK sa pomenúva `FriLens-<verzia>.apk` s pomlčkou namiesto medzery. GitHub premieňa medzeru
   v názve assetu na bodku, takže s pomlčkou sa adresa na stiahnutie dá odvodiť priamo
   z verzie a nemusí sa nikde opisovať.
+- **Verziu stampuje build callback, nie len menu položka** (`VersionStamp.cs`). Držať verziu
+  v kóde malo zabrániť tomu, aby sa Player Settings rozišli so skutočnosťou, ale samo to
+  fungovalo len pre buildy spustené z menu FriLens. Build z Unity dialógu ten kód nikdy
+  nespustil a potichu vydal predošlé číslo verzie — prvé APK 0.1.1-alpha vyšlo označené ako
+  0.1.0-alpha, s opravami vnútri a zlým menom na obale. `IPreprocessBuildWithReport` sa
+  spustí pri každom builde, nech ho začne kto chce.
 
 ### Overené na 0.1.0-alpha
 

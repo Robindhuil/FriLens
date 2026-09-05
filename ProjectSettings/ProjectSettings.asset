@@ -143,8 +143,11 @@ PlayerSettings:
   loadStoreDebugModeEnabled: 0
   visionOSBundleVersion: 1.0
   tvOSBundleVersion: 1.0
-  bundleVersion: 0.1.0-alpha
-  preloadedAssets: []
+  bundleVersion: 0.1.8-alpha
+  preloadedAssets:
+  - {fileID: 7409956309476867576, guid: 3fd4fc0127790db4bae83f7b77da8d45, type: 2}
+  - {fileID: 4800000, guid: c9f956787b1d945e7b36e0516201fc76, type: 3}
+  - {fileID: 4800000, guid: 0945859e5a1034c2cb6dce53cb4fb899, type: 3}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   xboxOneDisableKinectGpuReservation: 1
@@ -174,7 +177,7 @@ PlayerSettings:
     iPhone: 0
     tvOS: 0
   overrideDefaultApplicationIdentifier: 1
-  AndroidBundleVersionCode: 1
+  AndroidBundleVersionCode: 9
   AndroidMinSdkVersion: 25
   AndroidTargetSdkVersion: 0
   AndroidPreferredInstallLocation: 1
@@ -830,7 +833,7 @@ PlayerSettings:
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
   scriptingDefineSymbols:
-    Android: SENTIS_ANALYTICS_ENABLED
+    Android: SENTIS_ANALYTICS_ENABLED;APP_UI_EDITOR_ONLY
     Standalone: SENTIS_ANALYTICS_ENABLED;APP_UI_EDITOR_ONLY
     iPhone: UNITY_XR_ARKIT_LOADER_ENABLED
   additionalCompilerArguments: {}

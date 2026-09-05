@@ -161,6 +161,7 @@ GameObject:
   - component: {fileID: 234078120}
   - component: {fileID: 234078119}
   - component: {fileID: 234078118}
+  - component: {fileID: 234078121}
   m_Layer: 0
   m_Name: HUD
   m_TagString: Untagged
@@ -184,7 +185,11 @@ MonoBehaviour:
   m_Alignment: {fileID: 288061785}
   m_Travel: {fileID: 288061787}
   m_Logger: {fileID: 288061786}
+  m_Placement: {fileID: 234078121}
+  m_Continuity: {fileID: 288061790}
+  m_FloorProbe: {fileID: 288061791}
   m_Overlay: {fileID: 836722132}
+  m_InitializingPatienceSeconds: 20
 --- !u!114 &234078119
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -223,6 +228,25 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &234078121
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 234078117}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a24400fca7d66f4fba38f402c31d554, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FriLens.ProvisionalPlacement
+  m_AlignmentRoot: {fileID: 1867842952}
+  m_Overlay: {fileID: 836722132}
+  m_Camera: {fileID: 2512387469332387801}
+  m_Alignment: {fileID: 288061785}
+  m_Anchored: {fileID: 288061789}
+  m_CameraHeightMeters: 1.5
+  m_PlaceWhenUnaligned: 1
 --- !u!1 &288061782
 GameObject:
   m_ObjectHideFlags: 0
@@ -237,6 +261,9 @@ GameObject:
   - component: {fileID: 288061787}
   - component: {fileID: 288061788}
   - component: {fileID: 288061786}
+  - component: {fileID: 288061789}
+  - component: {fileID: 288061790}
+  - component: {fileID: 288061791}
   m_Layer: 0
   m_Name: FriLens
   m_TagString: Untagged
@@ -286,9 +313,11 @@ MonoBehaviour:
   m_TrackedImageManager: {fileID: 331264287}
   m_AlignmentRoot: {fileID: 1867842952}
   m_MarkerAnchor: {fileID: 57258818}
+  m_Anchored: {fileID: 288061789}
   m_SampleCount: 30
   m_ReferenceImageName: 
   m_AlignOnFirstSighting: 1
+  m_SampleGapTimeoutSeconds: 2
 --- !u!114 &288061786
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -304,6 +333,9 @@ MonoBehaviour:
   m_Mode: {fileID: 288061788}
   m_Alignment: {fileID: 288061785}
   m_Travel: {fileID: 288061787}
+  m_Continuity: {fileID: 288061790}
+  m_FloorProbe: {fileID: 288061791}
+  m_AnchoredRoot: {fileID: 288061789}
   m_Camera: {fileID: 2512387469332387801}
   m_SamplesPerSecond: 4
 --- !u!114 &288061787
@@ -319,7 +351,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FriLens.CameraTravel
   m_Camera: {fileID: 2512387469332387801}
+  m_AnchorManager: {fileID: 2512387470231460732}
   m_MinimumStepMeters: 0.004
+  m_MaximumStepMeters: 1
+  m_SmoothingSeconds: 0.35
+  m_ResampleStepMeters: 0.3
 --- !u!114 &288061788
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -335,7 +371,53 @@ MonoBehaviour:
   m_Session: {fileID: 702413258}
   m_ArRig: {fileID: 2512387470231460730}
   m_PreviewRig: {fileID: 2032841673}
+  m_InitializingTimeoutSeconds: 25
   m_Override: 0
+--- !u!114 &288061789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 288061782}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 427f671b3cd0a3848acf77d11c19dded, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FriLens.AnchoredRoot
+  m_AnchorManager: {fileID: 2512387470231460732}
+  m_Root: {fileID: 1867842952}
+--- !u!114 &288061790
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 288061782}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cd27b0772ed343448d92538faab0e49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FriLens.TrackingContinuity
+  m_IgnoreShorterThanSeconds: 0.3
+--- !u!114 &288061791
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 288061782}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60435826f212b244499639cf8e002b06, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FriLens.FloorProbe
+  m_Camera: {fileID: 2512387469332387801}
+  m_AnchorManager: {fileID: 2512387470231460732}
+  m_Material: {fileID: 2100000, guid: fd3f708ddb1a70e4f98acb91b70c6614, type: 2}
+  m_NavCollider: {fileID: 836722134}
+  m_EyeHeightMeters: 1.25
+  m_DiscDiameterMeters: 0.3
 --- !u!114 &331264287
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -403,7 +485,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.1
-  far clip plane: 600
+  far clip plane: 120
   field of view: 55
   orthographic: 0
   orthographic size: 5
@@ -508,6 +590,7 @@ GameObject:
   - component: {fileID: 836722131}
   - component: {fileID: 836722133}
   - component: {fileID: 836722132}
+  - component: {fileID: 836722134}
   m_Layer: 0
   m_Name: NavOverlay
   m_TagString: Untagged
@@ -586,6 +669,28 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 836722130}
+  m_Mesh: {fileID: 4300000, guid: 7bbbab3c3d1b5e043a219b6763765dc6, type: 2}
+--- !u!64 &836722134
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 836722130}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
   m_Mesh: {fileID: 4300000, guid: 7bbbab3c3d1b5e043a219b6763765dc6, type: 2}
 --- !u!1 &1323550131
 GameObject:
@@ -854,7 +959,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.1
-  far clip plane: 20
+  far clip plane: 120
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -1037,6 +1142,7 @@ GameObject:
   - component: {fileID: 2512387470231460710}
   - component: {fileID: 331264287}
   - component: {fileID: 2512387470231460731}
+  - component: {fileID: 2512387470231460732}
   m_Layer: 0
   m_Name: XR Origin (AR Rig)
   m_TagString: Untagged
@@ -1058,6 +1164,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit::UnityEngine.XR.Interaction.Toolkit.Inputs.InputActionManager
   m_ActionAssets:
   - {fileID: -944628639613478452, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+--- !u!114 &2512387470231460732
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2512387470231460730}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 728ad7fae8e460a4ba41265c7308d757, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.XR.ARFoundation::UnityEngine.XR.ARFoundation.ARAnchorManager
+  <trackablesChanged>k__BackingField:
+    m_PersistentCalls:
+      m_Calls: []
+  m_AnchorPrefab: {fileID: 0}
 --- !u!1 &2512387470665874425
 GameObject:
   m_ObjectHideFlags: 0

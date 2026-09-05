@@ -1,17 +1,23 @@
 # Implementačný plán
 
-**Verzia:** 0.1.0-alpha · **Dátum:** 2026-09-02 · **Stav:** fázy 0–2, 3c, 5 hotové · **Predpoklad:** [analýza stavu](2026-09-02-stav-projektu-a-analyza-navmeshu.md)
+**Verzia:** 0.2.0-alpha · **Dátum:** 2026-09-02, dopĺňané · **Stav:** fázy 0–2, 3c, 5 hotové · **Predpoklad:** [analýza stavu](2026-09-02-stav-projektu-a-analyza-navmeshu.md)
 
 Cieľ testu sa nemení oproti pôvodnému dokumentu: **zistiť, ako presne sedí navmesh na
-skutočnú fakultu a ako rýchlo to odchádza pri chôdzi.** Nie navigácia, nie okluzia, jedna
-značka, jedna plocha.
+skutočnú fakultu a ako rýchlo to odchádza pri chôdzi.** Nie navigácia, nie okluzia.
 
 Fázy sú zoradené tak, že každá končí niečím overiteľným. Fázy 1–5 sú práca pri počítači,
 fáza 6 je v teréne.
 
+Dve veci sa oproti pôvodnému zneniu zmenili a sú rozpísané na svojich miestach:
+
+- **Značiek bude viac, nie jedna** (fáza 3a) — značka je jediná vec nezávislá od mapy ARCore,
+  takže je zároveň liekom na stratu trackingu ([ADR 006](decisions/006-kotvenie-a-strata-trackingu.md)).
+- **Pribudla fáza 7** — korekcia polohy pomocou modelu, ako druhá vetva merania oproti fáze 6
+  ([ADR 007](decisions/007-vyuzitie-modelu-na-lokalizaciu.md)).
+
 ---
 
-## Fáza 0 — Hygiena projektu — ✅ hotové (okrem overenia na zariadení)
+## Fáza 0 — Hygiena projektu — ✅ hotové a overené na zariadení
 
 Krátke veci, ktoré blokujú build alebo špinia repozitár.
 
@@ -54,8 +60,8 @@ ARKit package       : removed
 KeepScreenAwake     : on 'FriLens'
 ```
 
-**Neoverené:** či prázdny build prejde na telefón a spustí sa. Vyžaduje zariadenie
-s ARCore a zapnutým USB ladením (diera K6) a nedá sa odbaviť od stola.
+Overené na zariadení od 0.1.0-alpha; od 0.1.4-alpha beží tracking spoľahlivo na Redmi Note
+10 Pro.
 
 ---
 
@@ -108,7 +114,7 @@ z nich by potreboval vlastné rozhodnutie, čo je ešte jedna plocha.
 
 ---
 
-## Fáza 2 — Vyčistenie scény — ✅ hotové (okrem overenia na zariadení)
+## Fáza 2 — Vyčistenie scény — ✅ hotové a overené na zariadení
 
 Scéna presunutá a premenovaná: `Assets/Scenes/SampleScene.unity` →
 **`Assets/_Game/Scenes/FriLensTest.unity`**. Vlastný obsah patrí do `_Game/`, rovnako ako
@@ -122,7 +128,12 @@ vo FriWorlde. Build settings obsahujú už len ju.
 - `Directional Light` — prekryv je unlit, svetlo nemá čo osvetľovať
 - `ARPlaneManager` — detekcia rovín kreslila prechodové štvorce práve po podlahe, teda po
   ploche, ktorej hranu má test čítať. K tomu stojí CPU.
-- `ARRaycastManager`, `InputActionManager` — existovali len pre tap-to-place
+- `ARRaycastManager` — existoval len pre tap-to-place
+
+> **Oprava 2026-09-03:** `InputActionManager` bol odstránený spolu s nimi a **musel sa
+> vrátiť**. `TrackedPoseDriver` berie pózu cez `InputActionReference`, a tie akcie sa samy
+> nezapnú — bez neho bola pozícia kamery presne `0.0000` po celý beh. Podrobne v CHANGELOG-u
+> pri 0.1.1-alpha.
 
 ### Odpojenie od šablónového prefabu
 
@@ -133,8 +144,9 @@ a `Samples` **zo 16 na 1**.
 
 Tá jedna je `Assets/Samples/…/Starter Assets/XRI Default Input Actions.inputactions`, ktorú
 používa `TrackedPoseDriver` na `Main Camera` na polohu a rotáciu kamery. **Zložka
-`Assets/Samples` sa preto zatiaľ nedá zmazať** — najskôr by ju musel nahradiť vlastný
-`.inputactions`. Bez zariadenia sa to overiť nedá, takže to nechávam tak.
+`Assets/Samples` sa preto nedá zmazať** — najskôr by ju musel nahradiť vlastný
+`.inputactions`. Keďže tadiaľto vedie celá póza kamery, nie je to miesto na upratovanie
+bez dôvodu.
 
 ### Výsledná hierarchia
 
@@ -149,6 +161,23 @@ AlignmentRoot              ← koreň prekryvu, hýbe ním zosúladenie
   ├ NavOverlay             ra0_nav (1 259 tris), NavOverlay.mat, lokálne Y = +0.03
   └ MarkerAnchor           póza značky v súradniciach modelu — zatiaľ nenastavená (fáza 3b)
 ```
+
+Stav k 0.1.8-alpha, po fázach 5 a 6 (mená objektov nezmenené, pribudli komponenty):
+
+```
+XR Origin (AR Rig)         + ARAnchorManager, ARTrackedImageManager, InputActionManager
+  └ Camera Offset
+      └ Main Camera        far clip 120 m (bolo 20 — prekryv má 80 m a nebolo ho vidieť)
+FriLens                    + KeepScreenAwake, SessionModeController, MarkerAlignment,
+                             AnchoredRoot, CameraTravel, TrackingContinuity, FloorProbe,
+                             SessionLogger
+HUD                        + UIDocument, DiagnosticsHud, ProvisionalPlacement
+PreviewRig                 vypnutý; zapne ho až Preview vetva
+AlignmentRoot              + MeshCollider na NavOverlay (jeden lúč za session na podlahu modelu)
+```
+
+Poradie skriptov je pevné: `CameraTravel` (−50) → `SessionLogger` (50) → `DiagnosticsHud` (60).
+Bez toho logger zapisoval aktuálnu pózu spolu s odvodenými hodnotami z predošlého snímku.
 
 Missing scriptov v scéne: 0.
 
@@ -192,10 +221,29 @@ vyžaduje zariadenie (diera K6).
 Toto je najzdĺhavejšia a najdôležitejšia časť. Kroky 5 a 6 pôvodného dokumentu platia
 nezmenené; sem patrí len to, čo k nim pribudlo.
 
-### 3a. Fyzická značka
+### 3a. Fyzické značky
 
-- [ ] Vybrať miesto lokalizovateľné v modeli — roh miestnosti, zárubňa, roh schodiska
-- [ ] Vytlačiť **matne**, nalepiť naplocho na tvrdý podklad
+> **Zmena od 0.1.5-alpha:** značiek má byť **viac, rozmiestnených po trase**, nie jedna.
+> Značka je jediná vec nezávislá od mapy ARCore, takže je to zároveň liek na stratu
+> trackingu: s viacerými je najhoršia možná chyba ohraničená úsekom medzi dvomi značkami,
+> nie dĺžkou celého behu. Dôvod v [ADR 006](decisions/006-kotvenie-a-strata-trackingu.md).
+
+**Obrázky sú hotové** — `Assets/_Game/AR/Markers/frilens-M1..M4.png`, 1024 × 1024.
+Vygenerované, nie prevzaté: ARCore hodnotí hustotu hrán, kontrast a to, aby sa vzor
+neopakoval, a logo je na to zlé. Každý má vlastný seed, lebo ARCore ich musí od seba
+odlíšiť — inak by prezarovnanie pri M3 posadilo prekryv na zameranú pózu M1.
+
+Vľavo hore je hrubá nesymetrická rohová značka. Slúži na ručné zarovnanie pri lepení
+a znemožňuje, aby vzor sadol sám na seba otočený o 90°.
+
+- [ ] Vybrať miesta lokalizovateľné v modeli — roh miestnosti, zárubňa, roh schodiska.
+      Rozmiestniť po plánovanej trase tak, aby jedna bola vždy v dosahu.
+- [ ] Vytlačiť **matne** na tvrdý papier, **bez prispôsobenia mierke** („actual size",
+      nie „fit to page") — tlačiareň inak zmenší okraje a s nimi celý vzor
+- [ ] **Odmerať pravítkom čierny rám** vytlačenej značky a to číslo zadať v
+      `FriLens > Marker Library`. Nie rozmer poslaný do tlače. Chyba 5 % v tomto čísle je
+      chyba 5 % v mierke celého prekryvu a na obrazovke ju nič neukáže.
+- [ ] Nalepiť naplocho na tvrdý podklad
 - [ ] **Odmerať vytlačenú značku pravítkom** a ten rozmer zadať do Reference Image Library.
       Nie rozmer poslaný do tlače. Chyba 5 % v rozmere značky je chyba 5 % v mierke celého
       prekryvu.
@@ -215,7 +263,7 @@ Model budovy sa nedonáša.
    (`ra000` je na `Y = 5.15 m`).
 4. Umiestniť `MarkerAnchor` na výslednú pózu.
 
-### 3c. Skript zosúladenia — ✅ hotové (okrem overenia na zariadení)
+### 3c. Skript zosúladenia — ⚠️ hotové, neoveriteľné bez značky
 
 `Assets/_Game/Scripts/Runtime/MarkerAlignment.cs`, na objekte `FriLens` v scéne. Napojený
 na `ARTrackedImageManager`, `AlignmentRoot` a `MarkerAnchor`.
@@ -280,9 +328,30 @@ vyzeralo ako zle zameraná značka.
 Kontroly sú menu položka, nie testovací asmdef: runtime skripty žijú v preddefinovanej
 `Assembly-CSharp`, na ktorú sa testovacia assembly s asmdef odkázať nedá.
 
+#### Overenie na zariadení, 2026-09-03
+
+Beh na telefóne, ktorý ARCore zvláda, s buildom 0.1.0-alpha odhalil chybu, ktorá by inak
+zabila celý test bez toho, aby ju bolo z čoho spoznať:
+
+```
+4.572   Ar, SessionTracking, None      ← ARCore trackuje
+…       55 sekúnd v SessionTracking
+cam_x = cam_y = cam_z = 0.0000         ← póza sa do appky nedostane
+walked_m = 0.000
+```
+
+`SessionTracking` znamená, že **ARCore** trackuje. Nehovorí nič o tom, či sa póza dostane
+do scény — tú doručuje `TrackedPoseDriver` cez `InputActionReference` do
+`XRI Default Input Actions`, a tie akcie zapína `InputActionManager`, ktorý fáza 2 odstránila.
+Prekryv by teda stál na mieste a `Walked` by zostalo nulové aj po prejdení celej fakulty.
+Opravené v 0.1.1-alpha, potvrdené týmto logom.
+
+Ponaučenie do protokolu: **stav trackingu na HUD-e nestačí ako dôkaz, že meranie beží.**
+Jediný spoľahlivý dôkaz je rastúce `Walked`.
+
 **Neoverené:** či po namierení na značku prekryv skočí na miesto a či opakované zosúladenie
-z rovnakého miesta trafí to isté (rozdiel pod 1–2 cm). Vyžaduje značku (fáza 3a), jej pózu
-(fáza 3b) a zariadenie (diera K6).
+z rovnakého miesta trafí to isté (rozdiel pod 1–2 cm). Vyžaduje značku (fáza 3a) a jej pózu
+(fáza 3b).
 
 ---
 
@@ -297,7 +366,7 @@ z rovnakého miesta trafí to isté (rozdiel pod 1–2 cm). Vyžaduje značku (f
 
 ---
 
-## Fáza 5 — Diagnostika a UI — ✅ hotové (okrem overenia na zariadení)
+## Fáza 5 — Diagnostika a UI — ✅ hotové a overené na zariadení
 
 UI je postavené na **UI Toolkit**, nie uGUI.
 
@@ -386,6 +455,14 @@ stiahnuť.
 
 ## Fáza 6 — Test v teréne
 
+> **Stav k 0.1.8-alpha:** prístroj je overený, samotné meranie zhody nie. Behy 0.1.5 až 0.1.8
+> odmerali, že prejdená vzdialenosť sedí na −2,7 %, ako sa správa strata trackingu, že kotvy ju
+> prežijú a že relokalizácie nesú metrovú zvislú zložku — všetko o **trackeri**. Zhoda modelu
+> s budovou čaká na fázu 3a a 3b. Podrobne v
+> [protokole](2026-09-04-protokol-baseline-testu.md) a
+> [výsledkoch](2026-09-04-vysledky-baseline.md).
+
+
 Protokol z pôvodného dokumentu, s jednou úpravou (diera K7).
 
 - [ ] Zosúladiť pri značke a **hneď pozrieť zblízka** — to je chyba modelu a značky, bez driftu
@@ -416,6 +493,28 @@ značky, neplatí. To je informácia, ktorú test má vedieť odovzdať.
 
 ---
 
+## Fáza 7 — Korekcia polohy pomocou modelu
+
+Pribudla po 0.1.5-alpha. Neide o inkrement k fáze 6, ale o **druhú vetvu merania**: fáza 6 dá
+drift bez akejkoľvek pomoci modelu, fáza 7 s ňou, a výsledkom je rozdiel medzi nimi.
+
+Poradie a odôvodnenie sú v [ADR 007](decisions/007-vyuzitie-modelu-na-lokalizaciu.md).
+V skratke:
+
+- [ ] Extraktor stien z hraničných hrán navmeshu — odomyká všetko ostatné
+- [ ] Zarovnanie kurzu na dominantné smery chodieb
+- [ ] Väzba na výšku podlahy
+- [ ] Map matching časticovým filtrom
+- [ ] *(samostatná kapitola)* roviny z ARCore proti stenám modelu
+- [ ] *(samostatná kapitola)* Depth API a ICP proti meshu
+
+**Každá položka je defaultne vypnutý režim.** Beh s korekciou a beh bez nej sa merajú zvlášť.
+Zapnúť všetko naraz a merať jeden beh by znamenalo merať model modelom.
+
+---
+
+---
+
 ## Otvorené otázky
 
 Tieto tri menia poradie práce, nie jej obsah.
@@ -427,6 +526,8 @@ Tieto tri menia poradie práce, nie jej obsah.
    ukáže hranu pri stene. Návrh: nechať portrait, orientáciu zamknúť.
 
 Otázka „kedy doniesť `fri_building`" odpadla — [ADR 003](decisions/003-poza-znacky-z-nav-polygonov.md).
+Rovnako odpadla aj pre steny: dajú sa odvodiť z hraničných hrán navmeshu
+([analýza](2026-09-04-analyza-geometrie-a-stien.md)).
 
 ---
 

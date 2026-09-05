@@ -25,10 +25,10 @@ namespace FriLens.EditorTools
     public static class AndroidBuilder
     {
         /// <summary>Human-readable version. Also the name of the output folder.</summary>
-        public const string Version = "0.1.1-alpha";
+        public const string Version = "0.2.0-alpha";
 
         /// <summary>Android versionCode. Must go up on every build Android is asked to install over another.</summary>
-        public const int VersionCode = 2;
+        public const int VersionCode = 10;
 
         const string ProductName = "FriLens";
 
@@ -79,7 +79,8 @@ namespace FriLens.EditorTools
             log.AppendLine($"Build {Version} ({VersionCode}): {summary.result}");
             log.AppendLine($"  output   : {apk}");
             log.AppendLine($"  duration : {summary.totalTime}");
-            log.AppendLine($"  size     : {summary.totalSize / 1024 / 1024} MB");
+            log.AppendLine($"  size     : {(File.Exists(apk) ? new FileInfo(apk).Length : 0L) / 1024f / 1024f:F1} MiB (apk), "
+                + $"{summary.totalSize / 1024 / 1024} MB (whole output)");
             log.AppendLine($"  errors   : {summary.totalErrors}, warnings: {summary.totalWarnings}");
 
             foreach (var step in report.steps)
@@ -89,7 +90,7 @@ namespace FriLens.EditorTools
 
             if (summary.result == BuildResult.Succeeded)
             {
-                WriteBuildInfo(folder, summary);
+                WriteBuildInfo(folder, apk);
                 Debug.Log(log.ToString());
                 EditorUtility.RevealInFinder(apk);
             }
@@ -118,7 +119,7 @@ namespace FriLens.EditorTools
         /// this and what did it have turned on" is the question nobody can answer from the file
         /// alone.
         /// </summary>
-        static void WriteBuildInfo(string folder, BuildSummary summary)
+        static void WriteBuildInfo(string folder, string apk)
         {
             var android = NamedBuildTarget.Android;
             var info = new StringBuilder();
@@ -126,7 +127,11 @@ namespace FriLens.EditorTools
             info.AppendLine($"FriLens {Version} (versionCode {VersionCode})");
             info.AppendLine($"built      : {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
             info.AppendLine($"unity      : {Application.unityVersion}");
-            info.AppendLine($"size       : {summary.totalSize / 1024 / 1024} MB");
+            // The APK on disk, not BuildSummary.totalSize. That figure counts everything
+            // the build produced, symbol folders included, and reported 973 MB for an APK
+            // of 40 — a number nobody could act on and everybody would quote.
+            var bytes = File.Exists(apk) ? new FileInfo(apk).Length : 0L;
+            info.AppendLine($"size       : {bytes / 1024f / 1024f:F1} MiB");
             info.AppendLine();
             info.AppendLine($"bundle id  : {PlayerSettings.GetApplicationIdentifier(android)}");
             info.AppendLine($"min sdk    : {PlayerSettings.Android.minSdkVersion}");

@@ -46,6 +46,10 @@ namespace FriLens
         [Tooltip("Empty object placed at the marker's pose in model coordinates.")]
         [SerializeField] Transform m_MarkerAnchor;
 
+        [Tooltip("Optional. Holds the root on an ARAnchor so it follows ARCore's corrections after "
+            + "a tracking loss. Without it the root is written once and stays put.")]
+        [SerializeField] AnchoredRoot m_Anchored;
+
         [Header("Sampling")]
         [Tooltip("Frames of tracked pose to average before applying an alignment.")]
         [SerializeField, Range(1, 120)] int m_SampleCount = 30;
@@ -56,11 +60,16 @@ namespace FriLens
         [Tooltip("Align automatically the first time the marker is seen.")]
         [SerializeField] bool m_AlignOnFirstSighting = true;
 
+        [Tooltip("Seconds without a usable sample after which a half-collected burst is thrown "
+            + "away rather than continued.")]
+        [SerializeField] float m_SampleGapTimeoutSeconds = 2f;
+
         readonly List<Vector3> m_Positions = new();
         readonly List<Quaternion> m_Rotations = new();
 
         bool m_Enabled;
         bool m_WarnedAboutUnsetAnchor;
+        float m_LastSampleTime;
 
         /// <summary>
         /// Raised right after an averaged pose has been applied. Distance walked has to start
@@ -89,6 +98,18 @@ namespace FriLens
 
         /// <summary>The marker currently being tracked, or null.</summary>
         public ARTrackedImage TrackedMarker { get; private set; }
+
+        /// <summary>
+        /// How many images the tracker has been given to look for.
+        ///
+        /// Zero until the printed markers exist, and that is not a detail: with an empty library
+        /// ARCore has nothing to recognise, so pressing re-anchor collects no samples and times
+        /// out. The button has to say that rather than look ready and do nothing.
+        /// </summary>
+        public int ReferenceImageCount =>
+            m_TrackedImageManager != null && m_TrackedImageManager.referenceLibrary != null
+                ? m_TrackedImageManager.referenceLibrary.count
+                : 0;
 
         void Awake()
         {
@@ -132,10 +153,37 @@ namespace FriLens
             // Poses reported while the tracker is only guessing would poison the average, so
             // limited tracking contributes nothing and the burst simply waits.
             if (TrackedMarker == null || TrackedMarker.trackingState != TrackingState.Tracking)
+            {
+                // Waiting is fine for a moment, but a burst left half full while the marker is
+                // out of view is a trap: when it comes back the average would mix poses from
+                // before and after — possibly across a relocalisation, from a different distance
+                // and angle — and produce an alignment that looks measured and is not. Old
+                // samples are dropped rather than continued.
+                if (Time.time - m_LastSampleTime > m_SampleGapTimeoutSeconds)
+                {
+                    if (m_Positions.Count > 0)
+                    {
+                        Debug.LogWarning($"{nameof(MarkerAlignment)}: dropped {m_Positions.Count} samples, "
+                            + $"the marker was out of view for more than {m_SampleGapTimeoutSeconds:F0} s.", this);
+                        m_Positions.Clear();
+                        m_Rotations.Clear();
+                        m_LastSampleTime = Time.time;
+                    }
+                    else
+                    {
+                        // Nothing was ever collected, so this is a re-anchor pressed with no
+                        // marker in front of the camera. Standing in "sampling 0/30" for ever
+                        // reads as work in progress; going back to waiting is the truth.
+                        State = AlignmentState.Waiting;
+                    }
+                }
+
                 return;
+            }
 
             m_Positions.Add(TrackedMarker.transform.position);
             m_Rotations.Add(TrackedMarker.transform.rotation);
+            m_LastSampleTime = Time.time;
 
             if (m_Positions.Count >= m_SampleCount)
                 ApplyAlignment();
@@ -152,6 +200,7 @@ namespace FriLens
 
             m_Positions.Clear();
             m_Rotations.Clear();
+            m_LastSampleTime = Time.time;
             State = AlignmentState.Sampling;
         }
 
@@ -193,7 +242,13 @@ namespace FriLens
             SolveRootPose(position, rotation, anchorLocalPosition, anchorLocalRotation,
                 out var rootPosition, out var rootRotation);
 
-            m_AlignmentRoot.SetPositionAndRotation(rootPosition, rootRotation);
+            // Through the anchor when there is one. A pose written straight into the transform is
+            // correct for exactly as long as ARCore's idea of the world does not change, and the
+            // whole point of the marker is to survive the moments when it does.
+            if (m_Anchored != null)
+                m_Anchored.PlaceAt(new Pose(rootPosition, rootRotation));
+            else
+                m_AlignmentRoot.SetPositionAndRotation(rootPosition, rootRotation);
 
             LastAlignmentTime = Time.time;
             State = AlignmentState.Aligned;

@@ -39,6 +39,10 @@ namespace FriLens
         [Tooltip("Camera and controls used when the device cannot do AR.")]
         [SerializeField] GameObject m_PreviewRig;
 
+        [Tooltip("Seconds of SessionInitializing after which AR is given up on and the app falls "
+            + "back to preview.")]
+        [SerializeField] float m_InitializingTimeoutSeconds = 25f;
+
         [Header("Development")]
         [Tooltip("Auto asks the device. The other values skip the check and force a mode.")]
         [SerializeField] ModeOverride m_Override = ModeOverride.Auto;
@@ -61,6 +65,8 @@ namespace FriLens
         /// <summary>True when the phone could do AR but Google Play Services for AR is missing.</summary>
         public bool NeedsArServicesInstall { get; private set; }
 
+        float m_InitializingFor;
+
         IEnumerator Start()
         {
             // The AR rig is deliberately left alone here. Switching it off even for the two frames
@@ -75,11 +81,28 @@ namespace FriLens
             // working session, so the preview path can never be reached by asking. Without a way
             // to force it, the mode a phone like the Redmi 14C actually lands in would only ever
             // be seen for the first time on that phone.
-            if (m_Override != ModeOverride.Auto)
+            if (m_Override == ModeOverride.ForcePreview)
             {
                 DecidedFrom = ARSession.state;
-                if (m_Override == ModeOverride.ForcePreview) EnterPreview(); else EnterAr();
-                Explanation = "Forced " + m_Override + " in the inspector. Not what this device reported.";
+                EnterPreview();
+                Explanation = "Forced to preview in the inspector. Not what this device reported.";
+                yield break;
+            }
+
+            // CheckAvailability() answers "can the ARCore API be used here", not "can this
+            // hardware track". Installing Google Play Services for AR is enough to make it say
+            // yes, even on a phone with no gyroscope — and motion tracking is visual-inertial,
+            // so with no gyroscope there is no inertial half to work with. The session then
+            // opens the camera and sits in SessionInitializing forever with notTrackingReason
+            // None, because nothing failed; it simply never converges. Asking the sensor first
+            // is both cheaper and more truthful than asking ARCore.
+            if (m_Override != ModeOverride.ForceAr && !SystemInfo.supportsGyroscope)
+            {
+                DecidedFrom = ARSession.state;
+                EnterPreview();
+                Explanation = "This device has no gyroscope, so ARCore cannot track motion "
+                    + "no matter what it reports. Showing the overlay without AR.";
+                Debug.LogWarning($"{nameof(SessionModeController)}: {Explanation}", this);
                 yield break;
             }
 
@@ -97,10 +120,49 @@ namespace FriLens
 
             DecidedFrom = ARSession.state;
 
+            // ForceAr overrides the verdict, not the check. Skipping the check as well used to
+            // leave the session sitting at state None, so the forced AR mode showed a HUD that
+            // could never light up — which made it useless for the one thing it exists for.
+            if (m_Override == ModeOverride.ForceAr)
+            {
+                EnterAr();
+                Explanation = "Forced to AR in the inspector. Not what this device reported.";
+                yield break;
+            }
+
             if (ARSession.state == ARSessionState.Unsupported || ARSession.state == ARSessionState.NeedsInstall)
                 EnterPreview();
             else
                 EnterAr();
+        }
+
+        /// <summary>
+        /// Second line of defence behind the gyroscope check. A phone can have the sensor and
+        /// still never converge — an uncertified device without a calibration profile does
+        /// exactly that. Sitting in AR mode forever shows a live camera and a frozen overlay,
+        /// which reads as a broken app rather than an unsuitable phone, so after a while the
+        /// app stops waiting and says so.
+        /// </summary>
+        void Update()
+        {
+            if (Mode != SessionMode.Ar || m_Override != ModeOverride.Auto)
+                return;
+
+            if (ARSession.state != ARSessionState.SessionInitializing)
+            {
+                m_InitializingFor = 0f;
+                return;
+            }
+
+            m_InitializingFor += Time.deltaTime;
+            if (m_InitializingFor < m_InitializingTimeoutSeconds)
+                return;
+
+            EnterPreview();
+            Explanation = $"AR could not start after {m_InitializingTimeoutSeconds:F0} s. "
+                + "The camera works, but tracking never settled — this device cannot run the test. "
+                + "Showing the overlay without AR.";
+            Debug.LogWarning($"{nameof(SessionModeController)}: {Explanation}", this);
         }
 
         void EnterAr()
