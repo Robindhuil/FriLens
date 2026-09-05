@@ -40,6 +40,7 @@ obmedzeniami: [ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md).
 | [ADR 006 — Kotvenie a strata trackingu](decisions/006-kotvenie-a-strata-trackingu.md) | čo sa stane pri zakrytí kamery, prečo `ARAnchor` a prečo značiek viac |
 | [ADR 007 — Využitie modelu na lokalizáciu](decisions/007-vyuzitie-modelu-na-lokalizaciu.md) | prečo je kamera nutná, aké možnosti dáva znalosť modelu a prečo baseline musí ísť prvý |
 | [ADR 008 — Rozšírenie rozsahu na navigáciu a hru](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md) | prečo sa zadanie mení, čo z merania zostáva a prečo je herné stanovište zameraná značka |
+| [ADR 009 — Vyhodnotenie sa neviaže na DOD](decisions/009-vyhodnotenie-sa-neviaze-na-den-otvorenych-dveri.md) | prečo sa nemeria na dni otvorených dverí, hoci je appka preň, a čo sa meria namiesto toho |
 
 Východiskový návrh testu žije vo FriWorlde:
 [`FriWorld/docs/2026-08-29-frilens-ar-test.md`](../../FriWorld/docs/2026-08-29-frilens-ar-test.md).

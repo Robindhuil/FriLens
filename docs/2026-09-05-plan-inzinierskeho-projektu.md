@@ -37,6 +37,50 @@ vzdialenosť)* s referenciou. Sto návštevníkov × osem stanovíšť je 800 me
 
 ---
 
+## Kalendár: kedy je udalosť a kedy semester
+
+Toto je jediné miesto, kde sa plán musel zmeniť oproti prvému návrhu, a je to dôležité.
+
+| | obdobie | udalosť v okne |
+|---|---|---|
+| **Semester 1** | ZS 2026/27, sep – jan | — |
+| | **február 2027** | **DOD 2027** — aplikácia existuje päť mesiacov, na nasadenie priskoro |
+| **Semester 2** | LS 2026/27, feb – jún | DOD 2027 padne do prvých týždňov |
+| | júl – august 2027 | mimo rozpočtu projektu |
+| **Semester 3** | ZS 2027/28, sep – **jan 2028** | **hlavné vyhodnotenie: november 2027** |
+| | február 2028 | **DOD 2028** — už po odovzdaní práce |
+
+**Zrážka.** Deň otvorených dverí je vo februári, tretí semester končí v januári. Oba DOD
+v okne projektu teda ležia mimo použiteľného času: prvý je príliš skoro, druhý až po odovzdaní.
+Nasadenie na deň otvorených dverí sa **nedá použiť ako zdroj dát pre prácu**.
+
+**Riešenie: hlavné vyhodnotenie sa neviaže na DOD.** V novembri 2027 sa pozvú tri až štyri
+triedy stredoškolákov, po 20–25 ľuďoch. Vzorka 60–100 návštevníkov je na porovnanie s kontrolnou
+skupinou dosť a na drift medzi stanovišťami dá stovky meraní.
+
+Nie je to náhradné riešenie z núdze, je to **lepší plán**:
+
+- **Termín si určuješ sám.** Najväčšie rozvrhové riziko projektu tým mizne úplne. Dátum DOD
+  neurčuje ani vedúci projektu, ani ty.
+- **Vzorka je čistejšia.** Trieda príde naraz, dá sa rozdeliť na skupinu s aplikáciou a kontrolnú
+  s papierovou mapou, a obe idú tou istou trasou v ten istý čas. Na dni otvorených dverí sa to
+  nedá — návštevníci prichádzajú priebežne a robia si, čo chcú.
+- **Dá sa opakovať.** Ak prvá trieda odhalí chybu, druhá príde o dva týždne. Deň otvorených dverí
+  je raz za rok a čo sa naň nestihne, nestihne sa vôbec.
+
+**Čo sa s dňami otvorených dverí urobí namiesto toho:**
+
+| kedy | čo |
+|---|---|
+| **DOD február 2027** | jeden merací beh v budove plnej ľudí. Nič sa nenasadzuje, nikto z návštevníkov appku nevidí. Je to jediná príležitosť odmerať tracking v dave a stojí 4 h. |
+| **DOD február 2028** | ostrá prevádzka aplikácie pre návštevníkov, **po** odovzdaní práce. To, že projekt pokračuje aj po obhajobe, je argument pre fakultu, nie súčasť práce. |
+
+> **Ešte overiť:** či fakulta nemá **jesenný termín dňa otvorených dverí** (november býva bežný).
+> Ak áno, nahradí pozvané triedy a vyhodnotenie prebehne na skutočnom DOD vnútri semestra 3.
+> Zmenil by sa tým iba názov udalosti v balíku 3.3, nie rozpočet ani poradie práce.
+
+---
+
 ## Východiskový stav — čo už existuje
 
 Projekt sa nezačína od nuly. K 0.1.8-alpha je hotové a **overené na zariadení**:
@@ -144,12 +188,12 @@ Rezerva je v tom, že balíky 1.5 a 1.6 sú podľa [ADR 007](decisions/007-vyuzi
 
 **Čo sa nevypúšťa za žiadnych okolností:** 1.1 a 1.2. Bez nich semester nemá výsledok.
 
-### Deň otvorených dverí v tomto semestri
+### Čo musí byť hotové na február
 
-Ak DOD pripadne do prvého semestra, **nenasadzuje sa naň nič**. Použije sa inak, a hodnotnejšie:
-budova plná ľudí je jediná príležitosť odmerať tracking v dave — zakrytia kamery, pohyb v okolí,
-obsadené chodby. Jeden merací beh počas udalosti dá dáta, ktoré sa v prázdnej chodbe nedajú
-získať. Rozpočtovo je to jeden beh z balíka 1.2.
+DOD 2027 padne pár týždňov po konci tohto semestra. **Nenasadzuje sa naň nič** — ide sa tam iba
+merať tracking v dave (balík 2.8). Znamená to však, že na konci semestra 1 musí appka **behať na
+telefóne a logovať**, nie byť rozostavaná. Akceptačné kritériá vyššie sú napísané tak, aby to
+vynútili.
 
 ---
 
@@ -158,21 +202,29 @@ získať. Rozpočtovo je to jeden beh z balíka 1.2.
 **Cieľ:** dokázať tabuľkou, o koľko znalosť modelu potlačí drift, a mať hrateľnú trasu po
 stanovištiach.
 
+Semester začína dňom otvorených dverí 2027, ktorý padne do jeho prvých týždňov. Ide sa naň merať,
+nie nasadzovať (balík 2.8) — dôvody v [kalendári](#kalendár-kedy-je-udalosť-a-kedy-semester).
+
+**Na konci tohto semestra musí byť aplikácia hotová.** Vyhodnocovacia udalosť je v novembri, teda
+v druhom mesiaci semestra 3, a dovtedy zostáva len čas na odolnosť a prípravu. Čo sa do júna
+nedostane do aplikácie, do práce sa nedostane vôbec.
+
 ### Pracovné balíky
 
 | # | Balík | Obsah | h |
 |---|---|---|---:|
 | 2.1 | **Offline replay** | prehratie zaznamenaného behu cez lokalizačný reťazec bez telefónu; ladenie filtra na dátach, nie v chodbe. **Násobí produktivitu všetkého ďalšieho** | 12 |
-| 2.2 | **Korekcia C — časticový filter** | stovky hypotéz polohy, posun odometriou, zabíjanie tých, čo prešli stenou; jadro práce | 26 |
+| 2.2 | **Korekcia C — časticový filter** | stovky hypotéz polohy, posun odometriou, zabíjanie tých, čo prešli stenou; jadro práce | 24 |
 | 2.3 | **Prezarovnanie na značkách za behu** | viac značiek po trase; automatické prezarovnanie pri uvidení; liek na 15-sekundový útes z baseline | 10 |
-| 2.4 | **Autorský pipeline** | definícia stanovišťa a questu ako asset; editorové okno; predvyplnenie z `Rooms.json`; validácia dosiahnuteľnosti po navmeshi | 18 |
-| 2.5 | **Herná slučka** | trasa stanovíšť, skenovanie značky, body, postup, obrazovky, obsah pre 4 stanovištia | 24 |
+| 2.4 | **Autorský pipeline** | definícia stanovišťa a questu ako asset; editorové okno; predvyplnenie z `Rooms.json`; validácia dosiahnuteľnosti po navmeshi | 16 |
+| 2.5 | **Herná slučka** | trasa stanovíšť, skenovanie značky, body, postup, obrazovky, obsah pre 4 stanovištia | 21 |
 | 2.6 | **Telemetria s odovzdaním** | anonymné ID, súhlasová obrazovka, upload behu, žiadne snímky z kamery na disk | 10 |
 | 2.7 | **Ablačná štúdia** | ≥ 12 behov: baseline / A+B / A+B+C / A+B+C+značky; vyhodnotenie skriptami z 1.3 | 14 |
-| 2.8 | **Réžia** | konzultácie, ADR, dokumentácia, semestrálna správa | 14 |
-| | **Spolu** | | **128** |
+| 2.8 | **DOD 2027 — meranie v dave** | jeden beh v budove plnej ľudí; nič sa nenasadzuje. Jediná príležitosť odmerať tracking v prevádzkových podmienkach, aké sa v prázdnej chodbe nasimulovať nedajú | 4 |
+| 2.9 | **Réžia** | konzultácie, ADR, dokumentácia, semestrálna správa | 14 |
+| | **Spolu** | | **125** |
 
-Trojhodinový presah sa kryje z rezervy semestra 1 alebo skrátením 2.5 na tri stanovištia.
+Semester je nabitý presne na strop, bez rezervy. Poistkou je zoznam nižšie, nie optimizmus.
 
 ### Akceptačné kritériá
 
@@ -199,13 +251,17 @@ Nikdy sa nevypúšťa 2.1 a 2.7. Replay je nástroj, bez ktorého sa ladí v ter
 **Cieľ:** nasadiť aplikáciu na reálnu udalosť, vyhodnotiť dáta z reálnych používateľov a napísať
 prácu.
 
+**Udalosť je v novembri 2027** — tri až štyri pozvané triedy stredoškolákov po 20–25 ľuďoch, alebo
+jesenný DOD, ak ho fakulta má. September a október sú na odolnosť a prípravu (36 h, čo je pri
+9,5 h týždenne pohodlné), november na udalosť, december a január na vyhodnotenie a písanie.
+
 ### Pracovné balíky
 
 | # | Balík | Obsah | h |
 |---|---|---|---:|
 | 3.1 | **Odolnosť a záložná vetva** | 2D pôdorys ako plnohodnotná náhrada pri strate trackingu aj na zariadeniach bez ARCore; obnova session; hlášky, ktoré nelžú | 18 |
-| 3.2 | **Príprava nasadenia** | obsah od katedier, zariadenia, prevádzkový postup pre obsluhu, skúšobný beh so študentmi týždeň vopred | 18 |
-| 3.3 | **Udalosť** | nasadenie, obsluha, zber telemetrie a dotazníkov, **kontrolná skupina s papierovou mapou** | 12 |
+| 3.2 | **Príprava nasadenia** | obsah od katedier, zariadenia, dohoda so školami, prevádzkový postup pre obsluhu, skúšobný beh so študentmi týždeň vopred | 18 |
+| 3.3 | **Udalosť** | tri až štyri návštevy tried; obsluha, zber telemetrie a dotazníkov, **kontrolná skupina s papierovou mapou** — polovica triedy s aplikáciou, polovica s mapou, tá istá trasa v ten istý čas | 12 |
 | 3.4 | **Vyhodnotenie** | drift medzi stanovišťami naprieč všetkými behmi; čas do miestnosti appka vs. mapa; dotazník; pokrytie zariadení; miera dokončenia | 18 |
 | 3.5 | **Písanie práce** | text, obrázky, tabuľky — z priebežných analýz a ADR, nie z ničoho | 45 |
 | 3.6 | **Réžia a obhajoba** | konzultácie, oponentúra, príprava prezentácie | 12 |
@@ -214,16 +270,20 @@ prácu.
 ### Akceptačné kritériá
 
 - [ ] Aplikácia beží celý deň udalosti bez zásahu vývojára
-- [ ] **≥ 50 dokončených behov** návštevníkov v telemetrii
+- [ ] **≥ 50 dokončených behov** návštevníkov v telemetrii (3 triedy × ~20 ľudí)
 - [ ] Porovnanie času do miestnosti proti kontrolnej skupine, so štatistickou významnosťou alebo s priznaním, že vzorka na ňu nestačí
 - [ ] Dataset driftu s pravdou zo stanovíšť, zverejniteľný ako príloha práce
 - [ ] Práca odovzdaná v termíne
 
 ### Ak sa nestíha
 
-Vypúšťa sa **3.3 udalosť v plnom rozsahu** a nahrádza sa **riadeným testom s pozvanou triedou
-stredoškolákov** (20–25 ľudí, 2 h). Vzorka je menšia, ale kontrolovanejšia a **termín si určuješ
-sám**. Práca tým stráca „stovky návštevníkov", nie výsledok.
+Vypúšťajú sa **návštevy tried, nie prvá z nich**. Jedna trieda (20–25 ľudí, 2 h) je minimum, pod
+ktoré sa ísť nedá — bez nej nie je s čím porovnávať kontrolnú skupinu. Každá ďalšia je zväčšenie
+vzorky a dá sa obetovať termínu.
+
+Druhá poistka je, že **termín si určuješ sám**. Ak október utečie, udalosť sa posunie na december
+a stále je pred odovzdaním. Toto je celý dôvod, prečo sa vyhodnotenie neviaže na deň otvorených
+dverí.
 
 Text práce sa nevypúšťa a nekráti. Ak sa niečo nestihne, nestihne sa funkcia, nie kapitola.
 
@@ -240,11 +300,12 @@ S2  replay ──► časticový filter ──► ablačná tabuľka
        │                                  ▲
        └──► autorský pipeline ──► hra ────┘
 
-S3  odolnosť ──► príprava ──► UDALOSŤ (pevný dátum) ──► vyhodnotenie ──► práca
+S3  odolnosť ──► príprava ──► TRIEDY (nov 2027) ──► vyhodnotenie ──► práca
 ```
 
-**Na kritickej ceste sú tri veci:** zameranie značiek (S1), replay (S2) a dátum udalosti (S3).
-Všetko ostatné má obchádzku.
+**Na kritickej ceste sú dve veci:** zameranie značiek (S1) a offline replay (S2). Tretia — dátum
+udalosti — na nej bola, kým sa vyhodnotenie viazalo na deň otvorených dverí. Presunutím na pozvané
+triedy sa z pevného termínu stal posunuteľný a **kritická cesta sa skrátila**.
 
 ---
 
@@ -253,7 +314,9 @@ Všetko ostatné má obchádzku.
 | Riziko | Dopad | Čo s tým |
 |---|---|---|
 | **Model nie je 1:1 alebo polygóny nesedia na stenách** | mení tému práce | meria sa ako prvé, v S1; ak neplatí, prácou sa stáva *kvantifikácia nepresnosti modelu*, čo je stále platná téma |
-| **Dátum udalosti padne za termín odovzdania** | nie je čo vyhodnotiť | overiť **teraz**, pred schválením zadania; záložne riadený test s pozvanou triedou |
+| ~~Dátum udalosti padne za termín odovzdania~~ | ~~nie je čo vyhodnotiť~~ | **vyriešené** — oba DOD v okne projektu ležia mimo použiteľného času, preto sa vyhodnotenie presunulo na pozvané triedy v novembri 2027, ktorých termín je pod kontrolou ([kalendár](#kalendár-kedy-je-udalosť-a-kedy-semester)) |
+| **Školy neprídu alebo zrušia termín** | menšia vzorka | osloviť viac škôl, než treba, a rozložiť na tri termíny; jedna trieda je minimum a to sa dá naplniť aj študentmi prvého ročníka |
+| **Aplikácia nie je hotová do júna 2027** | udalosť v novembri sa nestihne pripraviť | semester 2 má na strope nulovú rezervu a **zoznam, čo sa vypúšťa**; prvým na rade je časticový filter, nie hra ani meranie |
 | **Časticový filter sa nerozbehne v reálnom čase** | chýba najsilnejšia korekcia | replay (2.1) to odhalí v laboratóriu, nie na udalosti; fallback je A+B+značky |
 | **Obsah od katedier nepríde** | prázdne stanovištia | autorský pipeline (2.4) umožní generický obsah; termín pre katedry o mesiac skôr než treba |
 | **Návštevníci si appku nenainštalujú** | malé N | rozhodnúť distribúciu v S1; požičané telefóny sú istota, obchod je bonus |
@@ -267,8 +330,14 @@ Všetko ostatné má obchádzku.
 
 Tri veci menia plán a treba na ne odpoveď skôr, než sa začne pracovať:
 
-1. **Presný dátum dňa otvorených dverí**, na ktorý sa mieri v semestri 3 — a či leží **pred**
-   termínom odovzdania práce. Toto je najväčšie rozvrhové riziko celého projektu.
+1. **Či fakulta nemá jesenný termín dňa otvorených dverí** (november býva bežný). Ak áno,
+   nahradí pozvané triedy a vyhodnotenie prebehne na skutočnom DOD vnútri semestra 3 — mení sa
+   tým názov udalosti v balíku 3.3, nie rozpočet ani poradie práce.
+
+   Druhá, širšia otázka na to isté: **dá sa poradie semestrov posunúť** tak, aby tretí bol letný
+   a končil v júni 2028? Vtedy by DOD vo februári 2028 padol do jeho stredu a vyhodnotenie by
+   prebehlo na skutočnom dni otvorených dverí s najväčšou možnou vzorkou. Ak to študijný plán
+   dovolí, je to lepšia varianta než pozvané triedy a plán sa na ňu prepíše bez zmeny obsahu práce.
 2. **Android, alebo aj iOS.** Plán počíta s Androidom (ARKit bol z projektu odstránený).
    Návrat iOS je technicky priechodný cez AR Foundation, ale znamená Mac, vývojársky účet
    a približne 25 h navyše, ktoré v rozpočte nie sú.
