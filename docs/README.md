@@ -1,6 +1,6 @@
 # FriLens — dokumentácia
 
-**Verzia:** 0.1.8-alpha · **Stav:** fázy 0–2, 3c a 5 hotové
+**Verzia:** 0.2.0-alpha · **Stav:** fázy 0–2, 3c a 5 hotové; rozsah rozšírený ([ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md))
 
 Prístroj je overený v teréne na Redmi Note 10 Pro: prejdená vzdialenosť sedí na −2,7 %, kotvy
 prežijú stratu trackingu a kladenie diskov na navmesh funguje. **Chýba vytlačená a zameraná
@@ -9,16 +9,23 @@ značka** (fázy 3a, 3b) — dovtedy sa meria tracker, nie zhoda modelu s budovo
 Čísla z behov pred 0.1.4-alpha sú nadhodnotené: metóda merania dráhy sa vtedy zmenila
 ([ADR 005](decisions/005-ako-merat-prejdenu-vzdialenost.md)).
 
-Samostatný Unity projekt oddelený od `FriWorld`. Jediná otázka, na ktorú má odpovedať:
+Samostatný Unity projekt oddelený od `FriWorld`. Vetva 0.1.x odpovedala na jedinú otázku:
 **ako presne sa navmesh premietne do skutočnej fakulty a ako rýchlo to odchádza, keď sa
-človek prejde.**
+človek prejde.** Prístroj na to je hotový a overený.
 
-Nie navigačná appka. Nie prekryv miestností. Jedna značka, jedna plocha, vlastné oči.
+Od 0.2.0-alpha je z FriLens **inžiniersky projekt na tri semestre**: lokalizácia telefónu voči
+existujúcemu modelu budovy, navigácia k miestnostiam a hra na deň otvorených dverí. Meranie sa
+nezrušilo — zostáva ako trvalý režim a je tým, čím sa práca obhajuje. Prečo a s akými
+obmedzeniami: [ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md).
+
+> Staršia veta *„Nie navigačná appka. Nie prekryv miestností."* už neplatí. Dokumenty vetvy
+> 0.1.x sa neprepisujú — popisujú, čo sa naozaj robilo, a zostávajú platné ako záznam.
 
 ## Aktuálne dokumenty
 
 | Dokument | Čo je v ňom |
 |---|---|
+| [Plán inžinierskeho projektu](2026-09-05-plan-inzinierskeho-projektu.md) | tri semestre po 125 h: cieľ, pracovné balíky s hodinami, akceptačné kritériá, čo sa vypúšťa pri sklzu |
 | [Stav projektu a analýza navmeshu](2026-09-02-stav-projektu-a-analyza-navmeshu.md) | čo v projekte skutočne je, čo obsahuje `navmesh.blend`, kritické diery |
 | [Implementačný plán](2026-09-02-implementacny-plan.md) | fázy 0–6, od hygieny projektu po test v teréne |
 | [Brief pre návrh UI](2026-09-03-brief-navrh-ui.md) | zadanie pre návrhára HUD-u: podmienky v teréne, mantinely UI Toolkitu, čo sa nesmie meniť |
@@ -32,6 +39,7 @@ Nie navigačná appka. Nie prekryv miestností. Jedna značka, jedna plocha, vla
 | [ADR 005 — Ako merať prejdenú vzdialenosť](decisions/005-ako-merat-prejdenu-vzdialenost.md) | prečo sčítavanie snímok po snímku nafukuje menovateľ driftu |
 | [ADR 006 — Kotvenie a strata trackingu](decisions/006-kotvenie-a-strata-trackingu.md) | čo sa stane pri zakrytí kamery, prečo `ARAnchor` a prečo značiek viac |
 | [ADR 007 — Využitie modelu na lokalizáciu](decisions/007-vyuzitie-modelu-na-lokalizaciu.md) | prečo je kamera nutná, aké možnosti dáva znalosť modelu a prečo baseline musí ísť prvý |
+| [ADR 008 — Rozšírenie rozsahu na navigáciu a hru](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md) | prečo sa zadanie mení, čo z merania zostáva a prečo je herné stanovište zameraná značka |
 
 Východiskový návrh testu žije vo FriWorlde:
 [`FriWorld/docs/2026-08-29-frilens-ar-test.md`](../../FriWorld/docs/2026-08-29-frilens-ar-test.md).

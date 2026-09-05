@@ -18,6 +18,17 @@ Prvý krok je extraktor stien z **hraničných hrán navmeshu**: hrana patriaca 
 trojuholníku je stena, a dvere v nich zostanú otvorené samy, lebo cez ne sieť pokračuje.
 Modelovať sa nemusí nič ([analýza](docs/2026-09-04-analyza-geometrie-a-stien.md)).
 
+### Rozsah projektu sa rozšíril
+
+FriLens sa stáva **inžinierskym projektom na tri semestre**: lokalizácia voči modelu budovy,
+navigácia k miestnostiam a hra na deň otvorených dverí. Meranie sa nezrušilo — diagnostický HUD,
+CSV telemetria a vypínateľné korekčné režimy zostávajú natrvalo a sú tým, čím sa práca obhajuje.
+Herné stanovište je zároveň zameraná značka, takže hra a meranie sú tá istá vec.
+
+Dôvody a obmedzenia v [ADR 008](docs/decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md),
+rozpis práce v [pláne inžinierskeho projektu](docs/2026-09-05-plan-inzinierskeho-projektu.md).
+Veta „Nie navigačná appka. Nie prekryv miestností." z hlavičky dokumentácie tým prestáva platiť.
+
 ## [0.1.8-alpha] — 2026-09-04
 
 **Otestované v teréne bez pripomienok.** Posledná verzia vetvy 0.1.x.
