@@ -160,7 +160,7 @@ Keby neplatil, mení sa celá práca a je lepšie to vedieť v októbri než o r
 |---|---|---|---:|
 | 1.1 | **Zameranie značiek** | výber štyroch miest lokalizovateľných v navmeshi; tlač v mierke; meranie rámu pravítkom; odčítanie pózy z hrán polygónov; editorový nástroj na zadanie póz (nie ručné klikanie v scéne) | 22 |
 | 1.2 | **Meranie zhody model↔budova** | protokol fázy 6 so značkou: pohľad zblízka pri značke, overenie šírky chodby pásmom, odchýlka po 10 / 25 / 50 / 100 m, návrat a prezarovnanie; **tri behy** | 20 |
-| 1.3 | **Vyhodnocovacie skripty** | Python nad CSV: drift medzi značkami, skoky, straty, grafy; raz napísané, používané všetky tri semestre | 10 |
+| 1.3 | **Vyhodnocovacie skripty** — ✅ hotové | Python nad CSV: drift medzi značkami, skoky, straty, grafy; raz napísané, používané všetky tri semestre. `tools/frilens_eval.py`, 23 kontrol v `--selftest` | 10 |
 | 1.4 | **Extraktor stien** | hraničné hrany navmeshu → zvislé roviny; overenie proti známemu pôdorysu; odomyká korekcie A, C, D | 15 |
 | 1.5 | **Korekcia A — zarovnanie kurzu** | histogram normál stien → dominantné smery chodieb; zrezanie driftu kurzu; **vypínateľný režim** | 10 |
 | 1.6 | **Korekcia B — väzba na výšku podlahy** | výška podlahy z modelu; zrezanie zvislého driftu (baseline ukázal až 3 m); **vypínateľný režim** | 8 |

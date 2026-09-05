@@ -18,6 +18,24 @@ Prvý krok je extraktor stien z **hraničných hrán navmeshu**: hrana patriaca 
 trojuholníku je stena, a dvere v nich zostanú otvorené samy, lebo cez ne sieť pokračuje.
 Modelovať sa nemusí nič ([analýza](docs/2026-09-04-analyza-geometrie-a-stien.md)).
 
+### Vyhodnocovacie skripty
+
+`tools/frilens_eval.py` číta session logy a počíta z nich to, čo sa doteraz rátalo ručne:
+vzdialenosť proti pásmu, veľkosť a **zvislú zložku** relokalizačných skokov, epizódy strát
+trackingu spolu so skokmi v minúte po obnove, a medzeru medzi podlahou modelu a meranou výškou.
+Výstup je markdown, takže ide rovno do `docs/`. Metriky bežia na čistej štandardnej knižnici,
+grafy potrebujú `matplotlib` a sú voliteľné.
+
+Tri veci sú v ňom naschvál: prechody a státie sa priemerujú zvlášť (priemer cez oboje dal na
+testovacích dátach −44,6 % namiesto −3,0 %), kumulatívne počítadlá sa sčítavajú po riadkoch,
+lebo zosúladenie ich reštartuje, a skoky sa po strate zbierajú celú minútu, lebo pätnásťsekundové
+zakrytie v behu `001103` nevyvolalo jeden skok, ale tri rastúce.
+
+`--selftest` overuje 23 metrík proti logu so známymi odpoveďami, vrátane starých súborov
+s desatinnou čiarkou v menovke udalosti. Podrobnosti v [`tools/README.md`](tools/README.md).
+
+Balík 1.3 [plánu](docs/2026-09-05-plan-inzinierskeho-projektu.md).
+
 ### Rozsah projektu sa rozšíril
 
 FriLens sa stáva **inžinierskym projektom na tri semestre**: lokalizácia voči modelu budovy,
