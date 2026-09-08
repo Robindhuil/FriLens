@@ -18,6 +18,10 @@ Prvý krok je extraktor stien z **hraničných hrán navmeshu**: hrana patriaca 
 trojuholníku je stena, a dvere v nich zostanú otvorené samy, lebo cez ne sieť pokračuje.
 Modelovať sa nemusí nič ([analýza](docs/2026-09-04-analyza-geometrie-a-stien.md)).
 
+Ak sa ale steny dajú vziať z toho istého skenu ako nav plochy, je to lepší zdroj a odvodzovanie
+odpadne — to je prvé rozhodnutie pred návštevou fakulty
+([plán](docs/2026-09-09-plan-zamerania-znacky.md)).
+
 ### Vyhodnocovacie skripty
 
 `tools/frilens_eval.py` číta session logy a počíta z nich to, čo sa doteraz rátalo ručne:
@@ -46,6 +50,17 @@ Herné stanovište je zároveň zameraná značka, takže hra a meranie sú tá 
 Dôvody a obmedzenia v [ADR 008](docs/decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md),
 rozpis práce v [pláne inžinierskeho projektu](docs/2026-09-05-plan-inzinierskeho-projektu.md).
 Veta „Nie navigačná appka. Nie prekryv miestností." z hlavičky dokumentácie tým prestáva platiť.
+
+### Fixed
+- **Značka nemala merateľný vonkajší obrys.** Knižnica referenčných obrázkov deklaruje fyzický
+  rozmer *celého obrázka*, nie vzoru v ňom. Hranica obrázka bola biela, takže na bielom papieri
+  nebolo čo priložiť k pravítku — a inštrukcia „odmeraj čierny rám" bola navyše nesprávna: rám
+  má 928 z 1024 pixelov, takže by z nej vyšla **desaťpercentná chyba v mierke celého prekryvu**.
+  Zarovnanie by pritom vyzeralo čisto a rozptyl vzoriek malý.
+
+  Značky majú teraz tenkú linku úplne na kraji obrázka a inštrukciu vytlačenú priamo na sebe.
+  Merať treba obe strany: ak sa líšia, tlačiareň škálovala nerovnomerne a značka sa ako
+  metrická referencia použiť nedá.
 
 ## [0.1.8-alpha] — 2026-09-04
 
