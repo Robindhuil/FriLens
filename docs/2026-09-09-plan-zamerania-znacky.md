@@ -79,6 +79,16 @@ ktoré sa nedá prečítať, lebo v ňom bude drift aj konštantná chyba naraz.
 Riadok `Alignment` ukáže `±N cm / N°` — rozptyl vzoriek. Jednotky centimetrov a pod stupňom
 znamenajú čisté zarovnanie; veľký rozptyl znamená, že sa meral šum a treba zopakovať.
 
+## Rozmer značky — overené
+
+Vytlačené 2026-09-08 na Brother MFC-B7810DW z PDF `tlac-frilens-M*-180mm.pdf`, mierka 100 %,
+bez prispôsobovania strane. **Nameraných presne 180 mm**, čiže tlačiareň neškáluje.
+
+Do `FriLens > Marker Library` teda ide **0.18**.
+
+Platí to pre značky vytlačené na tejto tlačiarni týmto postupom. Iná tlačiareň alebo iné
+nastavenie mierky znamená nové meranie — číslo sa neprenáša.
+
 ## Jediná vec, ktorá potichu pokazí všetko
 
 **Rozmer značky odmerať pravítkom na vytlačenom papieri**, nie prevziať z toho, čo šlo do tlače.
