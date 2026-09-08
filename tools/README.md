@@ -2,6 +2,9 @@
 
 Skripty, ktoré nie sú súčasťou aplikácie. Bežia na počítači nad tým, čo appka vyprodukovala.
 
+- `frilens_eval.py` — vyhodnotenie session logov (nižšie)
+- [`planning/`](planning/README.md) — prevod plánu projektu na GitHub issues a board
+
 ## `frilens_eval.py` — vyhodnotenie session logov
 
 Prečíta CSV, ktoré appka zapisuje do `Application.persistentDataPath`, a vypočíta z neho

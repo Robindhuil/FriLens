@@ -26,6 +26,7 @@ obmedzeniami: [ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md).
 | Dokument | Čo je v ňom |
 |---|---|
 | [Plán inžinierskeho projektu](2026-09-05-plan-inzinierskeho-projektu.md) | tri semestre po 125 h: cieľ, pracovné balíky s hodinami, akceptačné kritériá, čo sa vypúšťa pri sklzu |
+| [Planning cez GitHub Projects](2026-09-08-planning-cez-github-projects.md) | ako je plán preložený na issues a board: čo je epic, čo míľnik, čo label, a ako sa sleduje odhad proti skutočnosti |
 | [Stav projektu a analýza navmeshu](2026-09-02-stav-projektu-a-analyza-navmeshu.md) | čo v projekte skutočne je, čo obsahuje `navmesh.blend`, kritické diery |
 | [Implementačný plán](2026-09-02-implementacny-plan.md) | fázy 0–6, od hygieny projektu po test v teréne |
 | [Brief pre návrh UI](2026-09-03-brief-navrh-ui.md) | zadanie pre návrhára HUD-u: podmienky v teréne, mantinely UI Toolkitu, čo sa nesmie meniť |
