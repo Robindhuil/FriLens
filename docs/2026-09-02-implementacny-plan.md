@@ -236,11 +236,17 @@ odlíšiť — inak by prezarovnanie pri M3 posadilo prekryv na zameranú pózu 
 Vľavo hore je hrubá nesymetrická rohová značka. Slúži na ručné zarovnanie pri lepení
 a znemožňuje, aby vzor sadol sám na seba otočený o 90°.
 
+**Meria sa vonkajší obrys, nie rámik okolo vzoru.** Knižnica deklaruje fyzický rozmer *celého
+obrázka*, lebo ARCore porovnáva celý PNG vrátane bieleho okraja a popisky. Rámik má 928 z 1024
+pixelov, takže zámena je desaťpercentná chyba v mierke celého prekryvu — a na obrazovke ju
+nič neukáže. Preto je na kraji obrázka tenká linka: bez nej niet čo priložiť k pravítku.
+
 - [ ] Vybrať miesta lokalizovateľné v modeli — roh miestnosti, zárubňa, roh schodiska.
       Rozmiestniť po plánovanej trase tak, aby jedna bola vždy v dosahu.
 - [ ] Vytlačiť **matne** na tvrdý papier, **bez prispôsobenia mierke** („actual size",
       nie „fit to page") — tlačiareň inak zmenší okraje a s nimi celý vzor
-- [ ] **Odmerať pravítkom čierny rám** vytlačenej značky a to číslo zadať v
+- [ ] **Odmerať pravítkom vonkajší obrys** vytlačenej značky — tenkú linku úplne na kraji,
+      nie hrubý rámik okolo vzoru — a to číslo zadať v
       `FriLens > Marker Library`. Nie rozmer poslaný do tlače. Chyba 5 % v tomto čísle je
       chyba 5 % v mierke celého prekryvu a na obrazovke ju nič neukáže.
 - [ ] Nalepiť naplocho na tvrdý podklad

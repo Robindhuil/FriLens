@@ -85,3 +85,11 @@ znamenajú čisté zarovnanie; veľký rozptyl znamená, že sa meral šum a tre
 Tlačiarne mierku menia. Päť percent v tomto čísle je päť percent v mierke celého prekryvu
 a na obrazovke to nie je vidieť — zarovnanie vyzerá čisto, rozptyl je malý a všetky vzdialenosti
 sú o dvadsatinu vedľa.
+
+**Meria sa vonkajší obrys**, teda tenká linka úplne na kraji, nie hrubý rámik okolo vzoru.
+Knižnica deklaruje rozmer *celého obrázka*; rámik má 928 z 1024 pixelov, takže zámena je
+desaťpercentná chyba. Značky majú tú linku pridanú práve preto — biely okraj na bielom papieri
+sa odmerať nedá — a inštrukcia je vytlačená priamo na nich.
+
+Odmerať **obe strany**. Ak sa líšia, tlačiareň škálovala nerovnomerne a taká značka sa ako
+metrická referencia použiť nedá.
