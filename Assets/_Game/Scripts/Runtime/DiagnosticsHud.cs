@@ -46,8 +46,12 @@ namespace FriLens
         /// <summary>
         /// Jeden blok pre všetky prekryvy. Alokovať ho po snímkoch by bolo zbytočné a Unity ho
         /// aj tak len kopíruje do rendereru.
+        ///
+        /// Vzniká až pri prvom použití, nie v inicializátore poľa: Unity zakazuje vyrobiť
+        /// <see cref="MaterialPropertyBlock"/> v konštruktore MonoBehaviour a hodí na to výnimku
+        /// pri každom vzniku komponentu. Skompiluje sa to, takže to chytí až beh.
         /// </summary>
-        readonly MaterialPropertyBlock m_OverlayTint = new();
+        MaterialPropertyBlock m_OverlayTint;
 
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
@@ -605,6 +609,8 @@ namespace FriLens
         {
             if (m_Overlays == null || m_Confidence == null)
                 return;
+
+            m_OverlayTint ??= new MaterialPropertyBlock();
 
             // Nikdy až do čierna. Prekryv má aj bez dôvery ostať čitateľný, len zjavne utlmený.
             var tint = Mathf.Lerp(0.35f, 1f, m_Confidence.Trust);
