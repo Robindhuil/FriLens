@@ -147,6 +147,9 @@
       <!-- The only proof that the run is being recorded at all. -->
       <ui:Label name="footer" class="footer" text="log: not writing" />
       <ui:VisualElement class="row-spacer" />
+      <!-- Ceilings are off by default: drawn overhead they fill the screen and hide the camera
+           image, which is the thing being judged. -->
+      <ui:Button name="btn-ceiling" class="btn-step btn-wide" text="strop" />
       <ui:Button name="btn-eye-down" class="btn-step" text="-" />
       <ui:Label name="eye-value" class="eye-value" text="1.70 m" />
       <ui:Button name="btn-eye-up" class="btn-step" text="+" />

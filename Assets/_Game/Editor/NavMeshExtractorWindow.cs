@@ -28,12 +28,37 @@ namespace FriLens.EditorTools
     ///
     /// Floors are selected by name, never by height: they overlap in Y because a staircase
     /// belongs to the floor below and the floor above at the same time.
+    ///
+    /// Since 2026-09-09 the model also carries walls and ceilings, named alongside the nav
+    /// polygons per room — ra000_corridor_1_nav_1 sits next to _wall_1 and _ceiling_1. They come
+    /// from the same scan, so they agree with the nav surfaces by construction; that is why they
+    /// are extracted here rather than derived from the nav mesh boundary.
     /// </summary>
     public class NavMeshExtractorWindow : EditorWindow
     {
-        const string NavToken = "_nav_";
         const string DefaultModelPath = "Assets/Models/navmesh.blend";
         const string DefaultOutputFolder = "Assets/_Game/Generated/Nav";
+
+        /// <summary>
+        /// What to pull out of the model. Each is a separate mesh asset and a separate renderer
+        /// in the scene, because they are switched on and off independently: a ceiling drawn in
+        /// a corridor puts the tester inside a closed box and hides the camera image entirely.
+        /// </summary>
+        public enum Kind { Nav, Wall, Ceiling }
+
+        static string TokenOf(Kind kind) => kind switch
+        {
+            Kind.Wall => "_wall_",
+            Kind.Ceiling => "_ceiling_",
+            _ => "_nav_"
+        };
+
+        static string SuffixOf(Kind kind) => kind switch
+        {
+            Kind.Wall => "_wall",
+            Kind.Ceiling => "_ceiling",
+            _ => "_nav"
+        };
 
         /// <summary>
         /// The nine indoor floors. Basement, terraces and the outdoor areas are left out on
@@ -49,6 +74,7 @@ namespace FriLens.EditorTools
 
         GameObject m_Model;
         string m_Prefix = "ra0";
+        Kind m_Kind = Kind.Nav;
         string m_OutputFolder = DefaultOutputFolder;
         Vector2 m_Scroll;
         string m_Report = "";
@@ -79,7 +105,8 @@ namespace FriLens.EditorTools
 
             var report = new StringBuilder();
             foreach (var prefix in FloorPrefixes)
-                report.AppendLine(Extract(model, prefix, DefaultOutputFolder));
+                foreach (Kind kind in System.Enum.GetValues(typeof(Kind)))
+                    report.AppendLine(Extract(model, prefix, kind, DefaultOutputFolder));
 
             Debug.Log(report.ToString());
         }
@@ -100,6 +127,8 @@ namespace FriLens.EditorTools
             m_Prefix = EditorGUILayout.TextField(new GUIContent("Name prefix",
                 "Objects whose name starts with this and contains \"_nav_\". "
                 + "Examples: ra0, rb2, rc0, rb_basement, outside, terrace."), m_Prefix);
+            m_Kind = (Kind)EditorGUILayout.EnumPopup(new GUIContent("Kind",
+                "Which geometry to weld: the walkable surface, the walls, or the ceilings."), m_Kind);
             m_OutputFolder = EditorGUILayout.TextField("Output folder", m_OutputFolder);
 
             EditorGUILayout.Space();
@@ -111,7 +140,7 @@ namespace FriLens.EditorTools
                 using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(m_Prefix)))
                 {
                     if (GUILayout.Button("Extract"))
-                        m_Report = Extract(m_Model, m_Prefix.Trim(), m_OutputFolder.Trim());
+                        m_Report = Extract(m_Model, m_Prefix.Trim(), m_Kind, m_OutputFolder.Trim());
                 }
             }
 
@@ -138,8 +167,10 @@ namespace FriLens.EditorTools
 
             foreach (var filter in model.GetComponentsInChildren<MeshFilter>(true))
             {
+                // Grouping counts a room once, whichever kind it was found by, so the listing
+                // answers "which floors exist" and not "which floors have walls".
                 var name = filter.gameObject.name;
-                if (!name.Contains(NavToken))
+                if (!name.Contains("_nav_") && !name.Contains("_wall_") && !name.Contains("_ceiling_"))
                     continue;
 
                 var head = name.Substring(0, name.IndexOf('_'));
@@ -164,8 +195,11 @@ namespace FriLens.EditorTools
             return report.ToString();
         }
 
-        static string Extract(GameObject model, string prefix, string outputFolder)
+        static string Extract(GameObject model, string prefix, Kind kind, string outputFolder)
         {
+            var token = TokenOf(kind);
+            var suffix = SuffixOf(kind);
+
             var parts = new List<CombineInstance>();
             int sources = 0;
             long vertexBudget = 0;
@@ -173,7 +207,7 @@ namespace FriLens.EditorTools
             foreach (var filter in model.GetComponentsInChildren<MeshFilter>(true))
             {
                 var name = filter.gameObject.name;
-                if (!name.Contains(NavToken) || !name.StartsWith(prefix))
+                if (!name.Contains(token) || !name.StartsWith(prefix))
                     continue;
 
                 var mesh = filter.sharedMesh;
@@ -197,11 +231,11 @@ namespace FriLens.EditorTools
             }
 
             if (sources == 0)
-                return "Nothing matched prefix \"" + prefix + "\". Run List groups to see what exists.";
+                return $"Nothing matched \"{prefix}\" + \"{token}\".";
 
             var combined = new Mesh
             {
-                name = prefix + "_nav",
+                name = prefix + suffix,
                 indexFormat = vertexBudget > 60000 ? IndexFormat.UInt32 : IndexFormat.UInt16
             };
             combined.CombineMeshes(parts.ToArray(), true, true);
@@ -209,7 +243,7 @@ namespace FriLens.EditorTools
             combined.Optimize();
 
             EnsureFolder(outputFolder);
-            var assetPath = outputFolder + "/" + prefix + "_nav.asset";
+            var assetPath = outputFolder + "/" + prefix + suffix + ".asset";
             AssetDatabase.CreateAsset(combined, assetPath);
             AssetDatabase.SaveAssets();
 

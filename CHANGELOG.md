@@ -18,9 +18,29 @@ Prvý krok je extraktor stien z **hraničných hrán navmeshu**: hrana patriaca 
 trojuholníku je stena, a dvere v nich zostanú otvorené samy, lebo cez ne sieť pokračuje.
 Modelovať sa nemusí nič ([analýza](docs/2026-09-04-analyza-geometrie-a-stien.md)).
 
-Ak sa ale steny dajú vziať z toho istého skenu ako nav plochy, je to lepší zdroj a odvodzovanie
-odpadne — to je prvé rozhodnutie pred návštevou fakulty
-([plán](docs/2026-09-09-plan-zamerania-znacky.md)).
+**Rozhodlo sa samo:** 2026-09-09 pribudli do `navmesh.blend` steny a stropy, pomenované po
+miestnostiach vedľa nav polygónov — `ra000_corridor_1_nav_1` vedľa `_wall_1` a `_ceiling_1`.
+Sú z toho istého skenu, takže s nav plochami súhlasia z podstaty. **Odvodzovanie z hraničných
+hrán tým odpadá**; malo by zmysel len tam, kde sken nie je.
+
+### Added
+
+- **Extraktor vie steny a stropy.** Ten istý postup ako pri nav plochách, len iný token —
+  `_wall_`, `_ceiling_`. Každý druh je samostatný mesh asset a samostatný renderer, lebo sa
+  zapínajú nezávisle. Dávka cez všetky podlažia vygeneruje 27 assetov.
+
+- **Prekryv prehodený na `rc0`.** Break room, kde sa bude zameriavať prvá značka, je na tomto
+  podlaží; v scéne bolo `ra0` a značka by sa zamerala do plochy, ktorá sa nekreslí.
+  `MeshCollider` pre disky prepnutý spolu s ním, inak by sa podlaha modelu pýtala starého meshu.
+
+- **Steny sú priesvitné.** Nepriehľadná stena zavrie testujúceho do krabice a schová práve tú
+  plochu, voči ktorej sa prekryv posudzuje — celé porovnanie je „sedí nakreslená stena na
+  skutočnej", a to potrebuje vidieť obe naraz.
+
+- **Stropy majú vlastný prepínač a sú štandardne vypnuté.** Sú jediná časť, ktorá dokáže zakryť
+  celú obrazovku. `Hide overlay` prepína podlahu a steny, tlačidlo `strop` v pätičke samostatne
+  strop — a ten sa zobrazí len vtedy, keď je zapnutý prekryv **aj** strop, takže skrytie
+  a odkrytie prekryvu nikomu potichu nezapne strop, ktorý si vypol.
 
 ### Vyhodnocovacie skripty
 

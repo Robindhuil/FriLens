@@ -63,6 +63,7 @@ namespace FriLens
         readonly Button m_Mark;
         readonly Button m_Drop;
         readonly Button m_CompactToggle;
+        Button m_Ceiling;
 
         public event Action Reanchor;
         public event Action Mark;
@@ -72,6 +73,11 @@ namespace FriLens
 
         /// <summary>Raised with the change in assumed eye height, in metres.</summary>
         public event Action<float> EyeHeightAdjusted;
+
+        /// <summary>Raised with whether the ceiling should be drawn.</summary>
+        public event Action<bool> CeilingToggled;
+
+        bool m_CeilingVisible;
 
         /// <summary>
         /// Whether the readings are collapsed out of the way of the camera image.
@@ -130,6 +136,13 @@ namespace FriLens
             // mean standing in a corridor pressing a button forty times.
             m_Root.Q<Button>("btn-eye-down").clicked += () => EyeHeightAdjusted?.Invoke(-0.01f);
             m_Root.Q<Button>("btn-eye-up").clicked += () => EyeHeightAdjusted?.Invoke(0.01f);
+
+            m_Ceiling = m_Root.Q<Button>("btn-ceiling");
+            m_Ceiling.clicked += () =>
+            {
+                SetCeilingVisible(!m_CeilingVisible);
+                CeilingToggled?.Invoke(m_CeilingVisible);
+            };
         }
 
         void BindRow(HudRow row, string key)
@@ -308,6 +321,15 @@ namespace FriLens
             m_OverlayText.text = visible ? "Hide overlay" : "Show overlay";
             m_OverlayGlyph.EnableInClassList("glyph--overlay-hide", visible);
             m_OverlayGlyph.EnableInClassList("glyph--overlay-show", !visible);
+        }
+
+        /// <summary>
+        /// Sets the ceiling button's appearance without raising <see cref="CeilingToggled"/>.
+        /// </summary>
+        public void SetCeilingVisible(bool visible)
+        {
+            m_CeilingVisible = visible;
+            m_Ceiling.EnableInClassList("btn-step--on", visible);
         }
 
         /// <summary>Shows the assumed height of the camera above the floor.</summary>

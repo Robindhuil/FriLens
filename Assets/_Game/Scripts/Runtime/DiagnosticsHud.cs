@@ -28,8 +28,13 @@ namespace FriLens
         [SerializeField] TrackingContinuity m_Continuity;
         [SerializeField] FloorProbe m_FloorProbe;
 
-        [Tooltip("Renderer switched off by the overlay button, so you can see what is under it.")]
-        [SerializeField] Renderer m_Overlay;
+        [Tooltip("Everything the overlay button switches off, so you can see what is under it. "
+            + "Floor and walls; the ceiling has its own switch.")]
+        [SerializeField] Renderer[] m_Overlays;
+
+        [Tooltip("Kept apart from the rest because it is the one piece that can fill the screen. "
+            + "A ceiling drawn overhead hides the camera image, which is what is being judged.")]
+        [SerializeField] Renderer m_Ceiling;
 
         [Tooltip("Seconds of SessionInitializing after which the HUD stops waiting politely and "
             + "says the session is stuck.")]
@@ -38,6 +43,13 @@ namespace FriLens
         DiagnosticsHudView m_View;
 
         int m_MarkCount;
+
+        /// <summary>
+        /// Whether the ceiling is wanted at all, as opposed to hidden along with everything else.
+        /// Two switches, so hiding the overlay and bringing it back does not silently turn the
+        /// ceiling on for somebody who had deliberately turned it off.
+        /// </summary>
+        bool m_CeilingWanted;
         float m_InitializingSince = -1f;
         SessionModeController.SessionMode m_ShownMode = (SessionModeController.SessionMode)(-1);
 
@@ -50,6 +62,7 @@ namespace FriLens
                 m_View.Drop -= OnDrop;
                 m_View.EyeHeightAdjusted -= OnEyeHeightAdjusted;
                 m_View.OverlayToggled -= OnOverlayToggled;
+                m_View.CeilingToggled -= OnCeilingToggled;
                 m_View = null;
             }
 
@@ -79,12 +92,15 @@ namespace FriLens
             m_View.Drop += OnDrop;
             m_View.EyeHeightAdjusted += OnEyeHeightAdjusted;
             m_View.OverlayToggled += OnOverlayToggled;
+            m_View.CeilingToggled += OnCeilingToggled;
+
+            m_View.SetCeilingVisible(m_CeilingWanted);
 
             if (m_FloorProbe != null)
                 m_View.SetEyeHeight(m_FloorProbe.EyeHeightMeters);
 
-            if (m_Overlay != null)
-                m_View.SetOverlayVisible(m_Overlay.enabled);
+            if (m_Overlays != null && m_Overlays.Length > 0 && m_Overlays[0] != null)
+                m_View.SetOverlayVisible(m_Overlays[0].enabled);
 
             if (m_Alignment != null)
                 m_Alignment.Aligned += OnAligned;
@@ -390,10 +406,34 @@ namespace FriLens
 
         void OnOverlayToggled(bool visible)
         {
-            if (m_Overlay != null)
-                m_Overlay.enabled = visible;
-
+            ApplyOverlayVisibility(visible);
             m_Logger?.MarkEvent(visible ? "overlay-shown" : "overlay-hidden");
+        }
+
+        /// <summary>
+        /// Turns the ceiling on or off without touching the rest.
+        ///
+        /// It gets its own switch because it is the only part that can hide the camera image
+        /// completely: in a corridor the ceiling is two metres over your head and fills the
+        /// screen. Most of a run is spent with it off.
+        /// </summary>
+        void OnCeilingToggled(bool wanted)
+        {
+            m_CeilingWanted = wanted;
+            ApplyOverlayVisibility(m_View.OverlayVisible);
+            m_Logger?.MarkEvent(wanted ? "ceiling-shown" : "ceiling-hidden");
+        }
+
+        void ApplyOverlayVisibility(bool visible)
+        {
+            if (m_Overlays != null)
+                foreach (var renderer in m_Overlays)
+                    if (renderer != null)
+                        renderer.enabled = visible;
+
+            // The ceiling needs both: the overlay showing at all, and somebody having asked for it.
+            if (m_Ceiling != null)
+                m_Ceiling.enabled = visible && m_CeilingWanted;
         }
 
         /// <summary>
