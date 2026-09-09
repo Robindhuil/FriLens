@@ -1,10 +1,15 @@
 # FriLens — dokumentácia
 
-**Verzia:** 0.2.0-alpha · **Stav:** fázy 0–2, 3c a 5 hotové; rozsah rozšírený ([ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md))
+**Verzia:** 0.2.2-alpha · **Stav:** fázy 0–3 a 5 hotové; rozsah rozšírený ([ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md))
 
 Prístroj je overený v teréne na Redmi Note 10 Pro: prejdená vzdialenosť sedí na −2,7 %, kotvy
-prežijú stratu trackingu a kladenie diskov na navmesh funguje. **Chýba vytlačená a zameraná
-značka** (fázy 3a, 3b) — dovtedy sa meria tracker, nie zhoda modelu s budovou.
+prežijú stratu trackingu a kladenie diskov na navmesh funguje.
+
+Značky sú od 2026-09-09 vytlačené, nalepené a zamerané a prekryv sa z nich zarovná. **Zhoda
+modelu s budovou sa ale zatiaľ merať nedá**: zarovnanie z jednej značky je nestabilné o metre,
+lebo natočenie sledovaného obrázka je rádovo horšie než jeho poloha. Čo sa namerlo a čím sa to
+nahradí je v [návrhu kalibrácie](2026-09-09-navrh-kalibracie-viac-znaciek.md)
+a [ADR 010](decisions/010-kurz-z-poloh-znaciek-sklon-z-gravitacie.md).
 
 Čísla z behov pred 0.1.4-alpha sú nadhodnotené: metóda merania dráhy sa vtedy zmenila
 ([ADR 005](decisions/005-ako-merat-prejdenu-vzdialenost.md)).
@@ -26,6 +31,8 @@ obmedzeniami: [ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md).
 | Dokument | Čo je v ňom |
 |---|---|
 | [Plán inžinierskeho projektu](2026-09-05-plan-inzinierskeho-projektu.md) | tri semestre po 125 h: cieľ, pracovné balíky s hodinami, akceptačné kritériá, čo sa vypúšťa pri sklzu |
+| [Návrh kalibrácie z viacerých značiek](2026-09-09-navrh-kalibracie-viac-znaciek.md) | prečo je zarovnanie z jednej značky nepoužiteľné a čím sa nahradí: solver, brána kvality, dva režimy, ukazovateľ dôvery |
+| [Plán zamerania značky](2026-09-09-plan-zamerania-znacky.md) | kam a ako sa značky lepia a merajú; sekcia o orientácii je zastaraná, viď [ADR 010](decisions/010-kurz-z-poloh-znaciek-sklon-z-gravitacie.md) |
 | [Stav projektu a analýza navmeshu](2026-09-02-stav-projektu-a-analyza-navmeshu.md) | čo v projekte skutočne je, čo obsahuje `navmesh.blend`, kritické diery |
 | [Implementačný plán](2026-09-02-implementacny-plan.md) | fázy 0–6, od hygieny projektu po test v teréne |
 | [Brief pre návrh UI](2026-09-03-brief-navrh-ui.md) | zadanie pre návrhára HUD-u: podmienky v teréne, mantinely UI Toolkitu, čo sa nesmie meniť |
@@ -41,6 +48,7 @@ obmedzeniami: [ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md).
 | [ADR 007 — Využitie modelu na lokalizáciu](decisions/007-vyuzitie-modelu-na-lokalizaciu.md) | prečo je kamera nutná, aké možnosti dáva znalosť modelu a prečo baseline musí ísť prvý |
 | [ADR 008 — Rozšírenie rozsahu na navigáciu a hru](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md) | prečo sa zadanie mení, čo z merania zostáva a prečo je herné stanovište zameraná značka |
 | [ADR 009 — Vyhodnotenie sa neviaže na DOD](decisions/009-vyhodnotenie-sa-neviaze-na-den-otvorenych-dveri.md) | prečo sa nemeria na dni otvorených dverí, hoci je appka preň, a čo sa meria namiesto toho |
+| [ADR 010 — Kurz z polôh značiek, sklon z gravitácie](decisions/010-kurz-z-poloh-znaciek-sklon-z-gravitacie.md) | prečo sa natočenie značky do zarovnania nepoužije, prečo sa mierka nefituje a čo z toho plynie pre obsluhu |
 
 Východiskový návrh testu žije vo FriWorlde:
 [`FriWorld/docs/2026-08-29-frilens-ar-test.md`](../../FriWorld/docs/2026-08-29-frilens-ar-test.md).
