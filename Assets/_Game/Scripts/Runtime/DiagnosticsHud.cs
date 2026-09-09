@@ -27,6 +27,7 @@ namespace FriLens
         [SerializeField] ProvisionalPlacement m_Placement;
         [SerializeField] TrackingContinuity m_Continuity;
         [SerializeField] FloorProbe m_FloorProbe;
+        [SerializeField] AlignmentConfidence m_Confidence;
 
         [Tooltip("Everything the overlay button switches off, so you can see what is under it. "
             + "Floor and walls; the ceiling has its own switch.")]
@@ -41,6 +42,14 @@ namespace FriLens
         [SerializeField] float m_InitializingPatienceSeconds = 20f;
 
         DiagnosticsHudView m_View;
+
+        /// <summary>
+        /// Jeden blok pre všetky prekryvy. Alokovať ho po snímkoch by bolo zbytočné a Unity ho
+        /// aj tak len kopíruje do rendereru.
+        /// </summary>
+        readonly MaterialPropertyBlock m_OverlayTint = new();
+
+        static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
         int m_MarkCount;
 
@@ -123,6 +132,7 @@ namespace FriLens
             UpdateTracking();
             UpdateMarker();
             UpdateAlignment();
+            ApplyOverlayTrust();
             UpdateReanchorButton();
             UpdateTravel();
             UpdateDevice();
@@ -267,11 +277,26 @@ namespace FriLens
                     // re-anchor is either the model's error or the wrong marker, and the row is
                     // the only thing on screen that tells the two apart.
                     var from = ShortName(m_Alignment.AlignedImageName);
+
+                    // Z koľkých značiek fit vznikol. Jedna znamená, že kurz prišiel z natočenia
+                    // značky a nesie jeho šum; dve a viac, že prišiel z ich polôh. Je to rozdiel
+                    // medzi metrami a centimetrami a na obrazovke to inak nevidno.
+                    var markers = m_Alignment.FitMarkerCount > 1
+                        ? $" · {m_Alignment.FitMarkerCount} značky"
+                        : " · 1 značka";
+
+                    // Dôvera sa pripája k tomu istému riadku namiesto vlastného: keď je plná,
+                    // nemá čo zaberať miesto, a keď nie je, patrí presne sem.
+                    var trust = m_Confidence != null && m_Confidence.Reason.Length > 0
+                        ? " · " + m_Confidence.Reason
+                        : "";
+
                     m_View.SetRow(HudRow.Alignment,
                         (from.Length > 0 ? from + " · " : "")
                         + $"{m_Alignment.TimeSinceAlignment:F0} s ago · "
-                        + $"±{m_Alignment.SampleSpreadMeters * 100f:F1} cm / {m_Alignment.SampleSpreadDegrees:F1}°",
-                        ValueState.Ok);
+                        + $"±{m_Alignment.SampleSpreadMeters * 100f:F1} cm"
+                        + markers + trust,
+                        m_Confidence != null && m_Confidence.Trust <= 0f ? ValueState.Warn : ValueState.Ok);
                     break;
 
                 default:
@@ -540,6 +565,35 @@ namespace FriLens
             // The ceiling needs both: the overlay showing at all, and somebody having asked for it.
             if (m_Ceiling != null)
                 m_Ceiling.enabled = visible && m_CeilingWanted;
+        }
+
+        /// <summary>
+        /// Stlmí prekryv, keď mu už netreba veriť.
+        ///
+        /// Neskrýva ho: zmiznutie by v teréne vyzeralo ako pád aplikácie a mlčky by zobralo
+        /// možnosť pozrieť sa, ako veľmi je vedľa — čo je pri meraní tá zaujímavá informácia.
+        /// Zošednutie hovorí to isté a nechá to vidieť.
+        ///
+        /// Ide to cez <see cref="MaterialPropertyBlock"/>, nie cez materiál: materiály prekryvov
+        /// sú zdieľané assety a zápis do nich by prežil ukončenie hry a zmenil súbor v projekte.
+        /// </summary>
+        void ApplyOverlayTrust()
+        {
+            if (m_Overlays == null || m_Confidence == null)
+                return;
+
+            // Nikdy až do čierna. Prekryv má aj bez dôvery ostať čitateľný, len zjavne utlmený.
+            var tint = Mathf.Lerp(0.35f, 1f, m_Confidence.Trust);
+
+            foreach (var renderer in m_Overlays)
+            {
+                if (renderer == null)
+                    continue;
+
+                renderer.GetPropertyBlock(m_OverlayTint);
+                m_OverlayTint.SetColor(BaseColorId, new Color(tint, tint, tint, 1f));
+                renderer.SetPropertyBlock(m_OverlayTint);
+            }
         }
 
         /// <summary>

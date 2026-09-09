@@ -279,8 +279,11 @@ MonoBehaviour:
   m_Placement: {fileID: 234078121}
   m_Continuity: {fileID: 288061790}
   m_FloorProbe: {fileID: 288061791}
-  m_Overlays: []
-  m_Ceiling: {fileID: 0}
+  m_Confidence: {fileID: 288061792}
+  m_Overlays:
+  - {fileID: 836722132}
+  - {fileID: 1989597784}
+  m_Ceiling: {fileID: 959977332}
   m_InitializingPatienceSeconds: 20
 --- !u!114 &234078119
 MonoBehaviour:
@@ -356,6 +359,7 @@ GameObject:
   - component: {fileID: 288061789}
   - component: {fileID: 288061790}
   - component: {fileID: 288061791}
+  - component: {fileID: 288061792}
   m_Layer: 0
   m_Name: FriLens
   m_TagString: Untagged
@@ -410,9 +414,16 @@ MonoBehaviour:
   - imageName: frilens-M2
     anchor: {fileID: 121906736}
   m_Anchored: {fileID: 288061789}
+  m_Travel: {fileID: 288061787}
+  m_Continuity: {fileID: 288061790}
   m_SampleCount: 30
   m_AlignOnFirstSighting: 1
+  m_Policy: 0
+  m_ContinuousIntervalSeconds: 2
+  m_LevelWithGravity: 1
   m_SampleGapTimeoutSeconds: 2
+  m_ObservationMaxAgeSeconds: 60
+  m_MaxPositionSpreadMeters: 0.02
 --- !u!114 &288061786
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -513,6 +524,22 @@ MonoBehaviour:
   m_NavCollider: {fileID: 836722134}
   m_EyeHeightMeters: 1.25
   m_DiscDiameterMeters: 0.3
+--- !u!114 &288061792
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 288061782}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8166c2cc716b05842a645d2b4115545a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FriLens.AlignmentConfidence
+  m_Alignment: {fileID: 288061785}
+  m_Travel: {fileID: 288061787}
+  m_DistrustAfterMeters: 30
+  m_DistrustAfterJumps: 1
 --- !u!114 &331264287
 MonoBehaviour:
   m_ObjectHideFlags: 0

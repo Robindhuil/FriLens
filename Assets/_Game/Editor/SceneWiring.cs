@@ -78,8 +78,45 @@ namespace FriLens.EditorTools
                 report.AppendLine("probe height 1.70 -> 1.25 m (measured at the moment of a drop)");
             }
 
+            // Prekryvy, ktoré prepína Hide overlay. Strop medzi nimi zámerne nie je: má vlastné
+            // tlačidlo, lebo je jediná časť, ktorá dokáže zakryť celú obrazovku. Doteraz bolo
+            // pole prázdne a m_Ceiling null, takže obe tlačidlá menili len svoj vlastný vzhľad.
+            SetArray(hud, "m_Overlays", new Object[]
+            {
+                RendererOf("NavOverlay"),
+                RendererOf("WallOverlay"),
+            });
+            Set(hud, "m_Ceiling", RendererOf("CeilingOverlay"));
+
+            // Zarovnanie potrebuje vedieť o relokalizačných skokoch a o strate trackingu, inak
+            // fit môže zmiešať polohy značiek z dvoch rôznych máp.
+            var alignment = Object.FindAnyObjectByType<MarkerAlignment>(FindObjectsInactive.Include);
+            var continuity = Object.FindAnyObjectByType<TrackingContinuity>(FindObjectsInactive.Include);
+            if (alignment != null)
+            {
+                Set(alignment, "m_Travel", travel);
+                Set(alignment, "m_Continuity", continuity);
+            }
+
+            // Ukazovateľ dôvery. Visí tam, kde ostatné runtime komponenty.
+            var confidence = Object.FindAnyObjectByType<AlignmentConfidence>(FindObjectsInactive.Include);
+            if (confidence == null && alignment != null)
+            {
+                confidence = Undo.AddComponent<AlignmentConfidence>(alignment.gameObject);
+                report.AppendLine($"added AlignmentConfidence to {alignment.gameObject.name}");
+            }
+
+            if (confidence != null)
+            {
+                Set(confidence, "m_Alignment", alignment);
+                Set(confidence, "m_Travel", travel);
+                Set(hud, "m_Confidence", confidence);
+            }
+
             report.AppendLine("wired: probe(camera, anchors, material, nav collider), "
-                + "hud.m_FloorProbe, logger.m_FloorProbe, logger.m_AnchoredRoot");
+                + "hud.m_FloorProbe, logger.m_FloorProbe, logger.m_AnchoredRoot, "
+                + "hud.m_Overlays, hud.m_Ceiling, hud.m_Confidence, "
+                + "alignment(travel, continuity), confidence(alignment, travel)");
 
             var scene = hud.gameObject.scene;
             EditorSceneManager.MarkSceneDirty(scene);
@@ -167,6 +204,33 @@ namespace FriLens.EditorTools
 
             property.objectReferenceValue = value;
             so.ApplyModifiedProperties();
+        }
+
+        /// <summary>
+        /// Pole referencií. Rovnaký postup ako <see cref="Set"/>, len sa najprv nastaví dĺžka —
+        /// SerializedProperty inak drží starý počet prvkov a priradenie by ticho vypadlo.
+        /// </summary>
+        static void SetArray(Object target, string field, Object[] values)
+        {
+            var so = new SerializedObject(target);
+            var property = so.FindProperty(field);
+            if (property == null)
+            {
+                Debug.LogError($"FriLens: {target.GetType().Name} has no field '{field}'.");
+                return;
+            }
+
+            property.arraySize = values.Length;
+            for (int i = 0; i < values.Length; i++)
+                property.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+
+            so.ApplyModifiedProperties();
+        }
+
+        static Renderer RendererOf(string objectName)
+        {
+            var found = GameObject.Find(objectName);
+            return found != null ? found.GetComponent<Renderer>() : null;
         }
     }
 }
