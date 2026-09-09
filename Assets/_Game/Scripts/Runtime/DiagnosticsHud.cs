@@ -465,7 +465,43 @@ namespace FriLens
             // The marker's name is the whole value of the row afterwards: two alignments in one
             // log are only comparable if it says which marker each came from.
             var from = ShortName(m_Alignment != null ? m_Alignment.AlignedImageName : "");
-            m_Logger?.MarkEvent(from.Length > 0 ? "aligned on " + from : "aligned");
+            var label = from.Length > 0 ? "aligned on " + from : "aligned";
+
+            // Both poses the alignment turned on, written as axes rather than euler angles.
+            // Euler needs an order and a convention to read back; three basis vectors do not, and
+            // the question they answer is which axis of a tracked image the surface normal comes
+            // out of — the one thing the marker anchors were set up from a simulator's authoring
+            // rule rather than from the provider running on the phone.
+            //
+            // On a vertical wall the two possible answers cannot be confused: the paper's own
+            // "up" is vertical, so whichever of img-up and img-fwd comes out near (0 1 0) is the
+            // one pointing up the wall, and the other is the surface normal.
+            if (m_Alignment != null)
+            {
+                var image = m_Alignment.LastMeasuredPose;
+                var root = m_Alignment.LastRootPose;
+
+                label += "; img pos " + Axis(image.position)
+                    + "; img up " + Axis(image.rotation * Vector3.up)
+                    + "; img fwd " + Axis(image.rotation * Vector3.forward)
+                    + "; root pos " + Axis(root.position)
+                    + "; root up " + Axis(root.rotation * Vector3.up)
+                    + "; root fwd " + Axis(root.rotation * Vector3.forward);
+            }
+
+            m_Logger?.MarkEvent(label);
+        }
+
+        /// <summary>
+        /// A vector for an event label: invariant culture and spaces, because the log is a CSV
+        /// and this device writes a decimal comma.
+        /// </summary>
+        static string Axis(Vector3 value)
+        {
+            var culture = System.Globalization.CultureInfo.InvariantCulture;
+            return value.x.ToString("F3", culture)
+                + " " + value.y.ToString("F3", culture)
+                + " " + value.z.ToString("F3", culture);
         }
 
         void OnOverlayToggled(bool visible)

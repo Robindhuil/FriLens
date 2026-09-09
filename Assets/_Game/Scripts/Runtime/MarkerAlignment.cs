@@ -120,6 +120,19 @@ namespace FriLens
         /// <summary>Largest angle between any sample and the averaged rotation, in degrees.</summary>
         public float SampleSpreadDegrees { get; private set; }
 
+        /// <summary>
+        /// The averaged marker pose the last alignment was built from, in session space.
+        ///
+        /// Kept because it is the only place the tracker's own answer survives. Everything after
+        /// an alignment describes where the overlay ended up; without the pose it was built from,
+        /// an overlay in the wrong place cannot be told apart from a marker read in the wrong
+        /// orientation, and the two need opposite fixes.
+        /// </summary>
+        public Pose LastMeasuredPose { get; private set; }
+
+        /// <summary>The root pose the last alignment produced, in session space.</summary>
+        public Pose LastRootPose { get; private set; }
+
         /// <summary>The marker currently being tracked, or null.</summary>
         public ARTrackedImage TrackedMarker { get; private set; }
 
@@ -387,6 +400,9 @@ namespace FriLens
 
             SolveRootPose(position, rotation, anchorLocalPosition, anchorLocalRotation,
                 out var rootPosition, out var rootRotation);
+
+            LastMeasuredPose = new Pose(position, rotation);
+            LastRootPose = new Pose(rootPosition, rootRotation);
 
             // Through the anchor when there is one. A pose written straight into the transform is
             // correct for exactly as long as ARCore's idea of the world does not change, and the
