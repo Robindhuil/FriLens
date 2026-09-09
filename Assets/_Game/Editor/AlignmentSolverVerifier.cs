@@ -31,6 +31,11 @@ namespace FriLens.EditorTools
             failures += CollinearMarkersStillSolve(report);
             failures += FitIsLevelByConstruction(report);
 
+            failures += ObservationsKeepOnlyTheNewestPerMarker(report);
+            failures += ObservationsRejectWideSpread(report);
+            failures += ObservationsDropOnJump(report);
+            failures += ObservationsDropWhenStale(report);
+
             report.AppendLine();
             report.AppendLine(failures == 0 ? "ALL CHECKS PASSED" : failures + " CHECK(S) FAILED");
 
@@ -227,6 +232,69 @@ namespace FriLens.EditorTools
             report.AppendLine($"level: fitted up is {tilt:F5} deg off vertical");
 
             if (tilt > 1e-3f) { report.AppendLine("  FAIL - fit introduced tilt"); return 1; }
+            return 0;
+        }
+
+        /// <summary>Druhé pozorovanie tej istej značky prepíše prvé, nie pridá vedľa neho.</summary>
+        static int ObservationsKeepOnlyTheNewestPerMarker(StringBuilder report)
+        {
+            var store = new MarkerObservations();
+            store.Offer("M1", new Vector3(1f, 0f, 0f), 0.001f, segment: 0, atTime: 0f);
+            store.Offer("M1", new Vector3(2f, 0f, 0f), 0.001f, segment: 0, atTime: 1f);
+
+            var kept = store.Current(segment: 0, now: 1f, maxAgeSeconds: 60f);
+            report.AppendLine($"newest wins: {kept.Count} observation(s), "
+                + $"x = {(kept.Count > 0 ? kept[0].measuredPosition.x : float.NaN)} (expected 1 and 2)");
+
+            if (kept.Count != 1 || Mathf.Abs(kept[0].measuredPosition.x - 2f) > 1e-4f)
+            {
+                report.AppendLine("  FAIL");
+                return 1;
+            }
+            return 0;
+        }
+
+        /// <summary>Burst s rozhádzanou polohou sa neprijme; je to meranie šumu, nie značky.</summary>
+        static int ObservationsRejectWideSpread(StringBuilder report)
+        {
+            var store = new MarkerObservations { MaxSpreadMeters = 0.02f };
+            var accepted = store.Offer("M1", Vector3.zero, spreadMeters: 0.05f, segment: 0, atTime: 0f);
+
+            report.AppendLine($"spread gate: 5 cm spread accepted={accepted} (must be False)");
+
+            if (accepted) { report.AppendLine("  FAIL"); return 1; }
+            return 0;
+        }
+
+        /// <summary>
+        /// Pozorovania spred a spoza relokalizačného skoku sú v dvoch rôznych mapách. Fit cez
+        /// ne dá pózu, ktorá nepatrí ani jednej — beh 134644 mal skok 4,818 m.
+        /// </summary>
+        static int ObservationsDropOnJump(StringBuilder report)
+        {
+            var store = new MarkerObservations();
+            store.Offer("M1", Vector3.zero, 0.001f, segment: 0, atTime: 0f);
+
+            var afterJump = store.Current(segment: 1, now: 1f, maxAgeSeconds: 60f);
+            report.AppendLine($"jump gate: {afterJump.Count} observation(s) survived a jump (expected 0)");
+
+            if (afterJump.Count != 0) { report.AppendLine("  FAIL"); return 1; }
+            return 0;
+        }
+
+        /// <summary>Staré pozorovanie je z inej chvíle driftu a mieša sa zle s čerstvým.</summary>
+        static int ObservationsDropWhenStale(StringBuilder report)
+        {
+            var store = new MarkerObservations();
+            store.Offer("M1", Vector3.zero, 0.001f, segment: 0, atTime: 0f);
+
+            var fresh = store.Current(segment: 0, now: 30f, maxAgeSeconds: 60f);
+            var stale = store.Current(segment: 0, now: 90f, maxAgeSeconds: 60f);
+
+            report.AppendLine($"age gate: at 30 s {fresh.Count} kept, at 90 s {stale.Count} kept "
+                + "(expected 1 and 0)");
+
+            if (fresh.Count != 1 || stale.Count != 0) { report.AppendLine("  FAIL"); return 1; }
             return 0;
         }
     }

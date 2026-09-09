@@ -570,7 +570,6 @@ namespace FriLens
         public float MaxSpreadMeters { get; set; } = 0.02f;
 
         readonly Dictionary<string, Observation> m_ByImage = new();
-        readonly List<Observation> m_Buffer = new();
 
         /// <summary>Koľko značiek je práve v zásobe, bez ohľadu na platnosť.</summary>
         public int Count => m_ByImage.Count;
@@ -600,21 +599,25 @@ namespace FriLens
 
         /// <summary>
         /// Observácie, ktoré sa smú použiť: z aktuálneho úseku trackingu a nie staršie než
-        /// <paramref name="maxAgeSeconds"/>. Vracia zdieľaný zoznam, ktorý ďalšie volanie
-        /// prepíše — netreba ho držať.
+        /// <paramref name="maxAgeSeconds"/>.
+        ///
+        /// Vracia vlastný zoznam pri každom volaní. Zdieľaná vyrovnávacia pamäť by ušetrila
+        /// alokáciu, ale metóda beží pri dokončení burstu, nie po snímkoch, takže niet čo
+        /// šetriť — a dva výsledky držané naraz by sa ticho prepísali. Presne o to sa porezala
+        /// prvá kontrola, ktorá ju použila.
         /// </summary>
-        public IReadOnlyList<Observation> Current(int segment, float now, float maxAgeSeconds)
+        public List<Observation> Current(int segment, float now, float maxAgeSeconds)
         {
-            m_Buffer.Clear();
+            var usable = new List<Observation>();
             foreach (var observation in m_ByImage.Values)
             {
                 if (observation.segment != segment)
                     continue;
                 if (now - observation.time > maxAgeSeconds)
                     continue;
-                m_Buffer.Add(observation);
+                usable.Add(observation);
             }
-            return m_Buffer;
+            return usable;
         }
 
         /// <summary>Zabudne všetko. Volá sa pri strate trackingu.</summary>
