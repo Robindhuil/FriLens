@@ -862,6 +862,10 @@ Za `[SerializeField] bool m_AlignOnFirstSighting = true;` pridaj:
             + "staršími. Continuous je navigačný.")]
         [SerializeField] UpdatePolicy m_Policy = UpdatePolicy.OnRequest;
 
+        [Tooltip("Najkratší odstup medzi dvomi automatickými zarovnaniami v navigačnom režime. "
+            + "Bez neho by burst štartoval znova hneď po dobehnutí a log by sa zaplnil.")]
+        [SerializeField] float m_ContinuousIntervalSeconds = 2f;
+
         /// <summary>Aktuálna politika; prepína ju HUD.</summary>
         public UpdatePolicy Policy
         {
@@ -889,16 +893,24 @@ V `ApplyAlignment()`, tesne pred `if (m_Anchored != null)`, pridaj:
 Na koniec `Update()` (alebo tam, kde sa vyhodnocuje stav) pridaj:
 
 ```csharp
-            // V navigačnom režime nikto nič netlačí: hneď ako je značka v zábere a burst
-            // dobehne, prekryv sa opraví sám.
+            // V navigačnom režime nikto nič netlačí: kým je značka v zábere, prekryv sa opravuje
+            // sám. Odstup je tam preto, že burst dobehne za sekundu a bez neho by hneď štartoval
+            // ďalší — log by sa zaplnil a prekryv by sa neustále prepisoval.
+            //
+            // Pozor: keď je v zábere len jedna značka, fit spadne na jej natočenie a zdedí jeho
+            // šum. Navigačný režim je preto použiteľný až tam, kde vidieť dve.
             if (m_Policy == UpdatePolicy.Continuous
                 && State == AlignmentState.Aligned
                 && TrackedMarker != null
-                && TrackedMarker.trackingState == TrackingState.Tracking)
+                && TrackedMarker.trackingState == TrackingState.Tracking
+                && Time.time - LastAlignmentTime >= m_ContinuousIntervalSeconds)
             {
                 Realign();
             }
 ```
+
+Blok patrí **pred** riadok `if (State != AlignmentState.Sampling) return;`, inak sa naň
+nikdy nedostane.
 
 - [ ] **Krok 3: Overiť kompiláciu**
 

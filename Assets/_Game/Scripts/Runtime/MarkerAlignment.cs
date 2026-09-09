@@ -81,6 +81,30 @@ namespace FriLens
         [Tooltip("Align automatically the first time the marker is seen.")]
         [SerializeField] bool m_AlignOnFirstSighting = true;
 
+        /// <summary>Kedy sa zarovnanie prepočítava.</summary>
+        public enum UpdatePolicy
+        {
+            /// <summary>
+            /// Len na Re-anchor. Prekryv sa medzi stlačeniami nehýbe, takže drift je vidieť
+            /// ako útek — to je meranie, kvôli ktorému projekt vznikol.
+            /// </summary>
+            OnRequest,
+
+            /// <summary>
+            /// Sám, kým je značka v zábere. Prekryv sa v miestnosti drží; veľkosť každej opravy
+            /// sa zapíše, takže drift sa číta ako veľkosť fixu namiesto úteku.
+            /// </summary>
+            Continuous,
+        }
+
+        [Tooltip("OnRequest je merací režim a je predvolený, aby sa behy dali porovnávať so "
+            + "staršími. Continuous je navigačný.")]
+        [SerializeField] UpdatePolicy m_Policy = UpdatePolicy.OnRequest;
+
+        [Tooltip("Najkratší odstup medzi dvomi automatickými zarovnaniami v navigačnom režime. "
+            + "Bez neho by burst štartoval znova hneď po dobehnutí a log by sa zaplnil.")]
+        [SerializeField] float m_ContinuousIntervalSeconds = 2f;
+
         [Tooltip("Take the overlay's tilt from gravity instead of from the marker, keeping only "
             + "its heading and position. A tracked image's out-of-plane tilt is the weak part of "
             + "the estimate and it biases rather than scatters, so it survives averaging. Off "
@@ -176,6 +200,20 @@ namespace FriLens
         /// </summary>
         public float FitBaselineErrorMeters { get; private set; }
 
+        /// <summary>
+        /// O koľko metrov posunulo prekryv posledné zarovnanie. Je to drift nazbieraný od
+        /// predošlého fitu, odčítaný ako číslo namiesto odhadu okom — v navigačnom režime je to
+        /// jediné miesto, kde sa drift dá prečítať, lebo útek sa priebežne maže.
+        /// </summary>
+        public float LastCorrectionMeters { get; private set; }
+
+        /// <summary>Aktuálna politika prepočtu; prepína ju HUD.</summary>
+        public UpdatePolicy Policy
+        {
+            get => m_Policy;
+            set => m_Policy = value;
+        }
+
         /// <summary>The marker currently being tracked, or null.</summary>
         public ARTrackedImage TrackedMarker { get; private set; }
 
@@ -261,6 +299,21 @@ namespace FriLens
                 && LastAlignmentTime < 0f)
             {
                 State = AlignmentState.Sampling;
+            }
+
+            // V navigačnom režime nikto nič netlačí: kým je značka v zábere, prekryv sa opravuje
+            // sám. Odstup je tam preto, že burst dobehne za sekundu a bez neho by hneď štartoval
+            // ďalší — log by sa zaplnil a prekryv by sa neustále prepisoval.
+            //
+            // Pozor: keď je v zábere len jedna značka, fit spadne na jej natočenie a zdedí jeho
+            // šum. Navigačný režim je preto použiteľný až tam, kde vidieť dve.
+            if (m_Policy == UpdatePolicy.Continuous
+                && State == AlignmentState.Aligned
+                && TrackedMarker != null
+                && TrackedMarker.trackingState == TrackingState.Tracking
+                && Time.time - LastAlignmentTime >= m_ContinuousIntervalSeconds)
+            {
+                Realign();
             }
 
             if (State != AlignmentState.Sampling)
@@ -534,6 +587,13 @@ namespace FriLens
 
             LastMeasuredPose = new Pose(position, rotation);
             LastRootPose = new Pose(rootPosition, rootRotation);
+
+            // Veľkosť opravy je drift nazbieraný od minulého fitu, odčítaný ako číslo namiesto
+            // odhadu okom. V meracom režime je to skok, ktorý si niekto vyžiadal; v navigačnom
+            // je to samotný výsledok merania.
+            LastCorrectionMeters = LastAlignmentTime < 0f
+                ? 0f
+                : Vector3.Distance(m_AlignmentRoot.position, rootPosition);
 
             // Through the anchor when there is one. A pose written straight into the transform is
             // correct for exactly as long as ARCore's idea of the world does not change, and the
