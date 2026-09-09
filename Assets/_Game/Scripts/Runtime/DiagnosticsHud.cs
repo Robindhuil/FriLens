@@ -515,9 +515,26 @@ namespace FriLens
 
                     // How far gravity had to stand the alignment up. It is the marker's tilt
                     // error in one number, so the row says what the correction was worth rather
-                    // than hiding it.
-                    + "; levelled " + m_Alignment.LevelledDegrees.ToString(
-                        "F2", System.Globalization.CultureInfo.InvariantCulture) + " deg";
+                    // than hiding it. Fit z dvoch a viac značiek je vzpriamený z konštrukcie,
+                    // takže tam vyjde nula a je to tak správne.
+                    + "; levelled " + Number(m_Alignment.LevelledDegrees) + " deg"
+
+                    // Z koľkých značiek fit vznikol. Jedna znamená kurz z natočenia so všetkým
+                    // jeho šumom, dve a viac kurz z ich polôh.
+                    + "; markers " + m_Alignment.FitMarkerCount
+
+                    // Najväčší zvyšok fitu. -1 znamená, že sústava nebola preurčená a zvyšok
+                    // neexistuje; nula by na tom mieste vyzerala ako dokonalý fit.
+                    + "; residual " + Number(m_Alignment.FitWorstResidualMeters)
+
+                    // Rozdiel nameranej a modelovej dĺžky spojnice dvoch značiek. To nie je
+                    // chyba zarovnania, to je chyba modelu na tom úseku steny.
+                    + "; baseline " + Number(m_Alignment.FitBaselineErrorMeters)
+
+                    // O koľko sa prekryv posunul oproti predošlému fitu, teda drift nazbieraný
+                    // medzitým. V navigačnom režime je to jediné miesto, kde sa dá prečítať,
+                    // lebo útek sa priebežne maže.
+                    + "; correction " + Number(m_Alignment.LastCorrectionMeters);
             }
 
             m_Logger?.MarkEvent(label);
@@ -534,6 +551,13 @@ namespace FriLens
                 + " " + value.y.ToString("F3", culture)
                 + " " + value.z.ToString("F3", culture);
         }
+
+        /// <summary>
+        /// Jedno číslo do menovky udalosti. Rovnaký dôvod ako <see cref="Axis"/>: telefón píše
+        /// desatinnú čiarku a log je CSV.
+        /// </summary>
+        static string Number(float value) =>
+            value.ToString("F4", System.Globalization.CultureInfo.InvariantCulture);
 
         void OnOverlayToggled(bool visible)
         {

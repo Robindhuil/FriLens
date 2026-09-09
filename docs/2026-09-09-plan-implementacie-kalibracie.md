@@ -1074,19 +1074,27 @@ git commit -m "feat(hud): ukazovateľ dôvery zarovnania a zapojenie prekryvov"
 V `OnAligned()` nahraď riadok začínajúci `+ "; levelled "` týmto:
 
 ```csharp
-                    + "; levelled " + m_Alignment.LevelledDegrees.ToString(
-                        "F2", System.Globalization.CultureInfo.InvariantCulture) + " deg"
+                    + "; levelled " + Number(m_Alignment.LevelledDegrees) + " deg"
 
                     // Z koľkých značiek fit vznikol, aké veľké sú jeho zvyšky a o koľko posunul
                     // prekryv. Ten posun je drift nazbieraný od minulého fitu — v navigačnom
                     // režime je to jediné miesto, kde sa drift dá odčítať.
                     + "; markers " + m_Alignment.FitMarkerCount
-                    + "; residual " + m_Alignment.FitWorstResidualMeters.ToString(
-                        "F4", System.Globalization.CultureInfo.InvariantCulture)
-                    + "; baseline " + m_Alignment.FitBaselineErrorMeters.ToString(
-                        "F4", System.Globalization.CultureInfo.InvariantCulture)
-                    + "; correction " + m_Alignment.LastCorrectionMeters.ToString(
-                        "F4", System.Globalization.CultureInfo.InvariantCulture);
+                    + "; residual " + Number(m_Alignment.FitWorstResidualMeters)
+                    + "; baseline " + Number(m_Alignment.FitBaselineErrorMeters)
+                    + "; correction " + Number(m_Alignment.LastCorrectionMeters);
+```
+
+A vedľa `Axis` pridaj pomocník na jedno číslo, nech sa `ToString` s kultúrou neopakuje
+päťkrát:
+
+```csharp
+        /// <summary>
+        /// Jedno číslo do menovky udalosti. Rovnaký dôvod ako <see cref="Axis"/>: telefón píše
+        /// desatinnú čiarku a log je CSV.
+        /// </summary>
+        static string Number(float value) =>
+            value.ToString("F4", System.Globalization.CultureInfo.InvariantCulture);
 ```
 
 - [ ] **Krok 2: Overiť kompiláciu**
