@@ -8,6 +8,70 @@ miesto, kde sa mení.
 Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spustiť
 `FriLens > Build Android <verzia>`.
 
+## [0.3.0-alpha] — nevydané
+
+Kurz prekryvu prestal chodiť z natočenia značky. Menšia číslica by klamala: nemení sa detail
+zarovnania, mení sa to, z čoho vzniká.
+
+Prečo v [ADR 010](docs/decisions/010-kurz-z-poloh-znaciek-sklon-z-gravitacie.md), ako
+v [návrhu](docs/2026-09-09-navrh-kalibracie-viac-znaciek.md).
+
+### Čo to opravuje
+
+Po `0.2.2-alpha` už prekryv sadol do správnej miestnosti a nemal svah, ale **hýbal sa aj keď
+sa nehýbal človek**. Trinásť `Re-anchor` za sebou na jednu značku zo stojaceho miesta, za
+tridsať sekúnd:
+
+| veličina | rozptyl |
+|---|---|
+| poloha `AlignmentRoot` v osi X | **7,36 m** |
+| kurz | **11,1°** |
+| posun medzi dvomi po sebe idúcimi zarovnaniami | 0,1 – 2,5 m |
+
+A dve značky na jednej rovnej stene si odporovali o 2,04 – 2,89 m a 4,2 – 7,3°.
+
+### Added
+
+- **`AlignmentSolver`.** Tuhá transformácia so štyrmi stupňami voľnosti: posun `XYZ` a kurz.
+  Berie z každej značky **len polohu**, ktorá je presná na 0,11 – 1,20 cm, a natočenie
+  zahadzuje, lebo je presné na jednotky stupňov a je to odchýlka, nie šum.
+
+  Jedna značka degraduje na pôvodné správanie, dve dajú kurz zo spojnice (~0,1° namiesto 5°),
+  tri mimo priamky dajú aj zvyšok na každej. Sklon sa nefituje, takže výsledok je vzpriamený
+  z konštrukcie a gravitácia sa naň už neaplikuje.
+
+  **Mierka sa nefituje zámerne.** Model by sa inak natiahol tak, aby rozdiel medzi nameranou
+  a modelovou vzdialenosťou značiek pohltil — a ten rozdiel je práve to, čo projekt meria.
+  Vracia sa ako `baseline`.
+
+- **`MarkerObservations`.** Drží poslednú prijatú observáciu každej značky a zahadzuje ich pri
+  relokalizačnom skoku, po strate trackingu a po uplynutí veku. Skok je z toho najdôležitejší:
+  pozorovania spred a spoza neho sú v dvoch rôznych mapách a fit cez ne dá pózu, ktorá nepatrí
+  ani jednej.
+
+- **Merací a navigačný režim.** Tá istá matematika, iná politika. `OnRequest` rieši len na
+  `Re-anchor` a je predvolený, aby sa behy dali porovnávať so staršími. `Continuous` sa
+  opravuje sám, kým je značka v zábere, s odstupom 2 s.
+
+- **`AlignmentConfidence` a stlmenie prekryvu.** Z prejdenej dráhy a počtu skokov od zarovnania
+  spraví jedno číslo. Po prekročení prahu prekryv **zošedne, nikdy nezmizne** — zmiznutie by
+  vyzeralo ako pád aplikácie a zobralo by možnosť pozrieť sa, ako veľmi je vedľa.
+
+- **Log nesie `markers`, `residual`, `baseline` a `correction`.** `correction` je drift
+  nazbieraný od predošlého fitu; v navigačnom režime je to jediné miesto, kde sa dá prečítať,
+  lebo útek prekryvu sa priebežne maže.
+
+- **`FriLens > Verify Alignment Solver`.** Desať kontrol bez telefónu: návrat známej
+  transformácie, znamienko kurzu v ľavotočivom Unity, zvyšok pri dvoch značkách, odmietnutie
+  menej než dvoch, tri v priamke, že fit nezavedie sklon, a štyri na bránu observácií.
+
+### Fixed
+
+- **`Hide overlay` a `strop` konečne niečo prepínajú.** `DiagnosticsHud` mal v scéne prázdne
+  `m_Overlays` a `m_Ceiling = null`, takže obe tlačidlá menili len svoj vlastný vzhľad a žiadny
+  renderer nevypli. `Wire Scene` ich odteraz zapája — a `SetArray` v ňom pribudol, lebo pole
+  referencií doteraz nemal ako nastaviť.
+
 ## [0.2.2-alpha] — nevydané
 
 ### Added
