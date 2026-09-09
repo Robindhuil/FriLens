@@ -217,8 +217,18 @@ namespace FriLens
                 var result = await m_AnchorManager.TryAddAnchorAsync(
                     new Pose(position, Quaternion.identity));
 
-                if (!result.status.IsSuccess() || disc == null)
+                if (!result.status.IsSuccess())
                     return;
+
+                // The await spans frames and the disc may be gone by now — the scene reloaded,
+                // or the app on its way out. An anchor left behind is one ARCore keeps tracking
+                // for the rest of the session on behalf of an object that no longer exists.
+                if (disc == null)
+                {
+                    if (result.value != null)
+                        m_AnchorManager.TryRemoveAnchor(result.value);
+                    return;
+                }
 
                 disc.SetParent(result.value.transform, true);
             }

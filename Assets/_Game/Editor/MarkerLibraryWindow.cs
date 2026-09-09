@@ -25,10 +25,21 @@ namespace FriLens.EditorTools
         const string MarkerFolder = "Assets/_Game/AR/Markers";
 
         /// <summary>
-        /// Side of the printed pattern in metres — the black frame, not the paper and not the
-        /// caption strip under it.
+        /// Only files starting with this are markers. The same folder holds the diagrams that
+        /// explain how to measure and hang them, and those are textures too — handed to ARCore
+        /// they would be tracked as markers, which is both wrong and slower.
         /// </summary>
-        float m_PrintedSizeMeters = 0.20f;
+        const string MarkerPrefix = "frilens-";
+
+        /// <summary>
+        /// Side of the printed marker in metres — the outer hairline boundary, which is the edge
+        /// of the whole image file, caption strip included.
+        ///
+        /// Defaulted to the size the print PDFs are made at and measured at on paper. It is still
+        /// a field rather than a constant because the number that counts is the one on the wall,
+        /// not the one sent to the printer.
+        /// </summary>
+        float m_PrintedSizeMeters = 0.18f;
 
         string m_Report = "";
 
@@ -44,7 +55,10 @@ namespace FriLens.EditorTools
                 "Measure the printed marker with a ruler and enter that, not the size you sent "
                 + "to the printer. Printers scale. An error of 5 % in this number is an error of "
                 + "5 % in the scale of the whole overlay, and nothing on screen will show it.\n\n"
-                + "Measure the black frame, not the sheet of paper.",
+                + "Measure the thin OUTER boundary, the one that runs around the caption too. "
+                + "That line is the edge of the image file, and the size given here is the size "
+                + "of the whole file. The thick frame around the pattern is 9 % smaller, and "
+                + "entering that instead scales the entire overlay by 9 %.",
                 MessageType.Warning);
 
             m_PrintedSizeMeters = EditorGUILayout.FloatField(
@@ -66,7 +80,11 @@ namespace FriLens.EditorTools
             }
         }
 
-        static string Rebuild(float sizeMeters)
+        /// <summary>
+        /// Rebuilds the library from the marker PNGs at the given printed size. Public so it can
+        /// be driven without the window, which is what a build script or a check would do.
+        /// </summary>
+        public static string Rebuild(float sizeMeters)
         {
             var report = new StringBuilder();
 
@@ -75,10 +93,13 @@ namespace FriLens.EditorTools
                 return $"No library at {LibraryPath}.";
 
             var guids = AssetDatabase.FindAssets("t:Texture2D", new[] { MarkerFolder });
-            var paths = guids.Select(AssetDatabase.GUIDToAssetPath).OrderBy(p => p).ToList();
+            var paths = guids.Select(AssetDatabase.GUIDToAssetPath)
+                .Where(p => Path.GetFileName(p).StartsWith(MarkerPrefix))
+                .OrderBy(p => p)
+                .ToList();
 
             if (paths.Count == 0)
-                return $"No textures in {MarkerFolder}.";
+                return $"No {MarkerPrefix}* textures in {MarkerFolder}.";
 
             // Reference images have to be readable, and Unity imports PNGs without that. The
             // library would build anyway and then fail at runtime with nothing to point at.

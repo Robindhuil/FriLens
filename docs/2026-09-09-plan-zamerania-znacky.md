@@ -116,6 +116,29 @@ a `Z = 5,238` resp. `12,031` (bližšie k rohu), na oboch značkách.
 Na zarovnanie to vplyv nemalo — `MarkerAlignment` číta kotvu, nie dosku. Vplyv to malo na
 človeka: podľa scény by sa papier zavesil hore nohami.
 
+### Ako sa značka skenuje v aplikácii
+
+V pätičke HUD je tlačidlo, ktoré prepína `any → M1 → M2 → any`. Vybraná značka je zvýraznená;
+`any` znamená „ktorúkoľvek uvidíš" a je to jediný stav, v ktorom sa výsledok nedá priradiť ku
+konkrétnej značke.
+
+Postup pri meraní rozdielu medzi značkami:
+
+1. Prepnúť cieľ na **M1**, postaviť sa pred ňu, `Re-anchor`. Riadok `Alignment` povie
+   `M1 · 0 s ago · ±… cm`.
+2. Prejsť k **M2**, prepnúť cieľ na M2, `Re-anchor`.
+3. **Prekryv poskočí.** Ten skok je hľadané číslo — chyba modelu na 6,79 m steny. Nie je to
+   porucha a nemá sa priemerovať preč.
+
+Prečo výber vôbec musí byť: zarovnáva sa vždy z jednej značky, ale obe sa z opačného konca
+miestnosti zmestia do záberu naraz. Bez výberu by aplikácia zarovnala z tej, ktorú ARCore
+ohlási prvú, a v logu by nebolo, ktorá to bola. Vzorky z oboch by sa navyše mohli zmiešať do
+jedného priemeru a výsledná poloha by nepatrila ani jednej z nich; burst je preto viazaný na
+značku, ktorá dala jeho prvú vzorku.
+
+Log to nesie dvakrát: udalosť `aligned on M1` v riadku zarovnania a stĺpec `marker` v každom
+ďalšom riadku.
+
 ### Dosky na kontrolu
 
 Na oboch pózach je v scéne **viditeľná doska s textúrou tej istej značky**. Po zarovnaní má

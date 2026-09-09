@@ -352,6 +352,10 @@
 }
 
 .footer {
+    /* Gives way to the buttons beside it rather than pushing them off the screen: the log line
+       is the least urgent thing in the row and the only one that can be cut short. */
+    flex-shrink: 1;
+    overflow: hidden;
     margin: 0;
     padding: 6px 12px 6px 12px;
     border-width: 1.5px;

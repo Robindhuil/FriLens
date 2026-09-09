@@ -81,6 +81,16 @@ namespace FriLens
         readonly List<Vector3> m_Positions = new();
         readonly List<Quaternion> m_Rotations = new();
 
+        /// <summary>
+        /// Which marker the burst in progress is made of. A burst has to belong to one marker:
+        /// the two in the break room are 6.79 m apart on the same wall and both fit in the
+        /// camera from across the room, and an average taken across the pair is a pose that
+        /// belongs to neither of them.
+        /// </summary>
+        string m_BurstImageName = "";
+
+        string m_TargetImageName = "";
+
         bool m_Enabled;
         bool m_WarnedAboutUnsetAnchor;
         float m_LastSampleTime;
@@ -112,6 +122,24 @@ namespace FriLens
 
         /// <summary>The marker currently being tracked, or null.</summary>
         public ARTrackedImage TrackedMarker { get; private set; }
+
+        /// <summary>
+        /// The marker the next alignment has to come from, or empty for whichever is seen.
+        ///
+        /// Which marker produced a given alignment cannot be left to whichever ARCore happened
+        /// to report first, because the difference between the alignment from one marker and
+        /// from the other is the measurement being taken.
+        /// </summary>
+        public string TargetImageName => m_TargetImageName;
+
+        /// <summary>
+        /// The marker the current alignment was solved from, or empty if there has not been one.
+        /// </summary>
+        public string AlignedImageName { get; private set; } = "";
+
+        /// <summary>Image name of the marker being tracked, or empty.</summary>
+        public string TrackedImageName =>
+            TrackedMarker != null ? TrackedMarker.referenceImage.name : "";
 
         /// <summary>
         /// How many images the tracker has been given to look for.
@@ -206,6 +234,21 @@ namespace FriLens
                 return;
             }
 
+            // Which marker the burst belongs to is settled by its first sample. A second marker
+            // coming into view part way through would otherwise be averaged in with the first,
+            // and the result would be a pose somewhere between two places on the wall.
+            var imageName = TrackedMarker.referenceImage.name;
+            if (m_Positions.Count > 0 && imageName != m_BurstImageName)
+            {
+                Debug.LogWarning($"{nameof(MarkerAlignment)}: '{imageName}' came into view while "
+                    + $"sampling '{m_BurstImageName}'. Starting again on the new one rather than "
+                    + "averaging the two.", this);
+                m_Positions.Clear();
+                m_Rotations.Clear();
+            }
+
+            m_BurstImageName = imageName;
+
             m_Positions.Add(TrackedMarker.transform.position);
             m_Rotations.Add(TrackedMarker.transform.rotation);
             m_LastSampleTime = Time.time;
@@ -225,21 +268,77 @@ namespace FriLens
 
             m_Positions.Clear();
             m_Rotations.Clear();
+            m_BurstImageName = "";
             m_LastSampleTime = Time.time;
             State = AlignmentState.Sampling;
         }
 
         /// <summary>
+        /// Restricts alignment to one marker, or to any of them when given an empty name.
+        /// </summary>
+        public void SetTarget(string imageName)
+        {
+            var wanted = imageName ?? "";
+            if (wanted == m_TargetImageName)
+                return;
+
+            m_TargetImageName = wanted;
+
+            // Samples already in hand came from the marker that was wanted a moment ago. Keeping
+            // them would apply the old marker's pose under the new one's name.
+            if (State == AlignmentState.Sampling)
+                Realign();
+        }
+
+        /// <summary>
+        /// Steps the target through the surveyed markers and back to "any", and returns the new
+        /// one. One button rather than one per marker: the marker list is a serialized field
+        /// that grows as markers get surveyed, and a fixed row of buttons would have to be kept
+        /// in step with it by hand.
+        /// </summary>
+        public string CycleTarget()
+        {
+            if (m_Markers == null || m_Markers.Length == 0)
+                return m_TargetImageName;
+
+            var index = -1;
+            for (var i = 0; i < m_Markers.Length; i++)
+                if (m_Markers[i].imageName == m_TargetImageName)
+                    index = i;
+
+            var next = index + 1;
+            SetTarget(next >= m_Markers.Length ? "" : m_Markers[next].imageName);
+            return m_TargetImageName;
+        }
+
+        /// <summary>
         /// Picks the tracked image that has a surveyed anchor. An image the library knows but
         /// nobody has measured is worse than none: it would align the overlay to a guess.
+        ///
+        /// An image ARCore has seen once stays in <c>trackables</c> for the rest of the session
+        /// with its state dropped to Limited, so taking the first match would pin the HUD to a
+        /// marker left behind at the other end of the room while the one actually in front of
+        /// the camera is ignored. A marker being tracked outranks one merely remembered.
         /// </summary>
         ARTrackedImage FindMarker()
         {
+            ARTrackedImage remembered = null;
+
             foreach (var image in m_TrackedImageManager.trackables)
-                if (AnchorFor(image) != null)
+            {
+                if (AnchorFor(image) == null)
+                    continue;
+
+                if (m_TargetImageName.Length > 0 && image.referenceImage.name != m_TargetImageName)
+                    continue;
+
+                if (image.trackingState == TrackingState.Tracking)
                     return image;
 
-            return null;
+                remembered ??= image;
+            }
+
+            return remembered;
         }
 
         Transform AnchorFor(ARTrackedImage image)
@@ -299,9 +398,11 @@ namespace FriLens
 
             LastAlignmentTime = Time.time;
             State = AlignmentState.Aligned;
+            AlignedImageName = m_BurstImageName;
 
-            Debug.Log($"{nameof(MarkerAlignment)}: aligned on {m_Positions.Count} samples, "
-                + $"spread {SampleSpreadMeters * 100f:F1} cm / {SampleSpreadDegrees:F2} deg.", this);
+            Debug.Log($"{nameof(MarkerAlignment)}: aligned on '{m_BurstImageName}' from "
+                + $"{m_Positions.Count} samples, spread {SampleSpreadMeters * 100f:F1} cm / "
+                + $"{SampleSpreadDegrees:F2} deg.", this);
 
             m_Positions.Clear();
             m_Rotations.Clear();

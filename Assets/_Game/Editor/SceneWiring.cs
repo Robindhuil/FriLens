@@ -24,16 +24,16 @@ namespace FriLens.EditorTools
         {
             var report = new StringBuilder();
 
-            var hud = Object.FindFirstObjectByType<DiagnosticsHud>(FindObjectsInactive.Include);
+            var hud = Object.FindAnyObjectByType<DiagnosticsHud>(FindObjectsInactive.Include);
             if (hud == null)
             {
                 Debug.LogError("FriLens: no DiagnosticsHud in the open scene. Open FriLensTest.");
                 return;
             }
 
-            var travel = Object.FindFirstObjectByType<CameraTravel>(FindObjectsInactive.Include);
-            var anchors = Object.FindFirstObjectByType<ARAnchorManager>(FindObjectsInactive.Include);
-            var arCamera = Object.FindFirstObjectByType<ARCameraManager>(FindObjectsInactive.Include);
+            var travel = Object.FindAnyObjectByType<CameraTravel>(FindObjectsInactive.Include);
+            var anchors = Object.FindAnyObjectByType<ARAnchorManager>(FindObjectsInactive.Include);
+            var arCamera = Object.FindAnyObjectByType<ARCameraManager>(FindObjectsInactive.Include);
 
             if (travel == null || arCamera == null)
             {
@@ -41,7 +41,7 @@ namespace FriLens.EditorTools
                 return;
             }
 
-            var probe = Object.FindFirstObjectByType<FloorProbe>(FindObjectsInactive.Include);
+            var probe = Object.FindAnyObjectByType<FloorProbe>(FindObjectsInactive.Include);
             if (probe == null)
             {
                 probe = Undo.AddComponent<FloorProbe>(travel.gameObject);
@@ -59,8 +59,8 @@ namespace FriLens.EditorTools
 
             // The log reads these directly rather than through the HUD, so it keeps recording
             // them even if the HUD fails to build.
-            var logger = Object.FindFirstObjectByType<SessionLogger>(FindObjectsInactive.Include);
-            var anchoredRoot = Object.FindFirstObjectByType<AnchoredRoot>(FindObjectsInactive.Include);
+            var logger = Object.FindAnyObjectByType<SessionLogger>(FindObjectsInactive.Include);
+            var anchoredRoot = Object.FindAnyObjectByType<AnchoredRoot>(FindObjectsInactive.Include);
             if (logger != null)
             {
                 Set(logger, "m_FloorProbe", probe);

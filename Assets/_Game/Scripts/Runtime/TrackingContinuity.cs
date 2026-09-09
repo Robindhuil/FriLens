@@ -33,6 +33,7 @@ namespace FriLens
 
         bool m_Tracking;
         float m_LostSince = -1f;
+        bool m_LossCounted;
         NotTrackingReason m_LostReason;
 
         /// <summary>
@@ -67,6 +68,11 @@ namespace FriLens
         {
             BlindSeconds = 0f;
             Losses = 0;
+
+            // A loss still in progress is not settled by an alignment that cannot be happening:
+            // a marker cannot be averaged while the session is down. Clearing the flag lets the
+            // loss be counted again if it is somehow still running, rather than being forgotten.
+            m_LossCounted = false;
         }
 
         void Update()
@@ -86,6 +92,19 @@ namespace FriLens
                     var reason = ARSession.notTrackingReason;
                     if (reason != NotTrackingReason.None)
                         m_LostReason = reason;
+
+                    // The loss is counted here, while it is still going on, rather than when
+                    // tracking comes back. Counting it on the way back left IsVerified true for
+                    // the whole blind period — so a session that lost its place and had not yet
+                    // found it wrote verified=1 into every row, which is the one moment the flag
+                    // exists for. A loss that never ends never came back at all, and that is the
+                    // worst case of the lot.
+                    if (!m_LossCounted && Time.time - m_LostSince >= m_IgnoreShorterThanSeconds)
+                    {
+                        m_LossCounted = true;
+                        Losses++;
+                        Lost?.Invoke(m_LostReason);
+                    }
                 }
 
                 return;
@@ -96,24 +115,21 @@ namespace FriLens
             if (!tracking)
             {
                 m_LostSince = Time.time;
+                m_LossCounted = false;
                 m_LostReason = ARSession.notTrackingReason;
-                Lost?.Invoke(m_LostReason);
                 return;
             }
 
             // Tracking came back. Whether it came back in the right place is exactly what cannot be
             // known from here, which is the point of counting these at all.
-            if (m_LostSince >= 0f)
-            {
-                var gone = Time.time - m_LostSince;
-                if (gone >= m_IgnoreShorterThanSeconds)
-                {
-                    Losses++;
-                    Regained?.Invoke(gone, m_LostReason);
-                }
-            }
+            // Only losses that were reported get a matching regain. Otherwise the log carried
+            // "tracking-lost" lines with nothing closing them, and a run looked far worse than it
+            // was: a frame or two between states is the session breathing, not an interruption.
+            if (m_LostSince >= 0f && m_LossCounted)
+                Regained?.Invoke(Time.time - m_LostSince, m_LostReason);
 
             m_LostSince = -1f;
+            m_LossCounted = false;
         }
     }
 }

@@ -224,7 +224,10 @@ def summarise(run):
         "losses": int(run.total("losses") or 0) if run.has("losses") else None,
         "blind_s": run.total("blind_s") if run.has("blind_s") else None,
         "verified_fraction": (sum(verified) / len(verified)) if verified else None,
-        "alignments": sum(1 for _, _, label in run.events() if label == "aligned"),
+        # "aligned" up to 0.1.8, "aligned on M1" from 0.2.0 on, when a second surveyed
+        # marker made it worth recording which one an alignment came from.
+        "alignments": sum(1 for _, _, label in run.events() if label.startswith("aligned")),
+        "markers": sorted({m for m in run.column("marker") if m}) if run.has("marker") else [],
         "cam_y_range_m": (max(cam_y) - min(cam_y)) if cam_y else None,
         "probes": int(max([p for p in run.column("probes") if p is not None] or [0])),
     }
@@ -415,6 +418,8 @@ def report(run, tape_m=None, window_s=60.0, chosen_segments=None):
     if summary["verified_fraction"] is not None:
         out.append(f"| riadky s `verified = 1` | {fmt(summary['verified_fraction'] * 100, 0)} % |")
     out.append(f"| zosúladenia | {summary['alignments']} |")
+    if summary["markers"]:
+        out.append(f"| značky | {', '.join(summary['markers'])} |")
     if summary["cam_y_range_m"] is not None:
         out.append(f"| rozsah `cam_y` | {fmt(summary['cam_y_range_m'])} m |")
     if summary["probes"]:

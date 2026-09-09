@@ -56,7 +56,7 @@ namespace FriLens
                     + "cam_x,cam_y,cam_z,cam_yaw,cam_pitch,cam_roll,"
                     + "walked_m,path_raw_m,from_origin_m,jumps,jumped_m,"
                     + "blind_s,losses,verified,origin_anchored,overlay_anchored,"
-                    + "probes,eye_m,since_align_s,spread_cm,spread_deg,event");
+                    + "probes,eye_m,since_align_s,spread_cm,spread_deg,marker,event");
                 m_Writer.Flush();
                 Debug.Log($"{nameof(SessionLogger)}: writing {FilePath}", this);
 
@@ -176,6 +176,12 @@ namespace FriLens
             var probes = m_FloorProbe != null ? m_FloorProbe.Count : 0;
             var eye = m_FloorProbe != null ? m_FloorProbe.EyeHeightMeters : 0f;
 
+            // Which marker the overlay is currently aligned from, on every row rather than
+            // only on the row where the alignment happened. Two alignments in one run is the
+            // whole point of a second marker, and telling their rows apart afterwards should not
+            // require carrying a value forward from an event line by hand.
+            var marker = m_Alignment != null ? m_Alignment.AlignedImageName : "";
+
             var sinceAlign = m_Alignment != null ? m_Alignment.TimeSinceAlignment : -1f;
             var spreadCm = m_Alignment != null ? m_Alignment.SampleSpreadMeters * 100f : 0f;
             var spreadDeg = m_Alignment != null ? m_Alignment.SampleSpreadDegrees : 0f;
@@ -206,6 +212,7 @@ namespace FriLens
                 sinceAlign.ToString("F2", culture),
                 spreadCm.ToString("F2", culture),
                 spreadDeg.ToString("F3", culture),
+                marker,
                 label));
 
             RowsWritten++;

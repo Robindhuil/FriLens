@@ -63,6 +63,7 @@ namespace FriLens
                 m_View.EyeHeightAdjusted -= OnEyeHeightAdjusted;
                 m_View.OverlayToggled -= OnOverlayToggled;
                 m_View.CeilingToggled -= OnCeilingToggled;
+                m_View.TargetCycled -= OnTargetCycled;
                 m_View = null;
             }
 
@@ -93,8 +94,10 @@ namespace FriLens
             m_View.EyeHeightAdjusted += OnEyeHeightAdjusted;
             m_View.OverlayToggled += OnOverlayToggled;
             m_View.CeilingToggled += OnCeilingToggled;
+            m_View.TargetCycled += OnTargetCycled;
 
             m_View.SetCeilingVisible(m_CeilingWanted);
+            ShowTarget();
 
             if (m_FloorProbe != null)
                 m_View.SetEyeHeight(m_FloorProbe.EyeHeightMeters);
@@ -197,13 +200,20 @@ namespace FriLens
             var marker = m_Alignment.TrackedMarker;
             if (marker == null)
             {
-                m_View.SetRow(HudRow.Marker, "none in view", ValueState.Idle);
+                // Naming the wanted marker rather than saying "none" answers the question the
+                // tester actually has while standing in front of a marker and seeing nothing
+                // happen: whether the app is looking for this one or for the other one.
+                var wanted = ShortName(m_Alignment.TargetImageName);
+                m_View.SetRow(HudRow.Marker,
+                    wanted.Length > 0 ? wanted + " not in view" : "none in view",
+                    ValueState.Idle);
                 return;
             }
 
             var tracking = marker.trackingState == TrackingState.Tracking;
+            var seen = ShortName(m_Alignment.TrackedImageName);
             m_View.SetRow(HudRow.Marker,
-                tracking ? "in view" : marker.trackingState.ToString(),
+                tracking ? seen + " in view" : seen + " · " + marker.trackingState,
                 tracking ? ValueState.Ok : ValueState.Warn);
         }
 
@@ -240,14 +250,26 @@ namespace FriLens
             switch (m_Alignment.State)
             {
                 case MarkerAlignment.AlignmentState.Sampling:
+                    var samplingOn = ShortName(m_Alignment.TrackedImageName);
+                    if (samplingOn.Length == 0)
+                        samplingOn = ShortName(m_Alignment.TargetImageName);
+
                     m_View.SetRow(HudRow.Alignment,
-                        $"sampling {m_Alignment.SamplesCollected}/{m_Alignment.SampleTarget}",
+                        samplingOn.Length > 0
+                            ? $"sampling {samplingOn} {m_Alignment.SamplesCollected}/{m_Alignment.SampleTarget}"
+                            : $"sampling {m_Alignment.SamplesCollected}/{m_Alignment.SampleTarget}",
                         ValueState.Warn);
                     break;
 
                 case MarkerAlignment.AlignmentState.Aligned:
+                    // Which marker it was aligned from belongs on this row rather than in the log
+                    // alone: with two markers on one wall, an overlay that jumps when you
+                    // re-anchor is either the model's error or the wrong marker, and the row is
+                    // the only thing on screen that tells the two apart.
+                    var from = ShortName(m_Alignment.AlignedImageName);
                     m_View.SetRow(HudRow.Alignment,
-                        $"{m_Alignment.TimeSinceAlignment:F0} s ago · "
+                        (from.Length > 0 ? from + " · " : "")
+                        + $"{m_Alignment.TimeSinceAlignment:F0} s ago · "
                         + $"±{m_Alignment.SampleSpreadMeters * 100f:F1} cm / {m_Alignment.SampleSpreadDegrees:F1}°",
                         ValueState.Ok);
                     break;
@@ -383,6 +405,45 @@ namespace FriLens
 
         bool InPreview => m_Mode != null && m_Mode.Mode == SessionModeController.SessionMode.Preview;
 
+        /// <summary>
+        /// Turns a reference image name into something that fits on a button: "frilens-M1" is
+        /// what the library calls it, "M1" is what is written on the printed sheet and what the
+        /// tester is holding.
+        /// </summary>
+        static string ShortName(string imageName)
+        {
+            if (string.IsNullOrEmpty(imageName))
+                return "";
+
+            var dash = imageName.LastIndexOf('-');
+            return dash >= 0 && dash < imageName.Length - 1 ? imageName[(dash + 1)..] : imageName;
+        }
+
+        /// <summary>
+        /// Steps which marker the next alignment is allowed to come from.
+        ///
+        /// The two markers in the break room are 6.79 m apart on the same wall and both fit in
+        /// the camera from across the room. Left to itself the app would align to whichever
+        /// ARCore reported first, and the whole point of two markers — that the gap between the
+        /// alignment each one gives is the model's error along that wall — needs to know which
+        /// one produced which alignment.
+        /// </summary>
+        void OnTargetCycled()
+        {
+            if (m_Alignment == null)
+                return;
+
+            var target = m_Alignment.CycleTarget();
+            ShowTarget();
+            m_Logger?.MarkEvent(target.Length > 0 ? "target " + ShortName(target) : "target any");
+        }
+
+        void ShowTarget()
+        {
+            var target = m_Alignment != null ? m_Alignment.TargetImageName : "";
+            m_View.SetTargetLabel(target.Length > 0 ? ShortName(target) : "any", target.Length > 0);
+        }
+
         void OnReanchor()
         {
             m_Alignment?.Realign();
@@ -401,7 +462,10 @@ namespace FriLens
             // question a tracking loss had opened. This is the only thing that clears the flag.
             m_Continuity?.MarkVerified();
 
-            m_Logger?.MarkEvent("aligned");
+            // The marker's name is the whole value of the row afterwards: two alignments in one
+            // log are only comparable if it says which marker each came from.
+            var from = ShortName(m_Alignment != null ? m_Alignment.AlignedImageName : "");
+            m_Logger?.MarkEvent(from.Length > 0 ? "aligned on " + from : "aligned");
         }
 
         void OnOverlayToggled(bool visible)

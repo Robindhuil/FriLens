@@ -64,6 +64,7 @@ namespace FriLens
         readonly Button m_Drop;
         readonly Button m_CompactToggle;
         Button m_Ceiling;
+        Button m_Target;
 
         public event Action Reanchor;
         public event Action Mark;
@@ -76,6 +77,9 @@ namespace FriLens
 
         /// <summary>Raised with whether the ceiling should be drawn.</summary>
         public event Action<bool> CeilingToggled;
+
+        /// <summary>Raised when the marker the alignment must use is stepped on.</summary>
+        public event Action TargetCycled;
 
         bool m_CeilingVisible;
 
@@ -136,6 +140,9 @@ namespace FriLens
             // mean standing in a corridor pressing a button forty times.
             m_Root.Q<Button>("btn-eye-down").clicked += () => EyeHeightAdjusted?.Invoke(-0.01f);
             m_Root.Q<Button>("btn-eye-up").clicked += () => EyeHeightAdjusted?.Invoke(0.01f);
+
+            m_Target = m_Root.Q<Button>("btn-target");
+            m_Target.clicked += () => TargetCycled?.Invoke();
 
             m_Ceiling = m_Root.Q<Button>("btn-ceiling");
             m_Ceiling.clicked += () =>
@@ -330,6 +337,19 @@ namespace FriLens
         {
             m_CeilingVisible = visible;
             m_Ceiling.EnableInClassList("btn-step--on", visible);
+        }
+
+        /// <summary>
+        /// Shows which marker an alignment is allowed to come from.
+        ///
+        /// Highlighted while it is restricted to one, because "any" is the state in which a
+        /// reading cannot be attributed to a marker, and that has to be visible without reading
+        /// the word.
+        /// </summary>
+        public void SetTargetLabel(string text, bool restricted)
+        {
+            m_Target.text = text;
+            m_Target.EnableInClassList("btn-step--on", restricted);
         }
 
         /// <summary>Shows the assumed height of the camera above the floor.</summary>

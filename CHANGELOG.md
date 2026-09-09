@@ -42,6 +42,49 @@ hrán tým odpadá**; malo by zmysel len tam, kde sken nie je.
   strop — a ten sa zobrazí len vtedy, keď je zapnutý prekryv **aj** strop, takže skrytie
   a odkrytie prekryvu nikomu potichu nezapne strop, ktorý si vypol.
 
+- **Výber značky v HUD.** Tlačidlo v pätičke prepína `any → M1 → M2 → any`. Zarovnáva sa vždy
+  z jednej značky a obe v break roome sa zmestia do záberu naraz, takže bez výberu by nebolo
+  známe, z ktorej dané zarovnanie vzniklo — a práve rozdiel medzi zarovnaním z M1 a z M2 je to
+  meranie, kvôli ktorému sú tam dve. Riadok `Alignment` odteraz začína menom značky, riadok
+  `Marker` hovorí, ktorá je v zábere alebo ktorá sa hľadá.
+
+- **Stĺpec `marker` v CSV.** Meno značky, z ktorej je prekryv práve zarovnaný, v každom riadku,
+  nielen v udalosti. Dve zarovnania v jednom behu sú celý zmysel druhej značky a ich riadky by
+  sa inak museli rozlišovať ručným ťahaním hodnoty z udalostného riadku dopredu.
+
+### Fixed
+
+- **Zarovnanie sa už nedá poskladať z dvoch značiek naraz.** Burst si po prvej vzorke zapamätá,
+  ktorej značke patrí; ak sa medzitým objaví druhá, začne odznova na nej. Predtým sa vzorky
+  z oboch spriemerovali a výsledkom bola poloha, ktorá nepatrí ani jednej z nich. S jednou
+  zameranou značkou to nastať nemohlo, s dvomi na jednej stene je to bežná situácia.
+
+- **Sledovaná značka sa vyberá podľa toho, ktorá sa práve sleduje.** Obrázok, ktorý ARCore raz
+  videl, zostáva v `trackables` do konca session so stavom `Limited`, takže výber prvého
+  nájdeného zamkol HUD na značku na druhom konci miestnosti a burst sa nikdy nenaplnil.
+
+- **Knižnica značiek brala aj obrázky z dokumentácie.** `FindAssets("t:Texture2D")` v priečinku
+  značiek našiel aj `ako-merat-znacku.png` a dva pôdorysy a pridal ich ako referenčné obrázky
+  s rozmerom 18 cm. Filtruje sa na `frilens-*`.
+
+- **Okno knižnice hovorilo merať zlú linku.** Text pýtal rozmer čierneho rámčeka; knižnica
+  pritom deklaruje rozmer **celého súboru**, teda vonkajší tenký obrys. Rozdiel je 9 %
+  a prejaví sa ako 9 % chyba mierky celého prekryvu, na ktorú nič na obrazovke neupozorní.
+  Predvolená hodnota je odteraz 0,18 m.
+
+- **`verified` už neklame počas straty trackingu.** Strata sa počítala až pri obnove, takže
+  celý čas naslepo — teda presne to okno, kvôli ktorému príznak existuje — mal každý riadok
+  `verified=1`. A strata, ktorá sa nikdy neskončí, sa nezapočítala vôbec. Počíta sa teraz hneď,
+  ako prekročí prah 0,3 s. Udalosť `tracking-lost` sa tým zároveň stala symetrickou
+  s `tracking-regained`: krátke výpadky nezapíšu ani jednu.
+
+- **Disk, ktorý zanikne počas kotvenia, po sebe nenechá kotvu.** `FloorProbe` kotvu vytvorenú
+  medzitým odstráni, rovnako ako to už robil `AnchoredRoot`.
+
+- **`SceneWiring` bez varovaní.** Sedem volaní `FindFirstObjectByType` prešlo na
+  `FindAnyObjectByType`; obe hľadajú jeden výskyt, ale prvé je deprecated pre závislosť na
+  poradí instance ID.
+
 ### Vyhodnocovacie skripty
 
 `tools/frilens_eval.py` číta session logy a počíta z nich to, čo sa doteraz rátalo ručne:

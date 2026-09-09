@@ -16,4 +16,44 @@ MonoBehaviour:
   m_GuidHigh: 10382964617711943563
   m_DataStore:
     m_Storage: []
-  m_Images: []
+  m_Images:
+  - m_SerializedGuid:
+      m_GuidLow: 4802224815048353854
+      m_GuidHigh: 17934324115847681430
+    m_SerializedTextureGuid:
+      m_GuidLow: 6315338507223616630
+      m_GuidHigh: 17932071150102028059
+    m_Size: {x: 0.18, y: 0.18}
+    m_SpecifySize: 1
+    m_Name: frilens-M1
+    m_Texture: {fileID: 0}
+  - m_SerializedGuid:
+      m_GuidLow: 4629850843515429264
+      m_GuidHigh: 4977101615415426475
+    m_SerializedTextureGuid:
+      m_GuidLow: 6729559768257363419
+      m_GuidHigh: 9607005382221970250
+    m_Size: {x: 0.18, y: 0.18}
+    m_SpecifySize: 1
+    m_Name: frilens-M2
+    m_Texture: {fileID: 0}
+  - m_SerializedGuid:
+      m_GuidLow: 5422451931563635426
+      m_GuidHigh: 12499256852091201174
+    m_SerializedTextureGuid:
+      m_GuidLow: 13809308716937670237
+      m_GuidHigh: 15530591510458367146
+    m_Size: {x: 0.18, y: 0.18}
+    m_SpecifySize: 1
+    m_Name: frilens-M3
+    m_Texture: {fileID: 0}
+  - m_SerializedGuid:
+      m_GuidLow: 5263435404124095967
+      m_GuidHigh: 6214661197243965359
+    m_SerializedTextureGuid:
+      m_GuidLow: 4365329494248585792
+      m_GuidHigh: 16210494684230146762
+    m_Size: {x: 0.18, y: 0.18}
+    m_SpecifySize: 1
+    m_Name: frilens-M4
+    m_Texture: {fileID: 0}

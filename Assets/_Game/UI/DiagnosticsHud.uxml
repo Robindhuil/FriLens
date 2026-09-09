@@ -147,6 +147,10 @@
       <!-- The only proof that the run is being recorded at all. -->
       <ui:Label name="footer" class="footer" text="log: not writing" />
       <ui:VisualElement class="row-spacer" />
+      <!-- Which marker an alignment is allowed to come from. Both markers on the west wall fit
+           in the camera together from across the room, so leaving the choice to ARCore would
+           make it unknowable which one a given alignment was solved from. -->
+      <ui:Button name="btn-target" class="btn-step btn-wide" text="any" />
       <!-- Ceilings are off by default: drawn overhead they fill the screen and hide the camera
            image, which is the thing being judged. -->
       <ui:Button name="btn-ceiling" class="btn-step btn-wide" text="strop" />
