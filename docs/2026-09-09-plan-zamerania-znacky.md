@@ -35,19 +35,31 @@ viditeľný roh miestnosti. Treba to skontrolovať okom, nie predpokladať.
 
 ## Zamerané — dve značky na západnej stene
 
-Podlaha `Y = 0,694 m`, steny do `Y = 7,08 m`. Roh **A** je `X −21,902  Z 3,828`, kde sa
-západná stena stretáva s južnou; obe sú dlhé a rovné.
+Podlaha `Y = 0,694 m`, steny do `Y = 7,08 m`. Západná stena beží od rohu **A** (`Z 3,828`,
+stretáva sa s južnou stenou) po roh **B** (`Z 13,621`, severná stena). Obe sú dlhé a rovné.
 
-| značka | poloha stredu | od rohu A | výška |
-|---|---|---:|---:|
-| `frilens-M1` | X −21,902 · Y 2,194 · Z 5,328 | 1,50 m | 1,50 m |
-| `frilens-M2` | X −21,902 · Y 2,194 · Z 12,828 | 9,00 m | 1,50 m |
+| značka | poloha stredu | umiestnenie |
+|---|---|---|
+| `frilens-M1` | X −21,902 · Y 2,194 · Z 5,328 | 1,50 m od rohu **A** |
+| `frilens-M2` | X −21,902 · Y 2,194 · Z 12,121 | 1,50 m od rohu **B** |
 
-Rozstup 7,5 m je zámerný. Polohu vieš trafiť na centimetre, natočenie nie — a keď sú značky
-ďaleko od seba, chyba natočenia jednej z nich sa na celom prekryve prejaví menej.
+Výška stredu 1,50 m nad podlahou pri oboch. Tri rovnaké čísla, menej na zapamätanie pri stene.
 
-**Obe vzdialenosti meraj pásmom od toho istého rohu**, nie každú od iného konca steny. Chyby
-sa tak nesčítajú.
+### Prečo každá od svojho rohu, a nie obe od jedného
+
+Pôvodne som navrhoval merať obe od rohu A. Bola to horšia voľba, a nielen preto, že deväť metrov
+sa pásmom meria zle.
+
+Zarovnáva sa vždy **na jednu značku**, nie na obe naraz. Keby boli obe odmerané od rohu A, obe by
+zdedili tú istú chybu a **dali by identické zarovnanie** — z rozdielu medzi nimi by sa nedalo
+prečítať nič.
+
+Keď je každá viazaná na svoj roh, rozdiel medzi zarovnaním z M1 a z M2 je **priamo to, o koľko
+sa model rozchádza so skutočnosťou** na dĺžke steny. To je meranie, kvôli ktorému projekt
+existuje, a vypadne zadarmo.
+
+Cena je, že prekryv pri prezarovnaní z jednej značky na druhú **poskočí** o ten rozdiel. To nie
+je chyba, to je ten výsledok — a je lepšie ho vidieť než schovať.
 
 ### Orientácia značky — overená, nie odhadnutá
 
