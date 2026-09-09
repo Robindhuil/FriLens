@@ -198,12 +198,26 @@ z toho, čo bolo vidieť na obrazovke.
 ## Čo tento návrh nerieši
 
 - **Chôdza mimo break roomu.** Značky budú len v ňom. Po odchode sa drift nemá čím opraviť
-  a `AlignmentConfidence` to má priznať. Riešenie by boli značky pozdĺž chodieb RC
-  a pose graph — vedome odložené, kým nie je jasné, či to projekt potrebuje.
+  a `AlignmentConfidence` to má priznať zošednutím.
+
+  **Riešením ale nie sú značky po celej budove.** Cieľ je opačný: **jedno miesto, kde sa
+  človek zosynchronizuje s fakultou, a potom chodí, kade chce.** Drift sa má potláčať tak, aby
+  sa nestaval, nie prelepovať fixmi každých pár desiatok metrov. Cesta k tomu je rozhodnutá
+  v [ADR 007](decisions/007-vyuzitie-modelu-na-lokalizaciu.md): väzby z modelu v poradí
+  **kurz na smery chodieb → väzba na výšku podlahy → map matching časticovým filtrom**, každá
+  ako samostatný, defaultne vypnutý režim, aby sa beh s ňou a bez nej dal porovnať.
+
+  Zopár značiek v odstupoch po chodbách je možný **doplnok** neskôr, keď bude zmerané, koľko
+  z driftu tie väzby naozaj zoberú. Nie je to plán a nie je to náhrada za ne.
 - **Cloud Anchors ani Geospatial API.** Viazalo by to prácu na cudziu službu a na pokrytie,
   ktoré vo vnútri fakulty nie je overené.
 - **Automatické zameranie novej značky.** Póza každej novej sa naďalej zadáva ručne podľa
   [plánu zamerania](2026-09-09-plan-zamerania-znacky.md).
+
+- **Dav ľudí.** Na dni otvorených dverí bude v miestnosti plno a to zasiahne oboje naraz:
+  značka vo výške 1,41 m je **presne v úrovni hláv**, takže ju telá zakryjú, a pohybujúci sa
+  ľudia sú zlé body pre VIO, takže sa zhorší aj tracking medzi zarovnaniami. Tento návrh s tým
+  nepočíta a merania z prázdnej miestnosti sa na plnú neprenášajú. Zaznamenané na boarde.
 
 ## Zdroje
 
