@@ -43,8 +43,25 @@ namespace FriLens
         [Tooltip("Root of the overlay. Everything under it moves as one when alignment is applied.")]
         [SerializeField] Transform m_AlignmentRoot;
 
-        [Tooltip("Empty object placed at the marker's pose in model coordinates.")]
-        [SerializeField] Transform m_MarkerAnchor;
+        /// <summary>
+        /// One printed marker: the name it has in the reference image library, and an empty object
+        /// sitting at its surveyed pose in model coordinates.
+        /// </summary>
+        [System.Serializable]
+        public struct SurveyedMarker
+        {
+            [Tooltip("Name in the reference image library, e.g. frilens-M1.")]
+            public string imageName;
+
+            [Tooltip("Empty object at the marker's pose in model coordinates.")]
+            public Transform anchor;
+        }
+
+        [Tooltip("Every marker that has been printed, stuck up and surveyed. More than one is the "
+            + "point: a marker is the only thing independent of ARCore's map, so it is also the "
+            + "remedy for a tracking loss — and one at the far end of a corridor is no use in the "
+            + "middle of it.")]
+        [SerializeField] SurveyedMarker[] m_Markers;
 
         [Tooltip("Optional. Holds the root on an ARAnchor so it follows ARCore's corrections after "
             + "a tracking loss. Without it the root is written once and stays put.")]
@@ -53,9 +70,6 @@ namespace FriLens
         [Header("Sampling")]
         [Tooltip("Frames of tracked pose to average before applying an alignment.")]
         [SerializeField, Range(1, 120)] int m_SampleCount = 30;
-
-        [Tooltip("Reference image to align to. Leave empty to accept the first tracked image.")]
-        [SerializeField] string m_ReferenceImageName = "";
 
         [Tooltip("Align automatically the first time the marker is seen.")]
         [SerializeField] bool m_AlignOnFirstSighting = true;
@@ -121,16 +135,27 @@ namespace FriLens
                 m_Enabled = false;
             }
 
-            if (m_AlignmentRoot == null || m_MarkerAnchor == null)
+            if (m_AlignmentRoot == null || m_Markers == null || m_Markers.Length == 0)
             {
-                Debug.LogError($"{nameof(MarkerAlignment)}: alignment root or marker anchor is not assigned.", this);
+                Debug.LogError($"{nameof(MarkerAlignment)}: alignment root or marker list is empty.", this);
                 m_Enabled = false;
+                return;
             }
-            else if (!m_MarkerAnchor.IsChildOf(m_AlignmentRoot))
+
+            foreach (var marker in m_Markers)
             {
-                Debug.LogError($"{nameof(MarkerAlignment)}: '{m_MarkerAnchor.name}' must be under "
-                    + $"'{m_AlignmentRoot.name}', otherwise moving the root does not move the anchor.", this);
-                m_Enabled = false;
+                if (marker.anchor == null)
+                {
+                    Debug.LogError($"{nameof(MarkerAlignment)}: marker '{marker.imageName}' has no "
+                        + "anchor. Its pose is what the whole alignment is solved from.", this);
+                    m_Enabled = false;
+                }
+                else if (!marker.anchor.IsChildOf(m_AlignmentRoot))
+                {
+                    Debug.LogError($"{nameof(MarkerAlignment)}: '{marker.anchor.name}' must be under "
+                        + $"'{m_AlignmentRoot.name}', otherwise moving the root does not move it.", this);
+                    m_Enabled = false;
+                }
             }
         }
 
@@ -204,16 +229,27 @@ namespace FriLens
             State = AlignmentState.Sampling;
         }
 
+        /// <summary>
+        /// Picks the tracked image that has a surveyed anchor. An image the library knows but
+        /// nobody has measured is worse than none: it would align the overlay to a guess.
+        /// </summary>
         ARTrackedImage FindMarker()
         {
             foreach (var image in m_TrackedImageManager.trackables)
-            {
-                if (!string.IsNullOrEmpty(m_ReferenceImageName)
-                    && image.referenceImage.name != m_ReferenceImageName)
-                    continue;
+                if (AnchorFor(image) != null)
+                    return image;
 
-                return image;
-            }
+            return null;
+        }
+
+        Transform AnchorFor(ARTrackedImage image)
+        {
+            if (image == null)
+                return null;
+
+            foreach (var marker in m_Markers)
+                if (marker.anchor != null && marker.imageName == image.referenceImage.name)
+                    return marker.anchor;
 
             return null;
         }
@@ -236,8 +272,19 @@ namespace FriLens
             // Read the anchor's pose relative to the root. It does not change when the root moves,
             // so reading it fresh on every alignment is safe and avoids caching something that
             // would go stale if the anchor were ever re-surveyed at runtime.
-            var anchorLocalPosition = m_AlignmentRoot.InverseTransformPoint(m_MarkerAnchor.position);
-            var anchorLocalRotation = Quaternion.Inverse(m_AlignmentRoot.rotation) * m_MarkerAnchor.rotation;
+            var anchor = AnchorFor(TrackedMarker);
+            if (anchor == null)
+            {
+                Debug.LogWarning($"{nameof(MarkerAlignment)}: the marker stopped being tracked "
+                    + "before the burst was applied. Dropping it rather than guessing.", this);
+                m_Positions.Clear();
+                m_Rotations.Clear();
+                State = AlignmentState.Waiting;
+                return;
+            }
+
+            var anchorLocalPosition = m_AlignmentRoot.InverseTransformPoint(anchor.position);
+            var anchorLocalRotation = Quaternion.Inverse(m_AlignmentRoot.rotation) * anchor.rotation;
 
             SolveRootPose(position, rotation, anchorLocalPosition, anchorLocalRotation,
                 out var rootPosition, out var rootRotation);
@@ -267,13 +314,18 @@ namespace FriLens
             if (m_WarnedAboutUnsetAnchor)
                 return;
 
-            if (m_MarkerAnchor.localPosition != Vector3.zero || m_MarkerAnchor.localRotation != Quaternion.identity)
-                return;
+            foreach (var marker in m_Markers)
+            {
+                if (marker.anchor == null) continue;
+                if (marker.anchor.localPosition != Vector3.zero
+                    || marker.anchor.localRotation != Quaternion.identity)
+                    continue;
 
-            m_WarnedAboutUnsetAnchor = true;
-            Debug.LogWarning($"{nameof(MarkerAlignment)}: '{m_MarkerAnchor.name}' is still at the origin with no "
-                + "rotation. The overlay will land somewhere meaningless until the marker's surveyed pose "
-                + "is entered.", this);
+                m_WarnedAboutUnsetAnchor = true;
+                Debug.LogWarning($"{nameof(MarkerAlignment)}: '{marker.anchor.name}' is still at the "
+                    + "origin with no rotation. The overlay will land somewhere meaningless until "
+                    + "the marker's surveyed pose is entered.", this);
+            }
         }
 
         /// <summary>

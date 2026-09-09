@@ -5,8 +5,11 @@
 Prvá návšteva, po ktorej má appka merať **zhodu modelu s budovou**, nie len tracking. Doteraz
 sa merala odometria; značka je to, čo tie dve veci spojí.
 
-Miesto: **atrium / break room** — má štyri pravouhlé rohy, čo je presne to, čo zameranie
-potrebuje.
+Miesto: **`rc000_break_room`** — v modeli sa volá tak, atrium tam nie je. Je na podlaží `rc0`,
+nie `ra0`, takže prekryv bolo treba prehodiť.
+
+Štyri pravouhlé rohy to ale nemá: **východná strana je rozstrapkaná asi o 25 cm**, sú v nej
+výklenky a dvere. Použiteľná je západná stena a rohy na jej koncoch.
 
 ## Prečo roh a nie stena
 
@@ -30,19 +33,48 @@ z meshu.
 **Pozor na mieste:** sokel, radiátor alebo skriňa polygón zorežú, a jeho roh potom nie je ten
 viditeľný roh miestnosti. Treba to skontrolovať okom, nie predpokladať.
 
+## Zamerané — dve značky na západnej stene
+
+Podlaha `Y = 0,694 m`, steny do `Y = 7,08 m`. Roh **A** je `X −21,902  Z 3,828`, kde sa
+západná stena stretáva s južnou; obe sú dlhé a rovné.
+
+| značka | poloha stredu | od rohu A | výška |
+|---|---|---:|---:|
+| `frilens-M1` | X −21,902 · Y 2,194 · Z 5,328 | 1,50 m | 1,50 m |
+| `frilens-M2` | X −21,902 · Y 2,194 · Z 12,828 | 9,00 m | 1,50 m |
+
+Rozstup 7,5 m je zámerný. Polohu vieš trafiť na centimetre, natočenie nie — a keď sú značky
+ďaleko od seba, chyba natočenia jednej z nich sa na celom prekryve prejaví menej.
+
+**Obe vzdialenosti meraj pásmom od toho istého rohu**, nie každú od iného konca steny. Chyby
+sa tak nesčítajú.
+
+### Orientácia značky — overená, nie odhadnutá
+
+AR Foundation kladie sledovaný obrázok do **lokálnej roviny XZ**, normála mieri po lokálnej
+**−Y** a „hore" na papieri je lokálne **+Z**. Nie +Z ako normála, ako by sa čakalo.
+
+Odčítané zo simulačného providera (`SimulatedTrackedImage` stavia quad s vrcholmi
+`(±x, 0, ±y)` a normálou `-Vector3.up`) a potom **skontrolované číselne**: výsledná normála
+vyšla `(1,00, 0, 0)`, teda do miestnosti, a hore `(0, 1,00, 0)`. Zámena by otočila celý prekryv
+o 90° a nič na obrazovke by nepovedalo prečo.
+
+### Dosky na kontrolu
+
+Na oboch pózach je v scéne **viditeľná doska s textúrou tej istej značky**. Po zarovnaní má
+nakreslená doska pristáť presne na vytlačenej — medzera medzi nimi je chyba zarovnania
+v centimetroch, čitateľná okom. To je lepšia kontrola než akékoľvek číslo na HUD-e.
+
 ## Rozhodnutie, ktoré treba spraviť ako prvé: odkiaľ prídu steny
 
 Toto určuje, **čo sa vlastne meria**, takže sa nedá odložiť na neskôr.
 
-**Zo skenu (`fri_building`).** Nav plochy pochádzajú z toho istého skenu ako steny, takže sú
-navzájom konzistentné. Vtedy „model je 20 cm vedľa" znamená jednu vec.
+> **Vyriešené 2026-09-09.** Steny aj stropy pribudli priamo do `navmesh.blend`, pomenované po
+> miestnostiach vedľa nav polygónov — `_wall_`, `_ceiling_`. Sú z toho istého skenu, takže sú
+> s nav plochami konzistentné z podstaty a odvodzovanie z hraničných hrán odpadá.
 
-**Ručne domodelované.** Vzniknú **dva zdroje pravdy**, ktoré sa môžu rozchádzať, a tá istá veta
-prestane mať zmysel — nebude jasné, ktorý model je vedľa.
-
-Ak steny pôjdu zo skenu, je to lepší zdroj než odvodzovanie z hraničných hrán navmeshu
-([analýza](2026-09-04-analyza-geometrie-a-stien.md)) a tá karta z boardu do veľkej miery
-odpadá. Odvodené steny majú zmysel len ako náhrada, keď sken nie je k dispozícii.
+Pôvodná úvaha: sken dáva jeden zdroj pravdy, ručné domodelovanie dva, ktoré sa môžu rozchádzať —
+a potom nie je jasné, ktorý model je vedľa.
 
 ## Stropy zakryjú obrazovku
 
