@@ -32,6 +32,7 @@ obmedzeniami: [ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md).
 |---|---|
 | [Plán inžinierskeho projektu](2026-09-05-plan-inzinierskeho-projektu.md) | tri semestre po 125 h: cieľ, pracovné balíky s hodinami, akceptačné kritériá, čo sa vypúšťa pri sklzu |
 | [Návrh kalibrácie z viacerých značiek](2026-09-09-navrh-kalibracie-viac-znaciek.md) | prečo je zarovnanie z jednej značky nepoužiteľné a čím sa nahradí: solver, brána kvality, dva režimy, ukazovateľ dôvery |
+| [Plán implementácie kalibrácie](2026-09-09-plan-implementacie-kalibracie.md) | sedem úloh po krokoch: solver a jeho overovač, zber observácií, zapojenie, dva režimy, dôvera, log, build a terénna skúška |
 | [Plán zamerania značky](2026-09-09-plan-zamerania-znacky.md) | kam a ako sa značky lepia a merajú; sekcia o orientácii je zastaraná, viď [ADR 010](decisions/010-kurz-z-poloh-znaciek-sklon-z-gravitacie.md) |
 | [Stav projektu a analýza navmeshu](2026-09-02-stav-projektu-a-analyza-navmeshu.md) | čo v projekte skutočne je, čo obsahuje `navmesh.blend`, kritické diery |
 | [Implementačný plán](2026-09-02-implementacny-plan.md) | fázy 0–6, od hygieny projektu po test v teréne |

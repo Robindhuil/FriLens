@@ -188,12 +188,13 @@ nemajú vplyv.
 - syntetické sady so známou odpoveďou — transformácia sa zadá, body sa ňou prehnú a solver
   ju má nájsť späť,
 - **degenerované prípady**: jedna značka, dve značky, tri v priamke,
-- **znamienko kurzu** v Unity, číselne,
-- **replay z existujúcich logov** — `img pos` je v nich od `0.2.1-alpha`, takže sa dá
-  spočítať, čo by fit dal, a porovnať s tým, čo aplikácia vtedy naozaj spravila.
+- **znamienko kurzu** v Unity, číselne.
 
-Ten replay je najcennejší: sú to skutočné dáta z fakulty, nie vymyslené, a odpoveď je známa
-z toho, čo bolo vidieť na obrazovke.
+**Replay zo starých logov sa nerobí.** Znelo to lákavo — `img pos` je v nich od `0.2.1-alpha`
+a sú to skutočné dáta z fakulty. Lenže staré behy pozorovali **jednu značku naraz**, kým fit
+potrebuje aspoň dve v jednom úseku trackingu, takže by sa takmer nikdy nespustil. Namiesto
+toho je rozhodujúcou skúškou **zopakovanie toho istého pokusu v teréne**: desať prezarovnaní
+zo stojaceho miesta, ktoré v behu `134644` rozhádzali prekryv o 7,36 m. Po zmene má stáť.
 
 ## Čo tento návrh nerieši
 
