@@ -8,6 +8,47 @@ miesto, kde sa mení.
 Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spustiť
 `FriLens > Build Android <verzia>`.
 
+## [0.2.1-alpha] — nevydané
+
+Diagnostický build. Prekryv na fakulte sadol úplne vedľa, hoci zarovnanie bolo čisté
+(`0,03 cm / 0,874°`), tracking neprerušený a značky nalepené v správnej výške. Tri hypotézy
+padli za sebou, lebo log nenesie to jediné, čím sa dajú rozlíšiť: **pózu, ktorú ARCore
+o značke ohlásil, a pózu, ktorú z nej dostal `AlignmentRoot`**.
+
+### Added
+
+- **Udalosť `aligned on …` nesie obe pózy.** Za menom značky pribudlo `img pos/up/fwd`
+  a `root pos/up/fwd` v súradniciach session. Bez toho sa zle umiestnený prekryv nedá odlíšiť
+  od zle prečítanej orientácie značky, a tie dve potrebujú opačnú opravu.
+
+  Zapisujú sa **bázové vektory, nie euler uhly**: euler sa spätne číta až keď sa k nemu dodá
+  poradie a konvencia, tri osi netreba vykladať. Otázka, na ktorú odpovedajú, je, ktorou osou
+  sledovaného obrázka vychádza normála plochy — a práve to je jediný článok reťazca, ktorý bol
+  nastavený podľa autorského pravidla XR Simulation, nie podľa providera bežiaceho na telefóne
+  ([plán zamerania](docs/2026-09-09-plan-zamerania-znacky.md) to o sebe hovorí sám).
+
+  Na zvislej stene sa tie dve možnosti nedajú zameniť: „hore" na papieri je zvislé, takže tá
+  z dvojice `img up` / `img fwd`, ktorá vyjde blízko `(0 1 0)`, mieri po stene nahor a druhá je
+  normála. Jeden sken to rozhodne.
+
+  Formátuje sa cez `InvariantCulture` — telefón píše desatinnú čiarku a log je CSV.
+
+### Fixed
+
+- **Kotvy značiek mali normálu opačne, prekryv bol o 180° po Y.** AR Foundation kladie normálu
+  plochy sledovaného obrázka po jeho **`+Y`**; kotvy boli postavené s `−Y` von z papiera. Tie
+  dve pózy sa líšia o otočenie o 180° okolo osi „hore na papieri", a tá je na zvislej stene
+  zvislá — takže sa chyba prejaví ako celá mapa otočená o 180° dokola. Stena, ktorá má byť pred
+  testujúcim, skončí za ním.
+
+  `MarkerAnchor_M1` aj `MarkerAnchor_M2` z eulerov `(270, 90, 0)` na `(270, 270, 0)`, čiže
+  `+Y → (1, 0, 0)` von do miestnosti a `+Z → (0, 1, 0)` hore po stene. Kontrolné dosky si
+  podržali svetovú pózu, aby ďalej sadali na vytlačenú značku.
+
+  Chyba prežila, lebo konvencia bola odčítaná zo **simulačného providera** — a v Editore beží
+  práve ten, takže sa v ňom prejaviť nemohla. Poznámka o tom je priamo v
+  [pláne zamerania](docs/2026-09-09-plan-zamerania-znacky.md); ten text treba opraviť.
+
 ## [0.2.0-alpha] — nevydané
 
 Steny a stropy. Od tejto verzie sa pracuje na tom, aby model vedel viac než kadiaľ sa dá
