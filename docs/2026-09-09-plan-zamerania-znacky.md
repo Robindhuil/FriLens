@@ -61,6 +61,28 @@ existuje, a vypadne zadarmo.
 Cena je, že prekryv pri prezarovnaní z jednej značky na druhú **poskočí** o ten rozdiel. To nie
 je chyba, to je ten výsledok — a je lepšie ho vidieť než schovať.
 
+### Kam presne siaha pásmo
+
+ARCore kladie pose sledovaného obrázka do jeho **stredu**, takže 1,50 m platí pre stred
+180 mm obrysu. Stred sa však meria zle — je to imaginárny bod uprostred bieleho papiera.
+
+V PDF je obrys presne v strede A4 (okraje 15,0 / 15,2 mm bokom, 58,5 / 58,6 mm hore a dole),
+takže stred obrysu je aj stredom listu. Merať sa dá jednoduchšie: **na spodnú a bočnú linku
+obrysu, o 90 mm bližšie.**
+
+| čo | odkiaľ kam | koľko |
+|---|---|---|
+| výška | podlaha → spodná linka obrysu | 1,41 m |
+| od rohu | roh → bližšia zvislá linka obrysu | 1,41 m |
+
+Dve rovnaké čísla a obe končia na vytlačenej linke, nie na odhadnutom bode.
+
+Vodorovnosť sa overí tým, že **oba spodné rohy obrysu sú 1,41 m nad podlahou**. Ak sa líšia,
+značka je natočená a zarovnanie ten uhol zdedí.
+
+Od okraja papiera sa nemeria a papier sa neorezáva: tlačiareň má posun (namerané okraje
+15 / 14 / 16 / 17 mm). Pravda je vytlačený obrys, nie list.
+
 ### Orientácia značky — overená, nie odhadnutá
 
 AR Foundation kladie sledovaný obrázok do **lokálnej roviny XZ**, normála mieri po lokálnej
