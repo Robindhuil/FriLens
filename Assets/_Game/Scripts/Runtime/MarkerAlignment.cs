@@ -67,6 +67,13 @@ namespace FriLens
             + "a tracking loss. Without it the root is written once and stays put.")]
         [SerializeField] AnchoredRoot m_Anchored;
 
+        [Tooltip("Zdroj čísla úseku trackingu a prejdenej dráhy. Bez neho sa observácie "
+            + "nezahodia pri relokalizačnom skoku a fit môže miešať dve mapy.")]
+        [SerializeField] CameraTravel m_Travel;
+
+        [Tooltip("Zdroj udalosti o strate trackingu. Bez neho sa observácie po strate nezahodia.")]
+        [SerializeField] TrackingContinuity m_Continuity;
+
         [Header("Sampling")]
         [Tooltip("Frames of tracked pose to average before applying an alignment.")]
         [SerializeField, Range(1, 120)] int m_SampleCount = 30;
@@ -84,8 +91,15 @@ namespace FriLens
             + "away rather than continued.")]
         [SerializeField] float m_SampleGapTimeoutSeconds = 2f;
 
+        [Tooltip("Sekundy, po ktorých sa observácia značky prestane počítať do fitu.")]
+        [SerializeField] float m_ObservationMaxAgeSeconds = 60f;
+
+        [Tooltip("Najväčší rozptyl polohy v burste, ktorý sa ešte prijme, v metroch.")]
+        [SerializeField] float m_MaxPositionSpreadMeters = 0.02f;
+
         readonly List<Vector3> m_Positions = new();
         readonly List<Quaternion> m_Rotations = new();
+        readonly MarkerObservations m_Observations = new();
 
         /// <summary>
         /// Which marker the burst in progress is made of. A burst has to belong to one marker:
@@ -145,6 +159,22 @@ namespace FriLens
         /// the measurement of the thing it corrects.
         /// </summary>
         public float LevelledDegrees { get; private set; }
+
+        /// <summary>Z koľkých značiek vznikol posledný fit. 1 znamená núdzový režim z natočenia.</summary>
+        public int FitMarkerCount { get; private set; }
+
+        /// <summary>
+        /// Najväčší zvyšok posledného fitu v metroch, alebo -1 keď sústava nebola preurčená.
+        /// Pri jednej a dvoch značkách zvyšok neexistuje a dosadiť nulu by vyzeralo ako
+        /// dokonalý fit, čo je horšie než priznať, že sa nemeral.
+        /// </summary>
+        public float FitWorstResidualMeters { get; private set; } = -1f;
+
+        /// <summary>
+        /// Pri presne dvoch značkách rozdiel nameranej a modelovej dĺžky spojnice. To je chyba
+        /// modelu na tom úseku steny a je to výsledok merania, nie chyba zarovnania.
+        /// </summary>
+        public float FitBaselineErrorMeters { get; private set; }
 
         /// <summary>The marker currently being tracked, or null.</summary>
         public ARTrackedImage TrackedMarker { get; private set; }
@@ -211,6 +241,13 @@ namespace FriLens
                     m_Enabled = false;
                 }
             }
+
+            if (m_Continuity != null)
+                m_Continuity.Lost += OnTrackingLost;
+            else
+                Debug.LogWarning($"{nameof(MarkerAlignment)}: no {nameof(TrackingContinuity)} "
+                    + "assigned. Pozorovania značiek prežijú stratu trackingu a fit môže miešať "
+                    + "polohy z mapy, ktorá sa medzitým prekreslila. Run FriLens > Wire Scene.", this);
         }
 
         void Update()
@@ -379,6 +416,35 @@ namespace FriLens
             return null;
         }
 
+        /// <summary>
+        /// Zameraná kotva podľa mena obrázka. Oproti <see cref="AnchorFor"/> nepotrebuje
+        /// sledovaný obrázok, lebo fit pracuje s uloženými pozorovaniami, nie s tým, čo je
+        /// práve v zábere.
+        /// </summary>
+        Transform AnchorNamed(string imageName)
+        {
+            foreach (var marker in m_Markers)
+                if (marker.anchor != null && marker.imageName == imageName)
+                    return marker.anchor;
+
+            return null;
+        }
+
+        /// <summary>
+        /// Po strate trackingu je poloha každej uloženej značky odhad z mapy, ktorá sa medzitým
+        /// mohla prekresliť. Zahodiť ich je lacnejšie než fit cez pomiešané súradnice.
+        /// </summary>
+        void OnTrackingLost(NotTrackingReason reason)
+        {
+            m_Observations.Clear();
+        }
+
+        void OnDestroy()
+        {
+            if (m_Continuity != null)
+                m_Continuity.Lost -= OnTrackingLost;
+        }
+
         void ApplyAlignment()
         {
             var position = AveragePosition(m_Positions);
@@ -411,12 +477,60 @@ namespace FriLens
             var anchorLocalPosition = m_AlignmentRoot.InverseTransformPoint(anchor.position);
             var anchorLocalRotation = Quaternion.Inverse(m_AlignmentRoot.rotation) * anchor.rotation;
 
-            SolveRootPose(position, rotation, anchorLocalPosition, anchorLocalRotation,
-                out var rootPosition, out var rootRotation);
+            // Burst dobehol celý v stave Tracking, takže je to platné pozorovanie bez ohľadu na
+            // to, či sa z neho hneď bude riešiť. O prijatí rozhodne rozptyl polohy.
+            m_Observations.MaxSpreadMeters = m_MaxPositionSpreadMeters;
+            m_Observations.Offer(m_BurstImageName, position, SampleSpreadMeters,
+                m_Travel != null ? m_Travel.RelocalisationJumps : 0, Time.time);
 
-            LevelledDegrees = m_LevelWithGravity
-                ? LevelRootPose(position, anchorLocalPosition, ref rootPosition, ref rootRotation)
-                : 0f;
+            var segment = m_Travel != null ? m_Travel.RelocalisationJumps : 0;
+            var usable = m_Observations.Current(segment, Time.time, m_ObservationMaxAgeSeconds);
+
+            var pairs = new List<AlignmentSolver.Correspondence>();
+            foreach (var observation in usable)
+            {
+                var surveyed = AnchorNamed(observation.imageName);
+                if (surveyed == null)
+                    continue;
+
+                pairs.Add(new AlignmentSolver.Correspondence
+                {
+                    imageName = observation.imageName,
+                    modelPosition = m_AlignmentRoot.InverseTransformPoint(surveyed.position),
+                    measuredPosition = observation.measuredPosition,
+                });
+            }
+
+            Vector3 rootPosition;
+            Quaternion rootRotation;
+
+            if (AlignmentSolver.TrySolve(pairs, out var fit))
+            {
+                // Fit má len kurz, takže je vzpriamený z konštrukcie a gravitácia sa naň
+                // neaplikuje — nie je čo stavať.
+                rootPosition = fit.rootPose.position;
+                rootRotation = fit.rootPose.rotation;
+
+                FitMarkerCount = fit.markerCount;
+                FitWorstResidualMeters = fit.markerCount > 2 ? fit.worstResidualMeters : -1f;
+                FitBaselineErrorMeters = fit.baselineErrorMeters;
+                LevelledDegrees = 0f;
+            }
+            else
+            {
+                // Jedna značka: kurz sa z jednej polohy určiť nedá, tak sa vezme z jej natočenia
+                // ako pred ADR 010 a postaví sa gravitáciou.
+                SolveRootPose(position, rotation, anchorLocalPosition, anchorLocalRotation,
+                    out rootPosition, out rootRotation);
+
+                LevelledDegrees = m_LevelWithGravity
+                    ? LevelRootPose(position, anchorLocalPosition, ref rootPosition, ref rootRotation)
+                    : 0f;
+
+                FitMarkerCount = 1;
+                FitWorstResidualMeters = -1f;
+                FitBaselineErrorMeters = 0f;
+            }
 
             LastMeasuredPose = new Pose(position, rotation);
             LastRootPose = new Pose(rootPosition, rootRotation);
