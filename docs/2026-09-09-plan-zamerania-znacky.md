@@ -93,6 +93,29 @@ Odčítané zo simulačného providera (`SimulatedTrackedImage` stavia quad s vr
 vyšla `(1,00, 0, 0)`, teda do miestnosti, a hore `(0, 1,00, 0)`. Zámena by otočila celý prekryv
 o 90° a nič na obrazovke by nepovedalo prečo.
 
+Kotva `MarkerAnchor_M1` aj `MarkerAnchor_M2` teda majú lokálne osi v svete takto:
+`−Y → (1, 0, 0)` (normála do miestnosti), `+Z → (0, 1, 0)` (hore), `+X → (0, 0, −1)`.
+Obe rovnako.
+
+### Doska bola hore nohami
+
+Vizualizačný `Plate` je Unity Quad. Ten má normálu po lokálnej **−Z** a textúru s počiatkom
+UV vľavo dole, takže ho nestačí natočiť do roviny steny — dá sa doň trafiť aj otočený o 180°
+a normála pritom vyjde správne.
+
+Presne to sa aj stalo. Odmerané cez mesh, nie od oka: vrchol s UV `(0, 1)` (ľavý horný roh
+obrázka, ten s hrubým **L**) ležal na `Y = 2,104`, teda **pod** stredom `2,194`, a na strane
+väčšieho `Z`. Pozorovateľ v miestnosti pozerá na západnú stenu smerom `−X`, jeho pravá ruka
+mieri na `+Z` — čiže L sedelo vpravo dole namiesto vľavo hore. Otočenie o 180° v rovine
+obrázka, nie zrkadlenie.
+
+Opravené o `Quaternion.Euler(0, 0, 180)` na lokálnej rotácii dosky, čo je otočka okolo jej
+vlastnej normály a tú teda nechá tak. Po oprave `uvTopLeft` vyšlo `Y = 2,284` (nad stredom)
+a `Z = 5,238` resp. `12,031` (bližšie k rohu), na oboch značkách.
+
+Na zarovnanie to vplyv nemalo — `MarkerAlignment` číta kotvu, nie dosku. Vplyv to malo na
+človeka: podľa scény by sa papier zavesil hore nohami.
+
 ### Dosky na kontrolu
 
 Na oboch pózach je v scéne **viditeľná doska s textúrou tej istej značky**. Po zarovnaní má
