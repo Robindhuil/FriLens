@@ -53,6 +53,16 @@ namespace FriLens
         /// </summary>
         MaterialPropertyBlock m_OverlayTint;
 
+        /// <summary>
+        /// Pôvodné farby prekryvov, odčítané raz zo zdieľaných materiálov.
+        ///
+        /// Bez nich sa stlmenie nedá spraviť: property block prepisuje celú hodnotu, takže
+        /// zapísať doň šedú by zahodilo aj farbu aj priehľadnosť. Steny majú alfu 0,3 a nav
+        /// plocha 0,35, a nepriehľadný prekryv zavrie testujúceho do krabice — presne to,
+        /// proti čomu boli spravené priesvitné.
+        /// </summary>
+        Color[] m_OverlayBaseColors;
+
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
         int m_MarkCount;
@@ -530,6 +540,8 @@ namespace FriLens
                     // Najväčší zvyšok fitu. -1 znamená, že sústava nebola preurčená a zvyšok
                     // neexistuje; nula by na tom mieste vyzerala ako dokonalý fit.
                     + "; residual " + Number(m_Alignment.FitWorstResidualMeters)
+                    + " on " + (m_Alignment.FitWorstResidualImage.Length > 0
+                        ? ShortName(m_Alignment.FitWorstResidualImage) : "-")
 
                     // Rozdiel nameranej a modelovej dĺžky spojnice dvoch značiek. To nie je
                     // chyba zarovnania, to je chyba modelu na tom úseku steny.
@@ -612,16 +624,34 @@ namespace FriLens
 
             m_OverlayTint ??= new MaterialPropertyBlock();
 
+            if (m_OverlayBaseColors == null)
+            {
+                m_OverlayBaseColors = new Color[m_Overlays.Length];
+                for (var i = 0; i < m_Overlays.Length; i++)
+                    m_OverlayBaseColors[i] = m_Overlays[i] != null
+                        && m_Overlays[i].sharedMaterial != null
+                        && m_Overlays[i].sharedMaterial.HasProperty(BaseColorId)
+                            ? m_Overlays[i].sharedMaterial.GetColor(BaseColorId)
+                            : Color.white;
+            }
+
             // Nikdy až do čierna. Prekryv má aj bez dôvery ostať čitateľný, len zjavne utlmený.
             var tint = Mathf.Lerp(0.35f, 1f, m_Confidence.Trust);
 
-            foreach (var renderer in m_Overlays)
+            for (var i = 0; i < m_Overlays.Length; i++)
             {
+                var renderer = m_Overlays[i];
                 if (renderer == null)
                     continue;
 
+                // Stlmí sa len jas. Alfa ostáva materiálu: priehľadnosť nie je vec dôvery
+                // a stmavnutie sa dá prečítať aj bez toho, aby prekryv zhustol.
+                var original = m_OverlayBaseColors[i];
+                var dimmed = new Color(
+                    original.r * tint, original.g * tint, original.b * tint, original.a);
+
                 renderer.GetPropertyBlock(m_OverlayTint);
-                m_OverlayTint.SetColor(BaseColorId, new Color(tint, tint, tint, 1f));
+                m_OverlayTint.SetColor(BaseColorId, dimmed);
                 renderer.SetPropertyBlock(m_OverlayTint);
             }
         }

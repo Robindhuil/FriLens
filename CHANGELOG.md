@@ -67,6 +67,32 @@ A dve značky na jednej rovnej stene si odporovali o 2,04 – 2,89 m a 4,2 – 7
 
 ### Fixed
 
+- **Fit sa zamietne, keď mu model odporuje.** Rozptyl v rámci burstu hrubo zlé čítanie polohy
+  neodhalí — ARCore vie tú istú nepohnutú značku ohlásiť o metre inde a pokojne, lebo je to
+  sústavná chyba, nie šum. Beh `20260909-134644` má polohu jednej značky rozídenú o **5,02 m**
+  pri rozptyloch pod centimetrom.
+
+  Chytí to až porovnanie s modelom, ktorý vzdialenosti medzi značkami pozná: pri dvoch rozdiel
+  dĺžok spojnice, pri troch a viac najväčší zvyšok, oboje voči rozpätiu značiek. Nad **25 %**
+  rozpätia sa fit zamietne a spadne na jednu značku — horšie zarovnanie, ale vedome horšie,
+  nie tiché a ľubovoľne zlé.
+
+- **Zvyšok sa hlási aj pri dvoch značkách.** Sústava je aj tam preurčená: dve značky dávajú
+  štyri vodorovné rovnice pre tri neznáme, takže rozdiel dĺžok sa medzi ne rozdelí. Hlásiť
+  `-1` zahadzovalo jedinú per-značkovú kontrolu, na ktorej stojí brána vyššie. Log nesie aj
+  meno značky, na ktorej ten zvyšok je.
+
+- **Stlmenie prekryvu prepisovalo farbu aj priehľadnosť.** Zápis šedej do `_BaseColor` nahradí
+  celú hodnotu, nie ju znásobí, takže priesvitné plochy — nav `a 0,35`, steny `a 0,3` —
+  sa stali **nepriehľadne bielymi** a testujúci skončil v zavretej krabici. Presne to, proti
+  čomu boli spravené priesvitné. Stlmuje sa už len jas, alfa ostáva materiálu.
+
+- **Číslo úseku trackingu sa nulovalo.** Ako identifikátor sa používalo
+  `RelocalisationJumps`, ktoré `RestartFrom` pri každom zarovnaní vynuluje, takže neras­tlo
+  monotónne. Postupnosť M1 → skok → M2 → M1 zahodila M2, hoci medzi nimi žiadny skok nebol,
+  a fit ticho spadol na jednu značku. Pribudlo `CameraTravel.JumpGeneration`, ktoré je
+  totožnosť súradnicovej sústavy, nie meranie, a preto sa nenuluje.
+
 - **`Hide overlay` a `strop` konečne niečo prepínajú.** `DiagnosticsHud` mal v scéne prázdne
   `m_Overlays` a `m_Ceiling = null`, takže obe tlačidlá menili len svoj vlastný vzhľad a žiadny
   renderer nevypli. `Wire Scene` ich odteraz zapája — a `SetArray` v ňom pribudol, lebo pole

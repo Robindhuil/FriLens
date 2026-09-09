@@ -31,6 +31,7 @@ namespace FriLens.EditorTools
             failures += CollinearMarkersStillSolve(report);
             failures += FitIsLevelByConstruction(report);
 
+            failures += ReportsModelSpanAndResidualForTwo(report);
             failures += ObservationsKeepOnlyTheNewestPerMarker(report);
             failures += ObservationsRejectWideSpread(report);
             failures += ObservationsDropOnJump(report);
@@ -233,6 +234,47 @@ namespace FriLens.EditorTools
 
             if (tilt > 1e-3f) { report.AppendLine("  FAIL - fit introduced tilt"); return 1; }
             return 0;
+        }
+
+        /// <summary>
+        /// Dve značky nie sú „nedourčená sústava": dávajú štyri vodorovné rovnice pre tri
+        /// neznáme, takže zvyšok existuje a rozdiel dĺžok sa medzi ne rozdelí. Kontroluje sa,
+        /// lebo na tomto zvyšku a na rozpätí stojí brána, ktorá zamieta hrubo zlé čítania.
+        /// </summary>
+        static int ReportsModelSpanAndResidualForTwo(StringBuilder report)
+        {
+            var a = new Vector3(-21.902f, 2.194f, 5.328f);
+            var b = new Vector3(-21.902f, 2.194f, 12.121f);
+            var span = Vector3.Distance(a, b);
+
+            var pairs = new List<AlignmentSolver.Correspondence>
+            {
+                new() { imageName = "M1", modelPosition = a, measuredPosition = Vector3.zero },
+                new() { imageName = "M2", modelPosition = b,
+                        measuredPosition = new Vector3(0f, 0f, span + 0.12f) },
+            };
+
+            if (!AlignmentSolver.TrySolve(pairs, out var result))
+            {
+                report.AppendLine("span/residual: FAIL - solver refused two markers");
+                return 1;
+            }
+
+            report.AppendLine($"span/residual: span {result.modelSpanMeters:F3} m (expected {span:F3}), "
+                + $"worst residual {result.worstResidualMeters * 100f:F2} cm on "
+                + $"'{result.worstResidualImage}' (expected 6.00 cm, half the 12 cm baseline error)");
+
+            int failures = 0;
+            if (Mathf.Abs(result.modelSpanMeters - span) > 1e-3f)
+            { report.AppendLine("  FAIL span"); failures++; }
+
+            if (Mathf.Abs(result.worstResidualMeters - 0.06f) > 5e-3f)
+            { report.AppendLine("  FAIL residual - two markers must not report zero"); failures++; }
+
+            if (string.IsNullOrEmpty(result.worstResidualImage))
+            { report.AppendLine("  FAIL worst marker unnamed"); failures++; }
+
+            return failures;
         }
 
         /// <summary>Druhé pozorovanie tej istej značky prepíše prvé, nie pridá vedľa neho.</summary>

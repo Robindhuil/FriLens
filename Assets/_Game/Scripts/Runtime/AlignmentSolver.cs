@@ -53,6 +53,13 @@ namespace FriLens
             /// neexistuje a hovoria za to zvyšky.
             /// </summary>
             public float baselineErrorMeters;
+
+            /// <summary>
+            /// Najväčšia vzdialenosť medzi dvomi značkami v súradniciach modelu. Je to mierka,
+            /// voči ktorej má zmysel posudzovať zvyšky: dvadsať centimetrov na šesťmetrovej
+            /// základni je iné číslo než dvadsať centimetrov na polmetrovej.
+            /// </summary>
+            public float modelSpanMeters;
         }
 
         /// <summary>
@@ -111,11 +118,18 @@ namespace FriLens
                 }
             }
 
+            for (var i = 0; i < pairs.Count; i++)
+            for (var j = i + 1; j < pairs.Count; j++)
+            {
+                var span = Vector3.Distance(pairs[i].modelPosition, pairs[j].modelPosition);
+                if (span > result.modelSpanMeters)
+                    result.modelSpanMeters = span;
+            }
+
             if (pairs.Count == 2)
             {
-                var modelSpan = Vector3.Distance(pairs[0].modelPosition, pairs[1].modelPosition);
                 var measuredSpan = Vector3.Distance(pairs[0].measuredPosition, pairs[1].measuredPosition);
-                result.baselineErrorMeters = measuredSpan - modelSpan;
+                result.baselineErrorMeters = measuredSpan - result.modelSpanMeters;
             }
 
             return true;

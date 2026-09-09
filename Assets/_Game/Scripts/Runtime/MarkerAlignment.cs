@@ -121,6 +121,11 @@ namespace FriLens
         [Tooltip("Najväčší rozptyl polohy v burste, ktorý sa ešte prijme, v metroch.")]
         [SerializeField] float m_MaxPositionSpreadMeters = 0.02f;
 
+        [Tooltip("Nad akou časťou rozpätia značiek sa fit zamietne. 0,25 je pri 6,79 m steny "
+            + "asi 1,7 m — veľkoryso nad skutočnou chybou modelu a ďaleko pod hrubým zlým "
+            + "čítaním polohy, aké ARCore vie ohlásiť.")]
+        [SerializeField, Range(0.02f, 1f)] float m_MaxFitErrorFraction = 0.25f;
+
         readonly List<Vector3> m_Positions = new();
         readonly List<Quaternion> m_Rotations = new();
         readonly MarkerObservations m_Observations = new();
@@ -188,11 +193,21 @@ namespace FriLens
         public int FitMarkerCount { get; private set; }
 
         /// <summary>
-        /// Najväčší zvyšok posledného fitu v metroch, alebo -1 keď sústava nebola preurčená.
-        /// Pri jednej a dvoch značkách zvyšok neexistuje a dosadiť nulu by vyzeralo ako
-        /// dokonalý fit, čo je horšie než priznať, že sa nemeral.
+        /// Najväčší zvyšok posledného fitu v metroch, alebo -1 keď fit vznikol z jednej značky
+        /// a zvyšok naozaj neexistuje. Dosadiť tam nulu by vyzeralo ako dokonalý fit, čo je
+        /// horšie než priznať, že sa nemeral.
+        ///
+        /// Od dvoch značiek vyššie zvyšok existuje: dve dávajú štyri vodorovné rovnice pre tri
+        /// neznáme, takže sústava je preurčená a rozdiel dĺžok sa medzi ne rozdelí.
         /// </summary>
         public float FitWorstResidualMeters { get; private set; } = -1f;
+
+        /// <summary>
+        /// Na ktorej značke je ten najväčší zvyšok. Pri troch a viac je to práve tá informácia,
+        /// kvôli ktorej má tretia značka zmysel — samotné číslo nepovie, ktorá strana miestnosti
+        /// sa s modelom rozchádza.
+        /// </summary>
+        public string FitWorstResidualImage { get; private set; } = "";
 
         /// <summary>
         /// Pri presne dvoch značkách rozdiel nameranej a modelovej dĺžky spojnice. To je chyba
@@ -484,6 +499,41 @@ namespace FriLens
         }
 
         /// <summary>
+        /// Či sa fit dá brať vážne, alebo je postavený na hrubo zle prečítanej polohe.
+        ///
+        /// Rozptyl v rámci burstu takú chybu neodhalí: ARCore vie tú istú nepohnutú značku
+        /// ohlásiť o metre inde a hlásiť to pokojne, lebo je to sústavná chyba, nie šum. Beh
+        /// 20260909-134644 má polohu jednej značky rozídenú o 5,02 m pri rozptyloch pod
+        /// centimetrom.
+        ///
+        /// Chytí sa to až porovnaním s modelom, ktorý vzdialenosti medzi značkami pozná. Pri
+        /// dvoch je to rozdiel dĺžok spojnice, pri troch a viac najväčší zvyšok; oboje sa meria
+        /// voči rozpätiu značiek, lebo dvadsať centimetrov znamená niečo iné na šiestich metroch
+        /// než na polmetri.
+        ///
+        /// Zamietnutý fit spadne na jednu značku, čo je horšie zarovnanie — ale vedome horšie,
+        /// nie tiché a ľubovoľne zlé.
+        /// </summary>
+        bool FitLooksSane(AlignmentSolver.Result fit)
+        {
+            if (fit.modelSpanMeters <= 0f)
+                return false;
+
+            var error = fit.markerCount == 2
+                ? Mathf.Abs(fit.baselineErrorMeters)
+                : fit.worstResidualMeters;
+
+            var allowed = m_MaxFitErrorFraction * fit.modelSpanMeters;
+            if (error <= allowed)
+                return true;
+
+            Debug.LogWarning($"{nameof(MarkerAlignment)}: fit z {fit.markerCount} značiek zamietnutý "
+                + $"— chyba {error:F2} m na rozpätí {fit.modelSpanMeters:F2} m je nad prahom "
+                + $"{allowed:F2} m. Niektorá značka je ohlásená hrubo zle; zarovnávam z jednej.", this);
+            return false;
+        }
+
+        /// <summary>
         /// Po strate trackingu je poloha každej uloženej značky odhad z mapy, ktorá sa medzitým
         /// mohla prekresliť. Zahodiť ich je lacnejšie než fit cez pomiešané súradnice.
         /// </summary>
@@ -534,9 +584,9 @@ namespace FriLens
             // to, či sa z neho hneď bude riešiť. O prijatí rozhodne rozptyl polohy.
             m_Observations.MaxSpreadMeters = m_MaxPositionSpreadMeters;
             m_Observations.Offer(m_BurstImageName, position, SampleSpreadMeters,
-                m_Travel != null ? m_Travel.RelocalisationJumps : 0, Time.time);
+                m_Travel != null ? m_Travel.JumpGeneration : 0, Time.time);
 
-            var segment = m_Travel != null ? m_Travel.RelocalisationJumps : 0;
+            var segment = m_Travel != null ? m_Travel.JumpGeneration : 0;
             var usable = m_Observations.Current(segment, Time.time, m_ObservationMaxAgeSeconds);
 
             var pairs = new List<AlignmentSolver.Correspondence>();
@@ -557,7 +607,7 @@ namespace FriLens
             Vector3 rootPosition;
             Quaternion rootRotation;
 
-            if (AlignmentSolver.TrySolve(pairs, out var fit))
+            if (AlignmentSolver.TrySolve(pairs, out var fit) && FitLooksSane(fit))
             {
                 // Fit má len kurz, takže je vzpriamený z konštrukcie a gravitácia sa naň
                 // neaplikuje — nie je čo stavať.
@@ -565,7 +615,11 @@ namespace FriLens
                 rootRotation = fit.rootPose.rotation;
 
                 FitMarkerCount = fit.markerCount;
-                FitWorstResidualMeters = fit.markerCount > 2 ? fit.worstResidualMeters : -1f;
+
+                // Zvyšok existuje od dvoch značiek vyššie: dve dávajú štyri vodorovné rovnice pre
+                // tri neznáme, takže sústava je preurčená a rozdiel dĺžok sa medzi ne rozdelí.
+                FitWorstResidualMeters = fit.worstResidualMeters;
+                FitWorstResidualImage = fit.worstResidualImage;
                 FitBaselineErrorMeters = fit.baselineErrorMeters;
                 LevelledDegrees = 0f;
             }
@@ -582,6 +636,7 @@ namespace FriLens
 
                 FitMarkerCount = 1;
                 FitWorstResidualMeters = -1f;
+                FitWorstResidualImage = "";
                 FitBaselineErrorMeters = 0f;
             }
 

@@ -1168,6 +1168,29 @@ postupu v [`docs/README.md`](README.md).
 
 ---
 
+## Po review: čo sa oproti tomuto plánu zmenilo
+
+Plán je záznam toho, ako sa to stavalo, a kód sa od neho po audite v štyroch veciach odchýlil.
+Kto číta úlohy 1–6 ako predlohu, má vedieť o týchto opravách — inak ich zavedie znova.
+
+- **Číslo úseku nie je `RelocalisationJumps`.** To sa pri každom zarovnaní nuluje
+  (`CameraTravel.RestartFrom`, volané z `DiagnosticsHud.OnAligned`), takže identifikátor
+  osciloval a observácie mizli aj bez skoku. Pribudlo `CameraTravel.JumpGeneration`, ktoré
+  rastie monotónne a nikdy sa nenuluje.
+
+- **Fit sa zamieta, keď mu model odporuje.** `AlignmentSolver` hlási `modelSpanMeters`
+  a `MarkerAlignment.FitLooksSane` zamietne fit, ktorého chyba presiahne `m_MaxFitErrorFraction`
+  (0,25) rozpätia značiek. Bez toho hrubo zlé čítanie polohy — a ARCore vie tú istú značku
+  ohlásiť o metre inde — vyrobilo sebavedomý dvojznačkový fit s kurzom o desiatky stupňov vedľa.
+
+- **Zvyšok sa hlási aj pri dvoch značkách.** Sústava je aj tam preurčená a rozdiel dĺžok sa
+  medzi značky rozdelí; overovač to potvrdzuje číslom 6,00 cm pri 12 cm chybe základne.
+  Pôvodná podmienka `markerCount > 2` tú informáciu zahadzovala.
+
+- **Stlmenie prekryvu sa s pôvodnou farbou násobí.** Zápis šedej do `_BaseColor` prepisoval
+  celú hodnotu vrátane alfy, takže priesvitné plochy (`0,3` a `0,35`) sa stali nepriehľadne
+  bielymi a testujúci skončil v zavretej krabici.
+
 ## Čo tento plán nerobí
 
 - **Nepridáva tretiu značku.** Solver ju zvládne bez zmeny kódu — pribudne len položka

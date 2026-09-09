@@ -112,6 +112,17 @@ namespace FriLens
         public float JumpedMeters { get; private set; }
 
         /// <summary>
+        /// Koľkokrát sa mapa pod aplikáciou prekreslila, od štartu a **bez nulovania**.
+        ///
+        /// <see cref="RelocalisationJumps"/> sa pri každom zarovnaní nuluje, lebo je to meranie
+        /// „od zarovnania". Toto meraním nie je — je to totožnosť súradnicovej sústavy. Dve
+        /// polohy zmerané pod rovnakou generáciou sa smú porovnávať, pod rôznymi nie, a keby sa
+        /// číslo nulovalo, dve rôzne mapy by dostali rovnaké a tichý rozdiel medzi nimi by sa
+        /// tváril ako platný.
+        /// </summary>
+        public int JumpGeneration { get; private set; }
+
+        /// <summary>
         /// Starts counting again from the camera's current position. Called when an alignment is
         /// applied, so the numbers on screen always refer to the alignment being tested.
         ///
@@ -183,6 +194,7 @@ namespace FriLens
                 {
                     RelocalisationJumps++;
                     JumpedMeters += step;
+                    JumpGeneration++;
 
                     // The resampler is carried across the jump rather than left behind to chase
                     // it, and Origin moves with it.
