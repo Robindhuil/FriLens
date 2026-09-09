@@ -8,6 +8,35 @@ miesto, kde sa mení.
 Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spustiť
 `FriLens > Build Android <verzia>`.
 
+## [0.2.2-alpha] — nevydané
+
+### Added
+
+- **Sklon prekryvu sa berie z gravitácie, nie zo značky.** Po oprave kotiev v `0.2.1-alpha` už
+  prekryv sadol do správnej miestnosti, ale od steny so značkami sa dvíhal a klesal. Log s pózami
+  povedal prečo: značka hlási svoju polohu na desatiny centimetra a natočenie na jednotky stupňov.
+
+  Namerané v break roome — „hore" na papieri vyšlo **2,6° až 5,7° od zvislice**, hoci papier visí
+  na zvislej stene, a normály **M1 a M2 sa líšili o 8,0°**, hoci sú obe na tej istej rovnej stene
+  a musia byť rovnobežné. Ani jedno nie je fyzicky možné; je to zle podmienený smer odhadu pózy
+  rovinného terča. A je to **odchýlka, nie šum** — priemerovaním cez burst nezmizne.
+
+  Otočí to celý prekryv okolo osi ležiacej v rovine steny, preto stena so značkami vyzerá dobre
+  a všetko priečne k nej stúpa alebo klesá. 4,5° je **0,78 m na desiatich metroch**.
+
+  Session space ARCore je gravitačne zarovnaný z IMU, jeho pitch a roll sú presné na zlomok stupňa
+  a nedriftujú, a model je postavený vzpriamene. Značke sa teda verí kurz a poloha a neverí sklon.
+
+  Postaví sa **najkratším otočením**, ktoré dá vlastnú zvislicu rootu na svetovú, takže sa pritom
+  nevymyslí žiadny kurz. Poloha sa potom dopočíta nanovo, nie ponechá: kotva sedí v modeli metre
+  od rootu, takže otočenie rootu by ju odhodilo zo značky. Prepočet ju vráti presne na **nameranú
+  polohu** — na tú polovicu merania, ktorá stojí za dôveru.
+
+  Prepínač `Level with gravity` na `MarkerAlignment`, zapnutý. Vypnutý meria surovú odpoveď značky.
+
+- **Udalosť `aligned on …` hlási `levelled N.NN deg`.** O koľko gravitácia zarovnanie postavila —
+  čo je chyba sklonu značky odčítaná priamo. Korekcia tým zároveň meria to, čo opravuje.
+
 ## [0.2.1-alpha] — nevydané
 
 Diagnostický build. Prekryv na fakulte sadol úplne vedľa, hoci zarovnanie bolo čisté

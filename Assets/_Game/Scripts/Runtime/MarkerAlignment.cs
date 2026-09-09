@@ -74,6 +74,12 @@ namespace FriLens
         [Tooltip("Align automatically the first time the marker is seen.")]
         [SerializeField] bool m_AlignOnFirstSighting = true;
 
+        [Tooltip("Take the overlay's tilt from gravity instead of from the marker, keeping only "
+            + "its heading and position. A tracked image's out-of-plane tilt is the weak part of "
+            + "the estimate and it biases rather than scatters, so it survives averaging. Off "
+            + "measures the marker's raw answer; on is what the overlay should be tested with.")]
+        [SerializeField] bool m_LevelWithGravity = true;
+
         [Tooltip("Seconds without a usable sample after which a half-collected burst is thrown "
             + "away rather than continued.")]
         [SerializeField] float m_SampleGapTimeoutSeconds = 2f;
@@ -132,6 +138,13 @@ namespace FriLens
 
         /// <summary>The root pose the last alignment produced, in session space.</summary>
         public Pose LastRootPose { get; private set; }
+
+        /// <summary>
+        /// How far the last alignment had to be stood upright, in degrees, or 0 when levelling is
+        /// off. This is the marker's tilt error read straight off, so the correction doubles as
+        /// the measurement of the thing it corrects.
+        /// </summary>
+        public float LevelledDegrees { get; private set; }
 
         /// <summary>The marker currently being tracked, or null.</summary>
         public ARTrackedImage TrackedMarker { get; private set; }
@@ -401,6 +414,10 @@ namespace FriLens
             SolveRootPose(position, rotation, anchorLocalPosition, anchorLocalRotation,
                 out var rootPosition, out var rootRotation);
 
+            LevelledDegrees = m_LevelWithGravity
+                ? LevelRootPose(position, anchorLocalPosition, ref rootPosition, ref rootRotation)
+                : 0f;
+
             LastMeasuredPose = new Pose(position, rotation);
             LastRootPose = new Pose(rootPosition, rootRotation);
 
@@ -443,6 +460,44 @@ namespace FriLens
                     + "origin with no rotation. The overlay will land somewhere meaningless until "
                     + "the marker's surveyed pose is entered.", this);
             }
+        }
+
+        /// <summary>
+        /// Stands the solved root upright and puts the anchor back on the measured position.
+        /// Returns how far it had to turn it, in degrees.
+        ///
+        /// A tracked image gives its position to a fraction of a centimetre and its rotation to
+        /// whole degrees: the out-of-plane tilt of a flat target is the badly conditioned part of
+        /// the estimate, and it does not average away because it is a bias, not noise. One run in
+        /// the break room reported the marker's own "up" between 2.6° and 5.7° off vertical, and
+        /// the two markers on that one flat wall disagreed about the wall's normal by 8.0°. Both
+        /// are impossible: the paper hangs on a vertical wall and the wall has one normal.
+        ///
+        /// The tilt turns the whole overlay about an axis lying in the wall, which is why the wall
+        /// carrying the markers looks right while everything at an angle to it climbs or sinks —
+        /// 4.5° is 0.78 m at ten metres.
+        ///
+        /// Gravity is the cure and it is already in hand. ARCore's session space is gravity
+        /// aligned from the IMU, its pitch and roll are good to a fraction of a degree and do not
+        /// drift, and the model is built upright. So the marker is believed about heading and
+        /// position and disbelieved about tilt.
+        ///
+        /// The turn is the shortest one that brings the root's own up onto the world's, so no
+        /// heading is invented while it happens. Position is then re-derived rather than kept:
+        /// the anchor sits metres away from the root inside the model, so turning the root would
+        /// swing it off the marker. Re-deriving pins the anchor back on the measured position,
+        /// which is the half of the measurement worth trusting.
+        /// </summary>
+        static float LevelRootPose(Vector3 measuredPosition, Vector3 anchorLocalPosition,
+            ref Vector3 rootPosition, ref Quaternion rootRotation)
+        {
+            var up = rootRotation * Vector3.up;
+            var upright = Quaternion.FromToRotation(up, Vector3.up);
+
+            rootRotation = upright * rootRotation;
+            rootPosition = measuredPosition - rootRotation * anchorLocalPosition;
+
+            return Vector3.Angle(up, Vector3.up);
         }
 
         /// <summary>

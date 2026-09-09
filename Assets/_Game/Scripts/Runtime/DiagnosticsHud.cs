@@ -486,7 +486,13 @@ namespace FriLens
                     + "; img fwd " + Axis(image.rotation * Vector3.forward)
                     + "; root pos " + Axis(root.position)
                     + "; root up " + Axis(root.rotation * Vector3.up)
-                    + "; root fwd " + Axis(root.rotation * Vector3.forward);
+                    + "; root fwd " + Axis(root.rotation * Vector3.forward)
+
+                    // How far gravity had to stand the alignment up. It is the marker's tilt
+                    // error in one number, so the row says what the correction was worth rather
+                    // than hiding it.
+                    + "; levelled " + m_Alignment.LevelledDegrees.ToString(
+                        "F2", System.Globalization.CultureInfo.InvariantCulture) + " deg";
             }
 
             m_Logger?.MarkEvent(label);
