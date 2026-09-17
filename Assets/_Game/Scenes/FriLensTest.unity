@@ -424,6 +424,7 @@ MonoBehaviour:
   m_SampleGapTimeoutSeconds: 2
   m_ObservationMaxAgeSeconds: 60
   m_MaxPositionSpreadMeters: 0.02
+  m_MaxFitErrorFraction: 0.25
 --- !u!114 &288061786
 MonoBehaviour:
   m_ObjectHideFlags: 0
