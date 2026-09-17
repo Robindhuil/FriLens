@@ -25,6 +25,7 @@ obmedzeniami: [ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md).
 
 | Dokument | Čo je v ňom |
 |---|---|
+| [Prezentácia pre vedúceho](2026-09-17-prezentacia-pre-veduceho.md) | scenár návrhu témy na 13 minút: poradie slidov s časmi, pôvod každého čísla, otázky, na ktoré sa treba pripraviť; zdroj slidov v [`prezentacia/`](prezentacia/2026-09-17-navrh-projektu/) |
 | [Plán inžinierskeho projektu](2026-09-05-plan-inzinierskeho-projektu.md) | tri semestre po 125 h: cieľ, pracovné balíky s hodinami, akceptačné kritériá, čo sa vypúšťa pri sklzu |
 | [Stav projektu a analýza navmeshu](2026-09-02-stav-projektu-a-analyza-navmeshu.md) | čo v projekte skutočne je, čo obsahuje `navmesh.blend`, kritické diery |
 | [Implementačný plán](2026-09-02-implementacny-plan.md) | fázy 0–6, od hygieny projektu po test v teréne |

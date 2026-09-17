@@ -1,0 +1,34 @@
+<section id="problem" data-transition="fade" style="background:#F7F5F0; color:#1A2430; font-family:'IBM Plex Sans', Arial, sans-serif; padding:128px 128px 160px; display:flex; flex-direction:column; justify-content:space-between">
+  <div style="display:flex; flex-direction:column; gap:16px">
+    <h2 style="font-family:'Source Serif 4', Georgia, serif; font-size:68px; font-weight:600; line-height:1.15">Meraný problém: pätnásť sekúnd slepoty</h2>
+    <p style="font-size:32px; line-height:1.4; color:#55606E; width:1500px">Bežná AR si mapu stavia za chôdze. Keď kamera na chvíľu nevidí — dlaň, dav, zlé svetlo — nevznikne jeden skok, ale obdobie nestability.</p>
+  </div>
+  <div style="display:flex; gap:28px; align-items:stretch">
+    <div style="flex:1; display:flex; flex-direction:column; gap:10px; background:#FDFCFA; border:1px solid #DCD6C9; border-radius:16px; padding:36px 40px">
+      <p style="font-size:26px; color:#55606E">0,2 s po obnove</p>
+      <h3 style="font-family:'Source Serif 4', Georgia, serif; font-size:84px; font-weight:600; line-height:1.05; color:#B0432A">13,4 m</h3>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; gap:10px; background:#FDFCFA; border:1px solid #DCD6C9; border-radius:16px; padding:36px 40px">
+      <p style="font-size:26px; color:#55606E">17,9 s po obnove</p>
+      <h3 style="font-family:'Source Serif 4', Georgia, serif; font-size:84px; font-weight:600; line-height:1.05; color:#B0432A">21,6 m</h3>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; gap:10px; background:#FDFCFA; border:1px solid #DCD6C9; border-radius:16px; padding:36px 40px">
+      <p style="font-size:26px; color:#55606E">57,8 s po obnove</p>
+      <h3 style="font-family:'Source Serif 4', Georgia, serif; font-size:84px; font-weight:600; line-height:1.05; color:#B0432A">35,7 m</h3>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; gap:10px; background:#14202E; border-radius:16px; padding:36px 40px">
+      <p style="font-size:26px; color:#9DAEC0">Celý beh: 228 m chôdze</p>
+      <h3 style="font-family:'Source Serif 4', Georgia, serif; font-size:84px; font-weight:600; line-height:1.05; color:#E0836A">132 m</h3>
+      <p style="font-size:24px; color:#9DAEC0">v 18 skokoch, takmer 60 %</p>
+    </div>
+  </div>
+  <p style="font-size:34px; line-height:1.4; color:#1A2430; width:1560px">Tracker sa <b>ešte minútu po obnove opravoval a odchýlky rástli</b>. Nie je to okrajový prípad: v budove plnej ľudí je zakrytá kamera normálna prevádzka.</p>
+  <p style="position:absolute; left:128px; bottom:64px; width:1600px; font-size:24px; color:#55606E">Vlastné meranie, Xiaomi Redmi Note 10 Pro, 4. 9. 2026 · log frilens-20260904-145117.csv, 465 s · dokumentované v docs/2026-09-04-vysledky-baseline.md</p>
+  <aside>Cca 70 s. Toto je najdôležitejší slide prezentácie — všetko ostatné z neho vychádza.
+
+Baseline beh: 465 sekúnd chôdze po fakulte s vlastnou telemetriou. Šesťkrát som počas neho zakryl kameru dlaňou. Krátke zakrytia (do 8 s) dopadli mierne, najväčší skok 8 m. Pätnásťsekundové zakrytie ale nespôsobilo jeden skok — spôsobilo obdobie nestability: 13 metrov hneď, 21 metrov o 18 sekúnd, 36 metrov o minútu.
+
+Pointa, ktorú treba povedať nahlas: pri takej veľkosti to nie je relokalizácia opravujúca smerom k pravde. Je to tracker hľadajúci niť vo vlastnej poškodenej mape. Softvérová oprava na to neexistuje.
+
+Ak sa niekto spýta na hranicu: leží niekde medzi 8 a 15 sekundami a cielené premeranie je súčasťou semestra 1.</aside>
+</section>

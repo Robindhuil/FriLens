@@ -1,0 +1,39 @@
+<section id="hotove" data-transition="fade" style="background:#F7F5F0; color:#1A2430; font-family:'IBM Plex Sans', Arial, sans-serif; padding:128px; display:flex; flex-direction:column; gap:32px">
+  <div style="display:flex; flex-direction:column; gap:14px">
+    <h2 style="font-family:'Source Serif 4', Georgia, serif; font-size:68px; font-weight:600; line-height:1.15">Východiskový stav: čo už beží</h2>
+    <p style="font-size:30px; line-height:1.4; color:#55606E; width:1620px">Projekt sa nezačína od nuly. Verzia 0.2.2-alpha je overená na zariadení, nie v editore.</p>
+  </div>
+  <div style="display:flex; gap:48px; align-items:flex-start">
+    <div style="flex:58; display:flex; flex-direction:column; gap:14px">
+      <p style="font-size:24px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:#2F6F68">Hotové a overené v teréne</p>
+      <ul style="font-size:26px; line-height:1.5; color:#2A3542; padding:0 0 0 26px">
+        <li>Unity + AR Foundation 6.4.3 + ARCore, Android, IL2CPP</li>
+        <li>9 navigačných plôch, steny a stropy vyextrahované z modelu</li>
+        <li>Zosúladenie na vytlačenú značku, kotvy prežijú stratu trackingu</li>
+        <li>Dve zamerané značky v miestnosti na rc0, tlač v presných 180 mm</li>
+        <li>Telemetria CSV 4 Hz, udalosti a diagnostický HUD</li>
+        <li>Vyhodnocovacie skripty nad logmi, 23 kontrol v selfteste</li>
+        <li>9 rozhodnutí ADR a 8 analýz, písaných priebežne od začiatku</li>
+      </ul>
+    </div>
+    <div style="flex:42; display:flex; flex-direction:column; gap:20px">
+      <div style="display:flex; flex-direction:column; gap:8px; background:#14202E; border-radius:18px; padding:30px 34px">
+        <p style="font-size:25px; color:#9DAEC0">Chyba merania prejdenej dráhy</p>
+        <h3 style="font-family:'Source Serif 4', Georgia, serif; font-size:72px; font-weight:600; line-height:1.05; color:#7FB5AE">-2,7 %</h3>
+        <p style="font-size:24px; color:#9DAEC0">na 8 m úseku, overené pásmom</p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px; background:#FDFCFA; border:1px solid #DCD6C9; border-radius:18px; padding:26px 30px">
+        <p style="font-size:24px; font-weight:600; color:#B0432A">Posledný nález, september 2026</p>
+        <p style="font-size:25px; line-height:1.4; color:#3A4552">Značka hlási svoj sklon s chybou 2,6 až 5,7 stupňa, čo je 0,78 m na desiatich metroch. Sklon sa preto berie z gravitácie.</p>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:27px; line-height:1.45; color:#1A2430; width:1620px"><b>Čo ešte chýba:</b> vyjadriť zhodu modelu so skutočnou budovou číslom. Dovtedy je overený prístroj, nie predpoklad, na ktorom stojí celá práca. Je to prvý balík semestra 1.</p>
+  <aside>Cca 70 s. Tento slide je dôvod, prečo návrh nie je špekulácia.
+
+Za tri týždne v lete vznikol overený merací prístroj. Chyba merania prejdenej vzdialenosti je -2,7 % na osemmetrovom úseku, overená pásmom — to je dosť presné na to, aby sa ním dal merať drift.
+
+Nález vpravo dole ukáž ako príklad toho, ako sa v projekte pracuje: prekryv na fakulte sadol vedľa, log s pózami povedal prečo, a odpoveď bola nečakaná — odhad sklonu rovinného terča je zle podmienený, značka hlási sklon s chybou niekoľkých stupňov, čo je na desiatich metroch skoro meter. Riešenie je brať sklon z gravitácie, ktorá je v ARCore presná na zlomok stupňa. A korekcia zároveň meria to, čo opravuje — zapisuje sa, o koľko zarovnanie postavila.
+
+Posledná veta je dôležitá pre plán: kritická cesta začína zameraním značiek a zmeraním zhody modelu s budovou.</aside>
+</section>

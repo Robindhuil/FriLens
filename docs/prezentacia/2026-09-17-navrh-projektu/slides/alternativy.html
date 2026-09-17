@@ -1,0 +1,23 @@
+<section id="alternativy" data-transition="fade" style="background:#EBE7DE; color:#1A2430; font-family:'IBM Plex Sans', Arial, sans-serif; padding:128px; display:flex; flex-direction:column; gap:40px">
+  <h2 style="font-family:'Source Serif 4', Georgia, serif; font-size:68px; font-weight:600; line-height:1.15">Prečo nestačí iná senzorika</h2>
+  <table style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:27px; color:#1A2430; border:1px solid #CFC7B7; border-radius:12px; background:#FDFCFA">
+    <tr style="background:#14202E">
+      <th style="width:24%; padding:14px 22px; text-align:left; color:#F7F5F0; font-weight:600">Metóda</th>
+      <th style="width:22%; text-align:left; color:#F7F5F0; font-weight:600">Presnosť</th>
+      <th style="width:54%; text-align:left; color:#F7F5F0; font-weight:600">Prečo nestačí sama</th>
+    </tr>
+    <tr><td>GNSS</td><td>3-10 m vonku</td><td>v budove nefunguje, orientáciu nedá</td></tr>
+    <tr style="background:#F3F1EA"><td>IMU sama</td><td>metre za sekundy</td><td>poloha je dvojitý integrál, chyba rastie kvadraticky</td></tr>
+    <tr><td>krokomer + kurz</td><td>okolo 5 % dráhy</td><td>orientácia driftuje, žiadne 6DoF</td></tr>
+    <tr style="background:#F3F1EA"><td>magnetometer</td><td>jednotky stupňov</td><td>v budove s oceľou nepoužiteľný ako kompas</td></tr>
+    <tr><td>WiFi RTT</td><td>1-2 m</td><td>vyžaduje AP s podporou, orientáciu nedá</td></tr>
+    <tr style="background:#F3F1EA"><td>BLE majáky</td><td>1-5 m</td><td>hardvér nainštalovaný do budovy</td></tr>
+    <tr><td>UWB</td><td>10-30 cm</td><td>hardvér na oboch stranách, bežný telefón ho nemá</td></tr>
+  </table>
+  <p style="font-size:32px; line-height:1.4; color:#1A2430; width:1620px"><b>Nič z toho nedá orientáciu</b> — a bez nej sa prekryv nedá vykresliť ani teoreticky. Všetko okrem UWB je navyše rádovo hrubšie než hrúbka steny, ktorú máme merať.</p>
+  <aside>Cca 55 s. Legitímna otázka od komisie aj od vedúceho: prečo kamera, keď existuje toľko indoor lokalizačných technológií? Odpoveď je v tabuľke a je zapísaná v ADR 007.
+
+Dve veci prejsť rýchlo: (1) všetko, čo by bolo dosť presné — BLE, UWB — vyžaduje nainštalovať hardvér do budovy, a to je presne to, čomu sa chceme vyhnúť; (2) žiadna z nich nedá orientáciu, takže prekryv sa nedá nakresliť.
+
+Dve stoja za pozornosť ako doplnok, nie náhrada: barometer na rozlíšenie podlažia (máme štyri podlažia) a magnetické fingerprinty ako poistka proti tichému zlyhaniu relokalizácie. Spomeň len ak je čas.</aside>
+</section>

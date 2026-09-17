@@ -1,0 +1,39 @@
+<section id="korekcie" data-transition="fade" style="background:#F7F5F0; color:#1A2430; font-family:'IBM Plex Sans', Arial, sans-serif; padding:128px; display:flex; flex-direction:column; gap:40px">
+  <div style="display:flex; flex-direction:column; gap:14px">
+    <h2 style="font-family:'Source Serif 4', Georgia, serif; font-size:68px; font-weight:600; line-height:1.15">Štyri korekcie, každá meraná zvlášť</h2>
+    <p style="font-size:30px; line-height:1.4; color:#55606E; width:1620px">Pridávajú sa postupne a každá je samostatne vypínateľný režim.</p>
+  </div>
+  <div style="display:flex; gap:24px; align-items:stretch">
+    <div style="flex:1; display:flex; flex-direction:column; gap:14px; background:#FDFCFA; border:1px solid #DCD6C9; border-radius:18px; padding:28px">
+      <p style="font-size:24px; font-weight:600; color:#2F6F68">A · semester 1 · 10 h</p>
+      <h3 style="font-size:30px; font-weight:600; line-height:1.25">Zarovnanie kurzu na smery chodieb</h3>
+      <p style="font-size:25px; line-height:1.4; color:#3A4552">Budova je Manhattan world. Jeden stupeň driftu kurzu je na 50 m skoro meter bokom.</p>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; gap:14px; background:#FDFCFA; border:1px solid #DCD6C9; border-radius:18px; padding:28px">
+      <p style="font-size:24px; font-weight:600; color:#2F6F68">B · semester 1 · 8 h</p>
+      <h3 style="font-size:30px; font-weight:600; line-height:1.25">Väzba na výšku podlahy</h3>
+      <p style="font-size:25px; line-height:1.4; color:#3A4552">Telefón je vždy 1,2 až 1,7 m nad podlahou, ktorej výšku poznáme z modelu.</p>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; gap:14px; background:#FDFCFA; border:1px solid #DCD6C9; border-radius:18px; padding:28px">
+      <p style="font-size:24px; font-weight:600; color:#B0432A">C · semester 2 · 24 h</p>
+      <h3 style="font-size:30px; font-weight:600; line-height:1.25">Map matching časticovým filtrom</h3>
+      <p style="font-size:25px; line-height:1.4; color:#3A4552">Stovky hypotéz polohy, zabíjajú sa tie, čo prešli stenou. Jadro práce.</p>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; gap:14px; background:#FDFCFA; border:1px solid #DCD6C9; border-radius:18px; padding:28px">
+      <p style="font-size:24px; font-weight:600; color:#B0432A">D · semester 2 · 10 h</p>
+      <h3 style="font-size:30px; font-weight:600; line-height:1.25">Prezarovnanie na značkách za behu</h3>
+      <p style="font-size:25px; line-height:1.4; color:#3A4552">Jediný liek na pätnásťsekundový útes zo slidu 2.</p>
+    </div>
+  </div>
+  <div style="display:flex; gap:22px; background:#F6E9E4; border:1px solid #DDAA99; border-radius:18px; padding:30px 34px">
+    <x-icon name="Warning" style="width:40px; height:40px; color:#B0432A"></x-icon>
+    <p style="flex:1; font-size:27px; line-height:1.45; color:#2A1D18"><b>Riziko kruhovosti.</b> Ak sa pomocou modelu opravuje póza, meria sa model modelom a chyba sa schová do korekcie. Preto je každá korekcia defaultne vypnutá a beh s ňou a bez nej sa merajú zvlášť. Výstupom nie je jedno číslo, ale <b>ablačná tabuľka</b>.</p>
+  </div>
+  <aside>Cca 75 s. Prejdi karty rýchlo zľava doprava, zdrž sa pri pruhu dole.
+
+A a B sú podľa ADR 007 „takmer zadarmo" — desiatky riadkov kódu, a útočia na dominantné zložky chyby. Preto sú v prvom semestri. C je jadro práce a najväčší jednotlivý balík. D je priama odpoveď na to, čo ukázal baseline: softvérová oprava na pätnásť sekúnd slepoty neexistuje, jediné, čo pomôže, je prezarovnanie na značke.
+
+Pruh dole je to, čo z toho robí prácu a nie appku. Kruhovosť je najväčšie metodologické nebezpečenstvo celého projektu a je zapísaná ako rozhodnutie v ADR 007 aj 008: korekcie sú defaultne vypnuté, nikdy sa nemeria jeden beh so všetkým zapnutým.
+
+Ak sa vedúci spýta na D a E z ADR 007 (roviny z ARCore proti stenám modelu, Depth API a ICP): sú to samostatné kapitoly, nie inkrementy, a v rozpočte troch semestrov nie sú.</aside>
+</section>
