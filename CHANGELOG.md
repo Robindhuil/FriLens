@@ -98,6 +98,13 @@ A dve značky na jednej rovnej stene si odporovali o 2,04 – 2,89 m a 4,2 – 7
   renderer nevypli. `Wire Scene` ich odteraz zapája — a `SetArray` v ňom pribudol, lebo pole
   referencií doteraz nemal ako nastaviť.
 
+- **`MaterialPropertyBlock` sa nesmie vyrobiť v inicializátore poľa.** Unity zakazuje volať jeho
+  konštruktor z konštruktora `MonoBehaviour` a hodí `UnityException: CreateImpl is not allowed
+  to be called from a MonoBehaviour constructor` pri každom vzniku komponentu — takže HUD hádzal
+  výnimku ešte pred prvým snímkom. Skompiluje sa to, takže to nechytí ani kompilátor, ani
+  overovače; chytilo to až otvorenie scény v editore. Blok vzniká lenivo pri prvom stlmení
+  prekryvu.
+
 ## [0.2.2-alpha] — nevydané
 
 ### Added

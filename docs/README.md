@@ -1,15 +1,17 @@
 # FriLens — dokumentácia
 
-**Verzia:** 0.2.2-alpha · **Stav:** fázy 0–3 a 5 hotové; rozsah rozšírený ([ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md))
+**Verzia:** 0.3.0-alpha · **Stav:** fázy 0–3 a 5 hotové; rozsah rozšírený ([ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md))
 
 Prístroj je overený v teréne na Redmi Note 10 Pro: prejdená vzdialenosť sedí na −2,7 %, kotvy
 prežijú stratu trackingu a kladenie diskov na navmesh funguje.
 
-Značky sú od 2026-09-09 vytlačené, nalepené a zamerané a prekryv sa z nich zarovná. **Zhoda
-modelu s budovou sa ale zatiaľ merať nedá**: zarovnanie z jednej značky je nestabilné o metre,
-lebo natočenie sledovaného obrázka je rádovo horšie než jeho poloha. Čo sa namerlo a čím sa to
-nahradí je v [návrhu kalibrácie](2026-09-09-navrh-kalibracie-viac-znaciek.md)
-a [ADR 010](decisions/010-kurz-z-poloh-znaciek-sklon-z-gravitacie.md).
+Značky sú od 2026-09-09 vytlačené, nalepené a zamerané a prekryv sa z nich zarovná. Zarovnanie
+z jednej značky bolo nestabilné o metre, lebo natočenie sledovaného obrázka je rádovo horšie než
+jeho poloha; `0.3.0-alpha` ho nahradila fitom z polôh viacerých značiek
+([návrh](2026-09-09-navrh-kalibracie-viac-znaciek.md),
+[ADR 010](decisions/010-kurz-z-poloh-znaciek-sklon-z-gravitacie.md)). **V teréne to zatiaľ
+overené nie je** — čo sa má odmerať a proti akým číslam, je v
+[protokole testu kalibrácie](2026-09-17-protokol-testu-viacerych-znaciek.md).
 
 Čísla z behov pred 0.1.4-alpha sú nadhodnotené: metóda merania dráhy sa vtedy zmenila
 ([ADR 005](decisions/005-ako-merat-prejdenu-vzdialenost.md)).
@@ -37,6 +39,7 @@ obmedzeniami: [ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md).
 | [Stav projektu a analýza navmeshu](2026-09-02-stav-projektu-a-analyza-navmeshu.md) | čo v projekte skutočne je, čo obsahuje `navmesh.blend`, kritické diery |
 | [Implementačný plán](2026-09-02-implementacny-plan.md) | fázy 0–6, od hygieny projektu po test v teréne |
 | [Brief pre návrh UI](2026-09-03-brief-navrh-ui.md) | zadanie pre návrhára HUD-u: podmienky v teréne, mantinely UI Toolkitu, čo sa nesmie meniť |
+| [Protokol testu kalibrácie](2026-09-17-protokol-testu-viacerych-znaciek.md) | čo odmerať v teréne s dvomi značkami a proti akým číslam z `0.2.2-alpha` sa to porovnáva |
 | [Protokol baseline testu](2026-09-04-protokol-baseline-testu.md) | čo odmerať v teréne, kým neexistuje značka, a čo znamená každý stĺpec CSV |
 | [Výsledky baseline testu](2026-09-04-vysledky-baseline.md) | čo namerali behy 0.1.5 až 0.1.7: vzdialenosť sedí na −2,7 %, dlhé zakrytie rozbije mapu, relokalizácie sú aj zvislé |
 | [Analýza geometrie a stien](2026-09-04-analyza-geometrie-a-stien.md) | čo `navmesh.blend` naozaj obsahuje a prečo sa steny dajú odvodiť z hraníc navmeshu |
