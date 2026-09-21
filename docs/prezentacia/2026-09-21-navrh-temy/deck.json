@@ -1,0 +1,24 @@
+{
+  "v": 4,
+  "createdOnFiles": { "v": 1, "at": "2026-09-21T09:00:00Z" },
+  "title": "Návrh témy inžinierskeho projektu",
+  "order": ["cover", "pouzitie", "preco-tazke", "senzorika", "model", "otazka", "korekcie", "vystupy", "hra", "kalendar", "s1", "s2", "s3", "rizika", "zaver"],
+  "cover": "cover",
+  "sections": {
+    "uvod": { "description": "Na čo to bude a prečo to dnešná AR na telefóne spoľahlivo nevie", "start": "cover" },
+    "navrh": { "description": "Model budovy ako mapa, výskumná otázka a štyri korekcie", "start": "model" },
+    "plan": { "description": "Kde sa bude vyhodnocovať a rozpis troch semestrov po 125 hodinách", "start": "kalendar" },
+    "zaver": { "description": "Riziká a dve rozhodnutia, ktoré potrebujem od vedúceho", "start": "rizika" }
+  },
+  "faces": {
+    "ibm-plex-sans": {
+      "family": "IBM Plex Sans",
+      "href": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    },
+    "source-serif-4": {
+      "family": "Source Serif 4",
+      "href": "https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&display=swap"
+    }
+  },
+  "designSystems": []
+}

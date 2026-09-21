@@ -1,0 +1,27 @@
+<section id="model" data-transition="fade" style="background:#F7F5F0; color:#1A2430; font-family:'IBM Plex Sans', Arial, sans-serif; padding:128px; display:flex; flex-direction:column; gap:44px">
+  <div style="display:flex; flex-direction:column; gap:14px">
+    <h2 style="font-family:'Source Serif 4', Georgia, serif; font-size:68px; font-weight:600; line-height:1.15">Návrh: model budovy ako mapa</h2>
+    <p style="font-size:30px; line-height:1.4; color:#55606E; width:1620px">Fakulta má navigačný model všetkých podlaží. Nemusí sa vyrábať — dá sa použiť ako mapa, voči ktorej sa telefón určí.</p>
+  </div>
+  <div style="display:flex; gap:32px; align-items:center">
+    <div style="flex:1; display:flex; flex-direction:column; gap:18px; background:#EBE7DE; border:1px solid #CFC7B7; border-radius:20px; padding:40px">
+      <p style="font-size:24px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:#B0432A">Bez modelu</p>
+      <h3 style="font-family:'Source Serif 4', Georgia, serif; font-size:40px; font-weight:600; line-height:1.2">Postav si mapu a sleduj sa v nej</h3>
+      <p style="font-size:29px; line-height:1.45; color:#3A4552">Chyba <b>rastie s prejdenou vzdialenosťou</b> a po strate sledovania sa poškodí aj mapa.</p>
+    </div>
+    <x-shape kind="arrow-right" style="width:96px; height:44px; background:#2F6F68"></x-shape>
+    <div style="flex:1; display:flex; flex-direction:column; gap:18px; background:#E4EDEB; border:1px solid #9CC2BD; border-radius:20px; padding:40px">
+      <p style="font-size:24px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:#2F6F68">S modelom</p>
+      <h3 style="font-family:'Source Serif 4', Georgia, serif; font-size:40px; font-weight:600; line-height:1.2">Urči sa voči existujúcej mape</h3>
+      <p style="font-size:29px; line-height:1.45; color:#21323A">Chyba je ohraničená <b>presnosťou modelu, nie dĺžkou chôdze</b>. Drift prestáva byť neohraničený.</p>
+    </div>
+  </div>
+  <p style="font-size:29px; line-height:1.45; color:#55606E; width:1620px">Z toho istého modelu vypadne aj <b>trasovanie k miestnosti</b>, aj <b>bariéry pre korekcie polohy</b>. Predpoklad, ktorý treba overiť ako prvý: sedí model na skutočnú budovu?</p>
+  <aside>Cca 70 s. Jadro návrhu. Kľúčová je zmena podstaty úlohy, nie technický detail.
+
+Povedz to takto: doteraz by sme robili to isté, čo robí každá AR appka — stavali si mapu a sledovali sa v nej. So známym modelom je to iná úloha: určovanie polohy voči existujúcej mape. Chyba prestáva byť funkciou toho, koľko človek prešiel, a stáva sa funkciou toho, aký presný je model.
+
+Druhá vec, ktorá sa oplatí povedať: model nie je nič, čo by sa muselo vyrobiť. Fakulta ho má na orientáciu v budove a pokrýva všetky podlažia. To je dôvod, prečo je táto téma realizovateľná práve tu a nie hocikde.
+
+Posledná veta je most na plán: ten predpoklad zatiaľ nikto neoveril a je to prvá vec, ktorú urobím. Keby neplatil, mení sa celá práca — a je lepšie to vedieť v októbri než o rok.</aside>
+</section>
