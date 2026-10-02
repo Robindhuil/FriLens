@@ -85,6 +85,13 @@ namespace FriLens
         }
 
         /// <summary>
+        /// Posledná prijatá observácia značky, bez ohľadu na platnosť. Výber ďalšej značky do
+        /// burstu podľa nej uprednostní tú, ktorá je najdlhšie nevidená.
+        /// </summary>
+        public bool TryGet(string imageName, out Observation observation) =>
+            m_ByImage.TryGetValue(imageName ?? "", out observation);
+
+        /// <summary>
         /// Zabudne všetko. Volá sa pri strate trackingu: potom je poloha každej uloženej značky
         /// odhad z mapy, ktorá sa medzitým mohla prekresliť.
         /// </summary>

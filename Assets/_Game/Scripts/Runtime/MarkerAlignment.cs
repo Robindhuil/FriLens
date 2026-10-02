@@ -222,6 +222,28 @@ namespace FriLens
         /// </summary>
         public float LastCorrectionMeters { get; private set; }
 
+        /// <summary>
+        /// Z čoho vznikol posledný fit: každá použitá observácia s vekom a rozptylom, napr.
+        /// <c>M1 0.0s 0.4cm + M2 3.1s 0.6cm</c>. Samotný počet značiek nepovie, či druhá
+        /// prišla zo státia pred troma sekundami alebo spred minúty z iného miesta.
+        /// </summary>
+        public string FitInputs { get; private set; } = "";
+
+        /// <summary>
+        /// Chyba fitu, ktorý zamietla brána kvality, v metroch; -1 keď zamietnutý nebol.
+        /// Bez nej sa <c>1 značka</c> z brány nedá odlíšiť od <c>1 značka</c> z nevidenej.
+        /// </summary>
+        public float RejectedFitErrorMeters { get; private set; } = -1f;
+
+        /// <summary>Prah brány pri poslednom zamietnutí, v metroch.</summary>
+        public float RejectedFitAllowedMeters { get; private set; }
+
+        /// <summary>
+        /// Či sa burst posledného zarovnania prijal do zásoby observácií. Burst s rozptylom
+        /// nad prahom zarovná, ale do fitu z viacerých značiek nevstúpi.
+        /// </summary>
+        public bool LastBurstAccepted { get; private set; }
+
         /// <summary>Aktuálna politika prepočtu; prepína ju HUD.</summary>
         public UpdatePolicy Policy
         {
@@ -450,26 +472,82 @@ namespace FriLens
         /// with its state dropped to Limited, so taking the first match would pin the HUD to a
         /// marker left behind at the other end of the room while the one actually in front of
         /// the camera is ignored. A marker being tracked outranks one merely remembered.
+        ///
+        /// Keď sú sledované dve naraz, vyhrá tá, ktorej observácia je najstaršia alebo chýba.
+        /// Do 0.3.0-alpha vyhrávala prvá v <c>trackables</c>, teda vždy tá istá: burst sa robí
+        /// z jednej značky, takže druhá sa do zásoby observácií nikdy nedostala a fit z dvoch
+        /// značiek pri cieli <c>any</c> nemohol nastať, hoci boli obe v zábere. Rozpracovaný
+        /// burst si svoju značku drží, inak by ho výber po každej snímke reštartoval.
         /// </summary>
         ARTrackedImage FindMarker()
         {
             ARTrackedImage remembered = null;
+            ARTrackedImage stalest = null;
+            var stalestTime = float.PositiveInfinity;
 
             foreach (var image in m_TrackedImageManager.trackables)
             {
                 if (AnchorFor(image) == null)
                     continue;
 
-                if (m_TargetImageName.Length > 0 && image.referenceImage.name != m_TargetImageName)
+                var name = image.referenceImage.name;
+                if (m_TargetImageName.Length > 0 && name != m_TargetImageName)
                     continue;
 
-                if (image.trackingState == TrackingState.Tracking)
+                if (image.trackingState != TrackingState.Tracking)
+                {
+                    remembered ??= image;
+                    continue;
+                }
+
+                if (State == AlignmentState.Sampling && m_Positions.Count > 0 && name == m_BurstImageName)
                     return image;
 
-                remembered ??= image;
+                var seenAt = m_Observations.TryGet(name, out var observation)
+                    ? observation.time
+                    : float.NegativeInfinity;
+
+                if (stalest == null || seenAt < stalestTime)
+                {
+                    stalest = image;
+                    stalestTime = seenAt;
+                }
             }
 
-            return remembered;
+            return stalest != null ? stalest : remembered;
+        }
+
+        /// <summary>
+        /// Čo ARCore práve hlási o každej zameranej značke, napr. <c>M1 Tracking M2 Limited</c>.
+        /// Ide do logu pri zarovnaní, lebo „boli obe v zábere?" sa inak z CSV zistiť nedá —
+        /// a práve od toho závisí, či je <c>1 značka</c> zamietnutý fit alebo nevidená značka.
+        /// </summary>
+        public string SeenImagesSummary()
+        {
+            if (m_TrackedImageManager == null)
+                return "";
+
+            var summary = new System.Text.StringBuilder();
+            foreach (var image in m_TrackedImageManager.trackables)
+            {
+                if (AnchorFor(image) == null)
+                    continue;
+                if (summary.Length > 0)
+                    summary.Append(' ');
+                summary.Append(ShortName(image.referenceImage.name)).Append(' ').Append(image.trackingState);
+            }
+
+            return summary.Length > 0 ? summary.ToString() : "-";
+        }
+
+        /// <summary><c>frilens-M1</c> → <c>M1</c>. Plné meno je v logu len šum.</summary>
+        public static string ShortName(string imageName)
+        {
+            if (string.IsNullOrEmpty(imageName))
+                return "";
+
+            var dash = imageName.LastIndexOf('-');
+            return dash >= 0 && dash < imageName.Length - 1 ? imageName[(dash + 1)..] : imageName;
         }
 
         Transform AnchorFor(ARTrackedImage image)
@@ -527,6 +605,9 @@ namespace FriLens
             if (error <= allowed)
                 return true;
 
+            RejectedFitErrorMeters = error;
+            RejectedFitAllowedMeters = allowed;
+
             Debug.LogWarning($"{nameof(MarkerAlignment)}: fit z {fit.markerCount} značiek zamietnutý "
                 + $"— chyba {error:F2} m na rozpätí {fit.modelSpanMeters:F2} m je nad prahom "
                 + $"{allowed:F2} m. Niektorá značka je ohlásená hrubo zle; zarovnávam z jednej.", this);
@@ -583,11 +664,19 @@ namespace FriLens
             // Burst dobehol celý v stave Tracking, takže je to platné pozorovanie bez ohľadu na
             // to, či sa z neho hneď bude riešiť. O prijatí rozhodne rozptyl polohy.
             m_Observations.MaxSpreadMeters = m_MaxPositionSpreadMeters;
-            m_Observations.Offer(m_BurstImageName, position, SampleSpreadMeters,
+            LastBurstAccepted = m_Observations.Offer(m_BurstImageName, position, SampleSpreadMeters,
                 m_Travel != null ? m_Travel.JumpGeneration : 0, Time.time);
+
+            if (!LastBurstAccepted)
+                Debug.LogWarning($"{nameof(MarkerAlignment)}: burst na '{ShortName(m_BurstImageName)}' "
+                    + $"neprijatý do fitu — rozptyl {SampleSpreadMeters * 100f:F1} cm je nad prahom "
+                    + $"{m_MaxPositionSpreadMeters * 100f:F1} cm.", this);
 
             var segment = m_Travel != null ? m_Travel.JumpGeneration : 0;
             var usable = m_Observations.Current(segment, Time.time, m_ObservationMaxAgeSeconds);
+
+            RejectedFitErrorMeters = -1f;
+            var inputs = new System.Text.StringBuilder();
 
             var pairs = new List<AlignmentSolver.Correspondence>();
             foreach (var observation in usable)
@@ -596,6 +685,19 @@ namespace FriLens
                 if (surveyed == null)
                     continue;
 
+                // Cieľ obmedzuje aj fit, nie len burst. Inak by `target M1` minútu po pohľade
+                // na M2 dal fit z oboch a Test F by nemeral jednu značku, ako tvrdí protokol.
+                if (m_TargetImageName.Length > 0 && observation.imageName != m_TargetImageName)
+                    continue;
+
+                if (inputs.Length > 0)
+                    inputs.Append(" + ");
+                inputs.Append(ShortName(observation.imageName)).Append(' ')
+                    .Append((Time.time - observation.time).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))
+                    .Append("s ")
+                    .Append((observation.spreadMeters * 100f).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))
+                    .Append("cm");
+
                 pairs.Add(new AlignmentSolver.Correspondence
                 {
                     imageName = observation.imageName,
@@ -603,6 +705,8 @@ namespace FriLens
                     measuredPosition = observation.measuredPosition,
                 });
             }
+
+            FitInputs = inputs.Length > 0 ? inputs.ToString() : "-";
 
             Vector3 rootPosition;
             Quaternion rootRotation;
