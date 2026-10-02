@@ -1,13 +1,14 @@
 # FriLens — dokumentácia
 
-**Verzia:** 0.3.0-alpha · **Stav:** fázy 0–3 a 5 hotové; rozsah rozšírený ([ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md))
+**Verzia:** 0.3.1-alpha · **Stav:** fázy 0–3 a 5 hotové; rozsah rozšírený ([ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md))
 
 Prístroj je overený v teréne na Redmi Note 10 Pro: prejdená vzdialenosť sedí na −2,7 %, kotvy
 prežijú stratu trackingu a kladenie diskov na navmesh funguje.
 
 Značky sú od 2026-09-09 vytlačené, nalepené a zamerané a prekryv sa z nich zarovná. Zarovnanie
 z jednej značky bolo nestabilné o metre, lebo natočenie sledovaného obrázka je rádovo horšie než
-jeho poloha; `0.3.0-alpha` ho nahradila fitom z polôh viacerých značiek
+jeho poloha; `0.3.0-alpha` ho nahradila fitom z polôh viacerých značiek a `0.3.1-alpha` opravila, aby sa
+pri cieli `any` do fitu naozaj dostali obe
 ([návrh](2026-09-09-navrh-kalibracie-viac-znaciek.md),
 [ADR 010](decisions/010-kurz-z-poloh-znaciek-sklon-z-gravitacie.md)). **V teréne to zatiaľ
 overené nie je** — čo sa má odmerať a proti akým číslam, je v

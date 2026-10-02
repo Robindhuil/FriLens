@@ -8,6 +8,41 @@ miesto, kde sa mení.
 Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spustiť
 `FriLens > Build Android <verzia>`.
 
+## [0.3.1-alpha] — nevydané
+
+Príprava na terénny test kalibrácie z viacerých značiek
+([protokol](docs/2026-09-17-protokol-testu-viacerych-znaciek.md)). V `0.3.0-alpha` by Test E
+nemeral to, čo tvrdí, a Test F tiež nie.
+
+### Fixed
+
+- **Pri cieli `any` sa druhá značka do fitu nedostala.** Burst sa robí z jednej značky
+  a vyberala sa vždy prvá sledovaná v `trackables` — keď boli v zábere obe, stále tá istá.
+  Observácia druhej teda nikdy nevznikla a fit z dvoch značiek nemohol nastať, hoci ich bolo
+  vidieť. Test E by trinásťkrát hlásil `1 značka` a meral by staré správanie. Teraz vyhrá
+  sledovaná značka s najstaršou alebo chýbajúcou observáciou, takže sa Re-anchor striedajú
+  `M1`, `M2`, `M1`… a od druhého je fit z oboch. Rozpracovaný burst si značku drží.
+- **Cieľ `M1` / `M2` obmedzuje aj fit, nie len burst.** Inak `target M1` do minúty po pohľade
+  na `M2` dal fit z oboch a Test F by nemeral jednu značku, ako hovorí protokol.
+
+### Added
+
+- **Varovania a chyby z Unity idú do CSV** ako udalosti `log-warning …`, `log-error …`,
+  `log-exception …`. Zamietnutý fit, zahodený burst či prepnutie značky uprostred burstu sa
+  doteraz hlásili len do logcatu, ktorý sa z fakulty bez kábla neprinesie. Opakované hlásenie
+  sa zapíše najviac raz za 5 s s počtom.
+- **Riadok `aligned on …` hovorí viac:** `root yaw` (kurz ako číslo pre Test E), `inputs`
+  (ktoré observácie išli do fitu, s vekom a rozptylom), `seen` (čo ARCore v tej chvíli hlásil
+  o každej značke), `burst accepted / rejected-spread`, `gate-rejected <chyba> > <prah>` keď fit
+  zamietla brána, `target` a `policy`. `1 značka` sa tak dá rozlíšiť na nevidenú, zamietnutú
+  bránou a neprijatú pre rozptyl.
+- **Burst neprijatý pre rozptyl nad 2 cm** sa hlási varovaním; doteraz ticho nevstúpil do fitu.
+- `tools/frilens_eval.py`: sekcia **Zarovnania** (tabuľka fitov, rozpätia X / Z / kurzu
+  a posunov oproti 0.2.2, `baseline` voči pásmu cez `--marker-tape`, okno `--align-window`)
+  a **Varovania z appky**.
+- `tools/pull-logs.ps1`: stiahne CSV z telefónu cez adb z inštalácie Unity, s `-Logcat`
+  aj logcat.
+
 ## [0.3.0-alpha] — nevydané
 
 Kurz prekryvu prestal chodiť z natočenia značky. Menšia číslica by klamala: nemení sa detail
