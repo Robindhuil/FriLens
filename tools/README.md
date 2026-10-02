@@ -27,6 +27,9 @@ Výstup je markdown, takže sa dá vložiť rovno do `docs/`.
 | **Straty trackingu** | epizódy strát a **skoky, ktoré po nich nasledovali v okne 60 s** |
 | **Disky na navmeshi** | `model floor … below height` — jediné číslo v logu, ktoré hovorí o modeli |
 
+| **Zarovnania** | od 0.3.1: každé `aligned on …` s počtom značiek, polohou a kurzom rootu, posunom voči predošlému, `baseline`, vstupmi fitu a tým, čo ARCore videl; rozpätia pre Test E |
+| **Varovania z appky** | od 0.3.1: `log-warning` a `log-error` riadky — zamietnutý fit, zahodený burst a pod. |
+
 ### Prepínače
 
 | prepínač | čo robí |
@@ -38,6 +41,18 @@ Výstup je markdown, takže sa dá vložiť rovno do `docs/`.
 | `--table` | jeden riadok na beh — tvar, ktorý potrebuje ablačná štúdia |
 | `--json` | strojovo čitateľný výstup |
 | `--selftest` | overí metriky na logu so známymi odpoveďami |
+| `--align-window S1-S2` | zarovnania len z časového okna, napr. jeden blok Testu E |
+| `--marker-tape M` | pásmom nameraná vzdialenosť M1–M2; doplní porovnanie `baseline` pre Test G |
+
+## `pull-logs.ps1` — logy z telefónu
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\pull-logs.ps1 -Logcat
+```
+
+Stiahne `frilens-*.csv` z `Android/data/sk.uniza.fri.frilens/files/` do
+`Documents/Robin/unity/frilens/logs/` (už stiahnuté preskočí) a s `-Logcat` aj výpis logcatu.
+adb berie z inštalácie Unity, v PATH nie je.
 
 ### Tri veci, ktoré robí zámerne inak, než by sa čakalo
 

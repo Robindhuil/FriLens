@@ -376,6 +376,115 @@ def probe_gaps(run):
 # --- report ----------------------------------------------------------------------
 
 
+def _floats(text):
+    try:
+        return [float(part) for part in text.split()]
+    except ValueError:
+        return None
+
+
+def alignment_events(run, window=None):
+    """Every `aligned …` row taken apart into its fields.
+
+    From 0.2.0 the label is `aligned on M1; img pos x y z; …; root pos x y z; root fwd …`,
+    and 0.3.0 added `markers`, `residual`, `baseline`, `correction`. 0.3.1 added `root yaw`,
+    `inputs`, `seen`, `burst`, `gate-rejected`, `target`. Missing fields come back as None,
+    so older logs still produce what they can. Yaw is derived from `root fwd` when the log
+    predates `root yaw`.
+    """
+    out = []
+    previous = None
+    for index, time_s, label in run.events():
+        if not label.startswith("aligned"):
+            continue
+        if window and time_s is not None and not (window[0] <= time_s <= window[1]):
+            continue
+
+        parts = [p.strip() for p in label.split(";")]
+        head = parts[0]
+        entry = {
+            "row": index, "time_s": time_s,
+            "marker": head[len("aligned on "):] if head.startswith("aligned on ") else "",
+            "root_pos": None, "root_yaw": None, "markers": None, "residual_m": None,
+            "residual_on": None, "baseline_m": None, "correction_m": None, "inputs": None,
+            "seen": None, "burst": None, "gate_rejected": None, "target": None, "levelled_deg": None,
+        }
+        root_fwd = None
+        for part in parts[1:]:
+            key, _, value = part.partition(" ")
+            if part.startswith("root pos "):
+                entry["root_pos"] = _floats(part[len("root pos "):])
+            elif part.startswith("root fwd "):
+                root_fwd = _floats(part[len("root fwd "):])
+            elif part.startswith("root yaw "):
+                entry["root_yaw"] = (_floats(part[len("root yaw "):].replace("deg", "")) or [None])[0]
+            elif key == "markers":
+                entry["markers"] = int(float(value)) if value else None
+            elif key == "residual":
+                number, _, on = value.partition(" on ")
+                entry["residual_m"] = (_floats(number) or [None])[0]
+                entry["residual_on"] = on or None
+            elif key == "baseline":
+                entry["baseline_m"] = (_floats(value) or [None])[0]
+            elif key == "correction":
+                entry["correction_m"] = (_floats(value) or [None])[0]
+            elif key == "levelled":
+                entry["levelled_deg"] = (_floats(value.replace("deg", "")) or [None])[0]
+            elif key in ("inputs", "seen", "burst", "target"):
+                entry[key] = value
+            elif key == "gate-rejected":
+                entry["gate_rejected"] = value
+
+        if entry["root_yaw"] is None and root_fwd and len(root_fwd) == 3:
+            entry["root_yaw"] = math.degrees(math.atan2(root_fwd[0], root_fwd[2]))
+
+        # Horizontal shift against the previous alignment, from the logged root positions.
+        # It is what Test E reads as "posun medzi dvomi po sebe idúcimi zarovnaniami".
+        entry["shift_m"] = None
+        entry["turn_deg"] = None
+        if previous and previous["root_pos"] and entry["root_pos"]:
+            a, b = previous["root_pos"], entry["root_pos"]
+            entry["shift_m"] = math.hypot(b[0] - a[0], b[2] - a[2])
+        if previous and previous["root_yaw"] is not None and entry["root_yaw"] is not None:
+            entry["turn_deg"] = _angle_diff(entry["root_yaw"], previous["root_yaw"])
+
+        out.append(entry)
+        previous = entry
+    return out
+
+
+def _angle_diff(a, b):
+    """Signed a − b wrapped into (−180, 180]."""
+    d = (a - b + 180.0) % 360.0 - 180.0
+    return 180.0 if d == -180.0 else d
+
+
+def alignment_stats(entries):
+    """Spreads Test E compares against 0.2.2: root X/Z range, heading range, step sizes."""
+    if len(entries) < 2:
+        return None
+    xs = [e["root_pos"][0] for e in entries if e["root_pos"]]
+    zs = [e["root_pos"][2] for e in entries if e["root_pos"]]
+    yaws = [e["root_yaw"] for e in entries if e["root_yaw"] is not None]
+    shifts = [e["shift_m"] for e in entries[1:] if e["shift_m"] is not None]
+    # Heading spread around the first value, so a wrap at ±180° does not read as 360°.
+    yaw_offsets = [_angle_diff(y, yaws[0]) for y in yaws] if yaws else []
+    return {
+        "n": len(entries),
+        "x_range_m": (max(xs) - min(xs)) if xs else None,
+        "z_range_m": (max(zs) - min(zs)) if zs else None,
+        "yaw_range_deg": (max(yaw_offsets) - min(yaw_offsets)) if yaw_offsets else None,
+        "shift_min_m": min(shifts) if shifts else None,
+        "shift_max_m": max(shifts) if shifts else None,
+    }
+
+
+def app_warnings(run):
+    """`log-warning …`, `log-error …` and `log-exception …` rows, written from 0.3.1 on."""
+    return [(t, label) for _, t, label in run.events()
+            if label.startswith(("log-warning", "log-error", "log-exception", "log-assert"))]
+
+
 def fmt(value, digits=2, dash="—"):
     if value is None:
         return dash
@@ -384,7 +493,74 @@ def fmt(value, digits=2, dash="—"):
     return f"{value:.{digits}f}"
 
 
-def report(run, tape_m=None, window_s=60.0, chosen_segments=None):
+def alignment_report(run, window=None, tape_between_markers_m=None):
+    """Section for the calibration tests E–H. Empty list when the run has no alignment."""
+    entries = alignment_events(run, window)
+    if not entries:
+        return []
+
+    out = ["## Zarovnania", ""]
+    if window:
+        out.append(f"Okno: **{fmt(window[0], 1)} – {fmt(window[1], 1)} s**.")
+        out.append("")
+    out.append("| čas (s) | z | cieľ | značky | root X | root Z | kurz (°) | posun (m) | "
+               "otočenie (°) | baseline (m) | zvyšok (m) | vstupy | videné | poznámka |")
+    out.append("|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|")
+    for e in entries:
+        pos = e["root_pos"] or [None, None, None]
+        note = []
+        if e["gate_rejected"]:
+            note.append(f"brána {e['gate_rejected']}")
+        if e["burst"] and e["burst"] != "accepted":
+            note.append(e["burst"])
+        residual = fmt(e["residual_m"], 3) if e["residual_m"] is not None and e["residual_m"] >= 0 else "—"
+        if e["residual_on"] and e["residual_on"] != "-":
+            residual += f" {e['residual_on']}"
+        out.append(
+            f"| {fmt(e['time_s'], 1)} | {e['marker'] or '?'} | {e['target'] or '—'} | "
+            f"{e['markers'] if e['markers'] is not None else '—'} | {fmt(pos[0], 3)} | {fmt(pos[2], 3)} | "
+            f"{fmt(e['root_yaw'], 2)} | {fmt(e['shift_m'], 3)} | {fmt(e['turn_deg'], 2)} | "
+            f"{fmt(e['baseline_m'], 3)} | {residual} | {e['inputs'] or '—'} | {e['seen'] or '—'} | "
+            f"{'; '.join(note)} |")
+    out.append("")
+
+    groups = [("všetky", entries),
+              ("z jednej značky", [e for e in entries if e["markers"] == 1]),
+              ("z dvoch a viac", [e for e in entries if (e["markers"] or 0) >= 2])]
+    rows = [(name, alignment_stats(group)) for name, group in groups]
+    rows = [(name, s) for name, s in rows if s]
+    if rows:
+        out.append("Rozptyly sa porovnávajú s `0.2.2-alpha`: X 7,36 m, kurz 11,1°, posun 0,1 – 2,5 m. "
+                   "Posun v skupine sa počíta voči predošlému zarovnaniu v celom behu, nie v skupine.")
+        out.append("")
+        out.append("| skupina | n | rozpätie X (m) | rozpätie Z (m) | rozpätie kurzu (°) | posun min – max (m) |")
+        out.append("|---|---:|---:|---:|---:|---:|")
+        for name, s in rows:
+            out.append(f"| {name} | {s['n']} | {fmt(s['x_range_m'], 3)} | {fmt(s['z_range_m'], 3)} | "
+                       f"{fmt(s['yaw_range_deg'], 2)} | {fmt(s['shift_min_m'], 3)} – {fmt(s['shift_max_m'], 3)} |")
+        out.append("")
+
+    baselines = [e["baseline_m"] for e in entries if (e["markers"] or 0) == 2 and e["baseline_m"] is not None]
+    if baselines:
+        mean = sum(baselines) / len(baselines)
+        line = (f"`baseline` z fitov z dvoch značiek: priemer **{fmt(mean, 3)} m**, "
+                f"rozpätie {fmt(min(baselines), 3)} až {fmt(max(baselines), 3)} m (n = {len(baselines)}).")
+        if tape_between_markers_m:
+            expected = tape_between_markers_m - MODEL_MARKER_SPAN_M
+            line += (f" Pásmo {fmt(tape_between_markers_m, 3)} m − model {fmt(MODEL_MARKER_SPAN_M, 2)} m "
+                     f"= **{fmt(expected, 3)} m**; rozdiel voči logu {fmt(mean - expected, 3)} m.")
+        out.append(line)
+        out.append("")
+
+    return out
+
+
+# Vzdialenosť M1–M2 v modeli, proti ktorej sa číta Test G.
+MODEL_MARKER_SPAN_M = 6.79
+
+
+def report(run, tape_m=None, window_s=60.0, chosen_segments=None, align_window=None,
+           marker_tape_m=None):
     """The markdown a run produces. Sections with nothing to say are left out."""
     out = []
     summary = summarise(run)
@@ -554,6 +730,18 @@ def report(run, tape_m=None, window_s=60.0, chosen_segments=None):
                    f"({fmt(min(gaps), 1)} až {fmt(max(gaps), 1)}).")
         out.append("")
 
+    out.extend(alignment_report(run, align_window, marker_tape_m))
+
+    warnings = app_warnings(run)
+    if warnings:
+        out.append("## Varovania z appky")
+        out.append("")
+        out.append("| čas (s) | hlásenie |")
+        out.append("|---:|---|")
+        for time_s, label in warnings:
+            out.append(f"| {fmt(time_s, 1)} | {label.replace('|', '/')} |")
+        out.append("")
+
     return "\n".join(out)
 
 
@@ -692,6 +880,19 @@ def selftest():
     lines.append(row(205.0, 8.0, 8.4, blind=5.0, losses=1,
                      event="probe-2 via navmesh; eye 1,70 m; model floor 7.5 cm below height"))
 
+    # Three alignments for Test E: the root moves 3 cm then 4 cm, heading wraps across ±180°.
+    def aligned(t, marker, x, z, yaw, markers, baseline):
+        return row(t, 0.0, 0.0, blind=5.0, losses=1, event=(
+            f"aligned on {marker}; img pos 0 0 0; root pos {x} 0.000 {z}; root yaw {yaw} deg; "
+            f"markers {markers}; residual -1.0000 on -; baseline {baseline}; correction 0.0000; "
+            f"inputs M1 0.0s 0.4cm + M2 3.0s 0.5cm; seen M1 Tracking M2 Tracking; burst accepted; "
+            f"target any"))
+    lines.append(aligned(300.0, "M1", "1.000", "2.000", "179.5", 2, "0.0200"))
+    lines.append(aligned(303.0, "M2", "1.030", "2.000", "-179.5", 2, "0.0400"))
+    lines.append(aligned(306.0, "M1", "1.030", "2.040", "179.0", 2, "0.0300"))
+    lines.append(row(307.0, 0.0, 0.0, blind=5.0, losses=1,
+                     event="log-warning MarkerAlignment: fit zamietnutý"))
+
     directory = tempfile.mkdtemp(prefix="frilens-selftest-")
     path = os.path.join(directory, "frilens-19700101-000000.csv")
     with open(path, "w", encoding="utf-8") as handle:
@@ -704,7 +905,7 @@ def selftest():
         ok = (got is not None) and abs(got - expected) <= tolerance
         checks.append((name, got, expected, ok))
 
-    check("riadkov prečítaných", len(run.rows), 14)
+    check("riadkov prečítaných", len(run.rows), 18)
     check("verzia rozpoznaná", 1.0 if run.version == "0.9.9-test" else 0.0, 1.0)
     # 8 m before the alignment plus 8 m after it. Endpoint subtraction would give 8.
     check("walked_m spolu (cez reset)", run.total("walked_m"), 16.0)
@@ -740,6 +941,19 @@ def selftest():
     # The second label carries a decimal comma; the parser must glue the row back together.
     check("druhá medzera cm (log s čiarkou)", probes["navmesh"][1]["gap_cm"], 7.5)
 
+    entries = alignment_events(run)
+    # The plain "aligned" row at 201 s counts too; the three Test E rows follow it.
+    check("zarovnaní nájdených", len(entries), 4)
+    stats = alignment_stats(entries[1:])
+    check("rozpätie X", stats["x_range_m"], 0.03)
+    check("rozpätie Z", stats["z_range_m"], 0.04)
+    # 179.5, −179.5 (= 180.5) and 179.0 span 1.5° across the wrap, not 359°.
+    check("rozpätie kurzu cez ±180°", stats["yaw_range_deg"], 1.5)
+    check("posun max", stats["shift_max_m"], 0.04)
+    check("baseline druhého", entries[2]["baseline_m"], 0.04)
+    check("varovaní z appky", len(app_warnings(run)), 1)
+    check("okno zarovnaní", len(alignment_events(run, (302.0, 310.0))), 2)
+
     width = max(len(name) for name, _, _, _ in checks)
     for name, got, expected, ok in checks:
         status = "ok  " if ok else "CHYBA"
@@ -758,6 +972,11 @@ def selftest():
 
 
 def main(argv=None):
+    # Windows console defaults to cp1252 and the report is Slovak.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
+
     parser = argparse.ArgumentParser(
         description="Vyhodnotí CSV logy z FriLens.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -777,7 +996,20 @@ def main(argv=None):
     parser.add_argument("--json", action="store_true", help="strojovo čitateľný výstup")
     parser.add_argument("--selftest", action="store_true",
                         help="overí metriky na logu so známymi odpoveďami")
+    parser.add_argument("--align-window", metavar="S1-S2",
+                        help="zarovnania len z tohto časového okna v sekundách, napr. 120-160 "
+                             "(Test E je jeden blok trinástich Re-anchor)")
+    parser.add_argument("--marker-tape", type=float, metavar="M",
+                        help="pásmom nameraná vzdialenosť M1–M2 pre Test G")
     args = parser.parse_args(argv)
+
+    align_window = None
+    if args.align_window:
+        try:
+            start, end = (float(v) for v in args.align_window.split("-"))
+            align_window = (start, end)
+        except ValueError:
+            parser.error("--align-window čaká S1-S2, napr. 120-160")
 
     if args.selftest:
         return selftest()
@@ -817,6 +1049,8 @@ def main(argv=None):
                 "jumps": jump_events(run),
                 "losses": loss_episodes(run, args.after),
                 "probes": probe_gaps(run),
+                "alignments": alignment_events(run, align_window),
+                "warnings": app_warnings(run),
             })
         print(json.dumps(payload, indent=2, ensure_ascii=False))
     elif args.table:
@@ -825,7 +1059,7 @@ def main(argv=None):
         for index, run in enumerate(runs):
             if index:
                 print("\n---\n")
-            print(report(run, args.tape, args.after, chosen))
+            print(report(run, args.tape, args.after, chosen, align_window, args.marker_tape))
 
     if args.plot:
         if len(runs) == 1 and not os.path.isdir(args.plot):
