@@ -93,6 +93,8 @@ namespace FriLens
         /// </summary>
         void OnEnable()
         {
+            Application.logMessageReceived += OnUnityLog;
+
             if (m_Continuity == null)
                 return;
 
@@ -102,12 +104,57 @@ namespace FriLens
 
         void OnDisable()
         {
+            Application.logMessageReceived -= OnUnityLog;
+
             if (m_Continuity == null)
                 return;
 
             m_Continuity.Lost -= OnTrackingLost;
             m_Continuity.Regained -= OnTrackingRegained;
         }
+
+        /// <summary>
+        /// Každé varovanie, chybu a výnimku z Unity zapíše do CSV ako udalosť.
+        ///
+        /// Zamietnutý fit, zahodený burst či prepnutie značky uprostred burstu sa hlásia cez
+        /// <c>Debug.LogWarning</c>, a to ide len do logcatu — na fakulte bez kábla k počítaču
+        /// sa stratí. CSV je jediné, čo sa z telefónu prinesie späť, tak tam musí byť všetko.
+        /// Bežné <c>Debug.Log</c> sa nepíše: zarovnanie má vlastný riadok a zvyšok je šum.
+        /// </summary>
+        void OnUnityLog(string condition, string stackTrace, LogType type)
+        {
+            if (type == LogType.Log)
+                return;
+
+            var text = condition ?? "";
+            if (type == LogType.Exception && !string.IsNullOrEmpty(stackTrace))
+            {
+                // Prvý riadok stacku stačí na to, aby sa výnimka dala nájsť v kóde.
+                var firstFrame = stackTrace.Split('\n')[0];
+                text += " @ " + firstFrame;
+            }
+
+            // To isté hlásenie po snímkach by zahltilo súbor a flush na každom riadku by bral
+            // snímky. Opakovanie sa zapíše najviac raz za päť sekúnd, s počtom vynechaných.
+            if (text == m_LastUnityLog && Time.unscaledTime - m_LastUnityLogTime < 5f)
+            {
+                m_RepeatedUnityLogs++;
+                return;
+            }
+
+            var repeated = m_RepeatedUnityLogs > 0 && text == m_LastUnityLog
+                ? $" (x{m_RepeatedUnityLogs + 1})" : "";
+            m_LastUnityLog = text;
+            m_LastUnityLogTime = Time.unscaledTime;
+            m_RepeatedUnityLogs = 0;
+
+            MarkEvent("log-" + type.ToString().ToLowerInvariant() + " "
+                + text.Replace('\n', ' ').Replace('\r', ' ').Replace('"', '\'') + repeated);
+        }
+
+        string m_LastUnityLog = "";
+        float m_LastUnityLogTime = float.NegativeInfinity;
+        int m_RepeatedUnityLogs;
 
         void OnTrackingLost(UnityEngine.XR.ARSubsystems.NotTrackingReason reason)
         {

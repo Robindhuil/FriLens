@@ -449,14 +449,7 @@ namespace FriLens
         /// what the library calls it, "M1" is what is written on the printed sheet and what the
         /// tester is holding.
         /// </summary>
-        static string ShortName(string imageName)
-        {
-            if (string.IsNullOrEmpty(imageName))
-                return "";
-
-            var dash = imageName.LastIndexOf('-');
-            return dash >= 0 && dash < imageName.Length - 1 ? imageName[(dash + 1)..] : imageName;
-        }
+        static string ShortName(string imageName) => MarkerAlignment.ShortName(imageName);
 
         /// <summary>
         /// Steps which marker the next alignment is allowed to come from.
@@ -550,7 +543,29 @@ namespace FriLens
                     // O koľko sa prekryv posunul oproti predošlému fitu, teda drift nazbieraný
                     // medzitým. V navigačnom režime je to jediné miesto, kde sa dá prečítať,
                     // lebo útek sa priebežne maže.
-                    + "; correction " + Number(m_Alignment.LastCorrectionMeters);
+                    + "; correction " + Number(m_Alignment.LastCorrectionMeters)
+
+                    // Kurz rootu ako jedno číslo. Test E sa číta ako rozptyl kurzu a z osi
+                    // `root fwd` by sa musel prepočítavať ručne.
+                    + "; root yaw " + Number(Yaw(root.rotation)) + " deg"
+
+                    // Ktoré observácie išli do fitu, s vekom a rozptylom.
+                    + "; inputs " + m_Alignment.FitInputs
+
+                    // Čo ARCore v tej chvíli hlásil o značkách. Odpovedá na „boli obe v zábere?".
+                    + "; seen " + m_Alignment.SeenImagesSummary()
+
+                    + "; burst " + (m_Alignment.LastBurstAccepted ? "accepted" : "rejected-spread")
+
+                    // Zamietnutie bránou kvality, ak nastalo. Bez neho je `markers 1` dvojznačné.
+                    + (m_Alignment.RejectedFitErrorMeters >= 0f
+                        ? "; gate-rejected " + Number(m_Alignment.RejectedFitErrorMeters)
+                            + " > " + Number(m_Alignment.RejectedFitAllowedMeters)
+                        : "")
+
+                    + "; target " + (m_Alignment.TargetImageName.Length > 0
+                        ? ShortName(m_Alignment.TargetImageName) : "any")
+                    + "; policy " + m_Alignment.Policy;
             }
 
             m_Logger?.MarkEvent(label);
@@ -572,6 +587,12 @@ namespace FriLens
         /// Jedno číslo do menovky udalosti. Rovnaký dôvod ako <see cref="Axis"/>: telefón píše
         /// desatinnú čiarku a log je CSV.
         /// </summary>
+        static float Yaw(Quaternion rotation)
+        {
+            var forward = rotation * Vector3.forward;
+            return Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg;
+        }
+
         static string Number(float value) =>
             value.ToString("F4", System.Globalization.CultureInfo.InvariantCulture);
 
