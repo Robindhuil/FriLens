@@ -169,6 +169,10 @@ def read_log(path):
     header = [name.strip() for name in lines[0].split(",")]
     if "time_s" not in header:
         raise ValueError(f"{path}: prvý riadok nevyzerá ako hlavička FriLens logu")
+    # Od 0.3.2 leží vedľa logu aj -markers.csv s pózami značiek po snímkach. Má time_s, ale
+    # je to iný súbor; pri zástupnom znaku frilens-*.csv by sa inak vyhodnotil ako beh.
+    if "event" not in header and "image" in header:
+        raise ValueError(f"{path}: surový záznam značiek, nie hlavný log")
 
     rows = []
     for line in lines[1:]:

@@ -29,7 +29,8 @@ if (-not $devices) { throw 'Žiadny telefón. Zapni ladenie cez USB a potvrď po
 $remote = '/sdcard/Android/data/sk.uniza.fri.frilens/files'
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
 
-$files = & $adb shell "ls $remote/frilens-*.csv 2>/dev/null" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+# Hlavný log, surový záznam značiek (-markers.csv) aj nahrávky relácie ARCore (-recN.mp4).
+$files = & $adb shell "ls $remote/frilens-*.csv $remote/frilens-*.mp4 2>/dev/null" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
 if (-not $files) {
     Write-Host "Na telefóne nie sú žiadne logy v $remote."
 } else {
@@ -55,4 +56,4 @@ if ($Logcat) {
 
 Write-Host ""
 Write-Host "Vyhodnotenie:"
-Write-Host "  python tools\frilens_eval.py `"$Out\frilens-*.csv`""
+Write-Host "  python tools\frilens_eval.py `"$Out\frilens-RRRRMMDD-HHMMSS.csv`"  (hlavný log, nie -markers.csv)"
