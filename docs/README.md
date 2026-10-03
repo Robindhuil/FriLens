@@ -34,6 +34,7 @@ obmedzeniami: [ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md).
 | Dokument | Čo je v ňom |
 |---|---|
 | [Plán inžinierskeho projektu](2026-09-05-plan-inzinierskeho-projektu.md) | tri semestre po 125 h: cieľ, pracovné balíky s hodinami, akceptačné kritériá, čo sa vypúšťa pri sklzu |
+| [Predbežné výsledky 0.3.1](2026-10-03-predbezne-vysledky-0.3.1.md) | voľný beh v break roome: fit z dvoch značiek drží na centimetre a desatiny stupňa, jedna značka nie; skoky mapy bez straty trackingu; čo zmeniť na formálnom teste |
 | [Návrh lokalizácie bez značiek](2026-10-02-navrh-lokalizacie-bez-znaciek.md) | nápad na rozbor po teste 0.3.1: poloha z obrazu (VPS cez COLMAP + HLoc) a nenápadné mozaiky proti driftu, riziká, odhady, poradie |
 | [Návrh kalibrácie z viacerých značiek](2026-09-09-navrh-kalibracie-viac-znaciek.md) | prečo je zarovnanie z jednej značky nepoužiteľné a čím sa nahradí: solver, brána kvality, dva režimy, ukazovateľ dôvery |
 | [Plán implementácie kalibrácie](2026-09-09-plan-implementacie-kalibracie.md) | sedem úloh po krokoch: solver a jeho overovač, zber observácií, zapojenie, dva režimy, dôvera, log, build a terénna skúška |
