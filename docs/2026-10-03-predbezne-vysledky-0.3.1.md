@@ -64,7 +64,35 @@ značkami funguje a dáva výsledky z bodu 1.
 že namerané polohy značiek sú bližšie k sebe než v modeli (6,79 m).
 
 Rozptyl 15 cm je aj medzi čerstvými dvojicami. Najpravdepodobnejšie je to drift nazbieraný na
-~7 m chôdze medzi dvomi skenmi, nie chyba modelu. Rozlíšiť to bez pásma nejde — **chýba Test G**.
+~7 m chôdze medzi dvomi skenmi.
+
+### Doplnené pásmom 2026-10-03
+
+Celá západná stena, roh **A** → roh **B**, nameraná pásmom: **9,86 m**.
+
+| | dĺžka steny | vzdialenosť stredov `M1`–`M2` |
+|---|---:|---:|
+| pásmo (stredy odvodené: 9,86 − 2 × 1,50) | **9,860 m** | **6,860 m** |
+| model (rohy z nav polygónu `Z 3,828` a `Z 13,621`) | 9,793 m | 6,793 m |
+| ARCore (model + priemerný `baseline` −0,093) | — | 6,70 m |
+
+Z toho dve rôzne chyby s opačným znamienkom:
+
+- **Model je o 6,7 cm kratší než budova (−0,68 %).** Keďže je každá značka zameraná od svojho
+  rohu, celý rozdiel dĺžky steny padne do vzdialenosti medzi nimi — presne tak, ako to plán
+  zamerania zamýšľal. Toto je prvé priame číslo zhody modelu s budovou.
+- **ARCore vidí značky o 16 cm bližšie, než sú (−2,3 %, v rozpätí −3,1 až −0,8 %).** To sedí na
+  baseline test z 0.1.8, kde `walked_m` vyšla −2,7 % proti pásmu. Dve nezávislé merania teda
+  ukazujú, že ARCore na tomto telefóne podhodnocuje vzdialenosti o 2–3 %. Rozptyl medzi fitmi je
+  na tom navrch drift.
+
+Mierka sa vo fite zámerne nefituje
+([návrh](2026-09-09-navrh-kalibracie-viac-znaciek.md)), takže chyba mierky ARCore sa v prekryve
+prejaví ako rozchod rastúci so vzdialenosťou od značky — pri 2,3 % asi 23 cm na desať metrov.
+
+**Platí za predpokladu**, že značky naozaj visia na 1,41 m od svojich rohov a že pásmo meralo
+roh v tom istom mieste, kde ho má nav polygón (vnútorné líce steny, nie sokel). Ak sa na mieste
+ukáže inak, prepočíta sa to; pásmo `M1`↔`M2` priamo (Test G) to overí.
 
 ## 5. Drift po chôdzi mimo miestnosti
 
@@ -104,7 +132,7 @@ nezamietla a žiadny burst neprekročil rozptyl 2 cm.
 
 - Test E robiť **chôdzou medzi značkami**: 13× `Re-anchor` striedavo pri `M1` a `M2`. Na mieste
   ešte raz skúsiť, či sa dajú obe chytiť ako `Tracking` z jedného miesta.
-- **Test G zmerať** — bez pásma sa `baseline` nedá rozdeliť na chybu modelu a drift.
+- **Test G zmerať aj tak** — dĺžka steny dáva vzdialenosť značiek len nepriamo, cez predpoklad, že visia presne na 1,41 m.
 - Pred `Drop` nastaviť výšku oka.
 - Keď mapa skáče, zapísať si, čo sa robilo a kam mierila kamera.
 
