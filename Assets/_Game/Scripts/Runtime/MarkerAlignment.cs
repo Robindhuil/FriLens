@@ -126,6 +126,35 @@ namespace FriLens
             + "čítaním polohy, aké ARCore vie ohlásiť.")]
         [SerializeField, Range(0.02f, 1f)] float m_MaxFitErrorFraction = 0.25f;
 
+        [Header("Ustálenie značky")]
+        [Tooltip("Burst sa nezačne, kým značka nie je ustálená. Prvá póza po zbadaní býva "
+            + "konzistentná, ale zlá: beh 20261003-134724 mal M2 o 44 cm vedľa pri rozptyle "
+            + "0,3 cm a brána rozptylu ju prepustila.")]
+        [SerializeField] bool m_RequireSettle = true;
+
+        [Tooltip("Najkratší čas sledovania značky pred prvým burstom, v sekundách.")]
+        [SerializeField] float m_SettleMinSeconds = 2f;
+
+        [Tooltip("O koľko stupňov sa musí zmeniť smer pohľadu kamery na značku. ARCore opravil "
+            + "hĺbku M2 až po pohybe do strany, nie čakaním — hypotéza z jedného behu, overuje ju "
+            + "surový záznam značiek.")]
+        [SerializeField] float m_SettleMinSweepDegrees = 15f;
+
+        [Tooltip("Kamera na meranie paralaxy. Prázdne znamená Camera.main.")]
+        [SerializeField] Transform m_Camera;
+
+        /// <summary>Ako ďaleko je značka od toho, aby sa jej poloha brala vážne.</summary>
+        struct SettleState
+        {
+            public float since;
+            public Vector3 firstDirection;
+            public float sweepDegrees;
+            public bool settled;
+        }
+
+        readonly Dictionary<string, SettleState> m_Settle = new();
+        int m_SettleSegment;
+
         readonly List<Vector3> m_Positions = new();
         readonly List<Quaternion> m_Rotations = new();
         readonly MarkerObservations m_Observations = new();
@@ -244,6 +273,30 @@ namespace FriLens
         /// </summary>
         public bool LastBurstAccepted { get; private set; }
 
+        /// <summary>
+        /// Značka sa ustálila: meno, sekundy od prvého zbadania a uhol, o ktorý sa zmenil pohľad.
+        /// HUD to zapíše do logu, aby sa dalo porovnať s pózou v surovom zázname.
+        /// </summary>
+        public event System.Action<string, float, float> MarkerSettled;
+
+        /// <summary>
+        /// Burst čaká, kým sa značka v zábere ustáli. HUD vtedy radí pohnúť telefónom do strany;
+        /// bez toho by „sampling 0/30" vyzeral ako zaseknutý.
+        /// </summary>
+        public bool WaitingForSettle { get; private set; }
+
+        public bool IsSettled(string imageName) =>
+            !m_RequireSettle || (m_Settle.TryGetValue(imageName ?? "", out var state) && state.settled);
+
+        /// <summary>O koľko stupňov sa zatiaľ zmenil pohľad na značku od jej prvého zbadania.</summary>
+        public float SettleSweepDegrees(string imageName) =>
+            m_Settle.TryGetValue(imageName ?? "", out var state) ? state.sweepDegrees : 0f;
+
+        public float SettleMinSweepDegrees => m_SettleMinSweepDegrees;
+
+        /// <summary>Pre surový záznam značiek v <see cref="SessionLogger"/>.</summary>
+        public ARTrackedImageManager TrackedImageManager => m_TrackedImageManager;
+
         /// <summary>Aktuálna politika prepočtu; prepína ju HUD.</summary>
         public UpdatePolicy Policy
         {
@@ -330,6 +383,7 @@ namespace FriLens
             if (!m_Enabled)
                 return;
 
+            UpdateSettle();
             TrackedMarker = FindMarker();
 
             if (State == AlignmentState.Waiting && m_AlignOnFirstSighting && TrackedMarker != null
@@ -354,12 +408,17 @@ namespace FriLens
             }
 
             if (State != AlignmentState.Sampling)
+            {
+                WaitingForSettle = false;
                 return;
+            }
 
             // Poses reported while the tracker is only guessing would poison the average, so
             // limited tracking contributes nothing and the burst simply waits.
             if (TrackedMarker == null || TrackedMarker.trackingState != TrackingState.Tracking)
             {
+                WaitingForSettle = false;
+
                 // Waiting is fine for a moment, but a burst left half full while the marker is
                 // out of view is a trap: when it comes back the average would mix poses from
                 // before and after — possibly across a relocalisation, from a different distance
@@ -391,6 +450,21 @@ namespace FriLens
             // coming into view part way through would otherwise be averaged in with the first,
             // and the result would be a pose somewhere between two places on the wall.
             var imageName = TrackedMarker.referenceImage.name;
+
+            // Neustálená značka do burstu nepatrí ani jednou snímkou: jej póza je síce pokojná,
+            // ale môže byť celá posunutá, a priemer z nej by to len spevnil. Burst počká a časovač
+            // výpadku sa drží, inak by Re-anchor po dvoch sekundách čakania potichu zrušil.
+            if (!IsSettled(imageName))
+            {
+                WaitingForSettle = true;
+                m_Positions.Clear();
+                m_Rotations.Clear();
+                m_LastSampleTime = Time.time;
+                return;
+            }
+
+            WaitingForSettle = false;
+
             if (m_Positions.Count > 0 && imageName != m_BurstImageName)
             {
                 Debug.LogWarning($"{nameof(MarkerAlignment)}: '{imageName}' came into view while "
@@ -621,6 +695,67 @@ namespace FriLens
         void OnTrackingLost(NotTrackingReason reason)
         {
             m_Observations.Clear();
+            m_Settle.Clear();
+        }
+
+        /// <summary>
+        /// Sleduje, ako dlho a z akých smerov je ktorá zameraná značka v stave Tracking.
+        ///
+        /// Ustálená je, keď je sledovaná aspoň <see cref="m_SettleMinSeconds"/> a smer pohľadu
+        /// kamery na ňu sa od prvého zbadania zmenil aspoň o <see cref="m_SettleMinSweepDegrees"/>.
+        /// Samotné čakanie nestačí: M2 v behu 134724 hlásila zlú polohu pokojne niekoľko sekúnd
+        /// a ARCore ju opravil, až keď sa telefón pohol do strany. Približovanie k značke paralaxu
+        /// nedá, lebo ide po tom istom lúči — preto uhol, nie prejdená dráha.
+        ///
+        /// Zabúda sa pri strate trackingu a pri relokalizačnom skoku, z rovnakého dôvodu ako
+        /// observácie: po nich je každá póza z inej mapy.
+        /// </summary>
+        void UpdateSettle()
+        {
+            var segment = m_Travel != null ? m_Travel.JumpGeneration : 0;
+            if (segment != m_SettleSegment)
+            {
+                m_SettleSegment = segment;
+                m_Settle.Clear();
+            }
+
+            var camera = m_Camera != null ? m_Camera
+                : Camera.main != null ? Camera.main.transform : null;
+            if (camera == null)
+                return;
+
+            foreach (var image in m_TrackedImageManager.trackables)
+            {
+                if (image.trackingState != TrackingState.Tracking || AnchorFor(image) == null)
+                    continue;
+
+                var direction = image.transform.position - camera.position;
+                if (direction.sqrMagnitude < 1e-6f)
+                    continue;
+                direction.Normalize();
+
+                var name = image.referenceImage.name;
+                if (!m_Settle.TryGetValue(name, out var state))
+                {
+                    m_Settle[name] = new SettleState { since = Time.time, firstDirection = direction };
+                    continue;
+                }
+
+                if (state.settled)
+                    continue;
+
+                state.sweepDegrees = Mathf.Max(state.sweepDegrees,
+                    Vector3.Angle(state.firstDirection, direction));
+
+                if (Time.time - state.since >= m_SettleMinSeconds
+                    && state.sweepDegrees >= m_SettleMinSweepDegrees)
+                {
+                    state.settled = true;
+                    MarkerSettled?.Invoke(name, Time.time - state.since, state.sweepDegrees);
+                }
+
+                m_Settle[name] = state;
+            }
         }
 
         void OnDestroy()
