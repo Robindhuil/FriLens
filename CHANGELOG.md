@@ -8,6 +8,38 @@ miesto, kde sa mení.
 Nový build: zdvihnúť `Version` aj `VersionCode`, dopísať riadok sem, spustiť
 `FriLens > Build Android <verzia>`.
 
+## [0.3.2-alpha] — nevydané
+
+Posledná verzia, ktorá mení zarovnanie zo značiek. Potom sa zmrazí — prečo a za akých podmienok sa
+smie otvoriť znova, je v [pláne](docs/2026-09-05-plan-inzinierskeho-projektu.md#zmena-plánu-2026-10-03).
+
+### Fixed
+
+- **Prvé čítanie značky sa do fitu nedostane.** ARCore po zbadaní značky hlási pózu, ktorá je
+  pokojná, ale môže byť celá posunutá: v behu `20261003-134724` ležala `M2` 44 cm vedľa pri
+  rozptyle 0,3 cm, brána rozptylu ju prepustila a fit potom preskočil o 1,53 m a 3,9°. Burst sa
+  teraz začne až keď je značka **ustálená**: sledovaná aspoň 2 s a pohľad kamery na ňu sa od
+  prvého zbadania zmenil aspoň o 15°. Uhol, nie čakanie, lebo ARCore opravil `M2` až po pohybe do
+  strany. Je to hypotéza z jedného behu; overí ju surový záznam nižšie. Vypína sa poľom
+  `m_RequireSettle` na `MarkerAlignment`.
+
+### Added
+
+- **Surový záznam značiek** `frilens-…-markers.csv` vedľa hlavného logu: póza každej sledovanej
+  značky a kamery 15× za sekundu, stav sledovania, úsek mapy, ustálenie. Brány na čítanie značiek
+  sa tak dajú ladiť doma na nahratých dátach namiesto cesty na fakultu za každú zmenu.
+- **Nahrávanie relácie ARCore** tlačidlom `rec` do `frilens-…-recN.mp4`. Nahrávka obsahuje kameru
+  a senzory a dá sa prehrať v telefóne. Pri zapnutí aj vypnutí ARCore reláciu na 0,5 – 1 s
+  pozastaví, čo log zapíše ako stratu trackingu — zapínať pred zarovnaním. Prehrávanie zatiaľ
+  v appke nie je.
+- Udalosti `settled M2 after 3.4 s; sweep 17 deg`, `rec-start …`, `rec-stopped …` v hlavnom logu.
+
+### Changed
+
+- **Compact je predvolený a ukazuje riadok zarovnania aj pätičku** (cieľ, `rec`, strop, výška oka).
+  Full zakrýval kameru a compact skrýval počet značiek, takže sa nedalo testovať ani v jednom.
+- Pri čakaní na ustálenie riadok zarovnania radí `M2 · pohni do strany 8/15°`.
+
 ## [0.3.1-alpha] — nevydané
 
 Príprava na terénny test kalibrácie z viacerých značiek

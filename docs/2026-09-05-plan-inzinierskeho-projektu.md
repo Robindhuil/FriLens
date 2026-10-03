@@ -1,6 +1,7 @@
 # Plán inžinierskeho projektu — tri semestre
 
-**Verzia:** 0.2.0-alpha · **Dátum:** 2026-09-05 · **Stav:** návrh pre vedúceho projektu
+**Verzia:** 0.2.0-alpha · **Dátum:** 2026-09-05 · **Stav:** návrh pre vedúceho projektu ·
+**Zmenené:** 2026-10-03, viď [zmenu plánu](#zmena-plánu-2026-10-03)
 **Rozpočet:** 3 × 125 h = **375 h** · **Predpoklad:** [ADR 008](decisions/008-rozsirenie-rozsahu-na-navigaciu-a-hru.md)
 
 ---
@@ -145,6 +146,66 @@ Pravidlá, podľa ktorých sú odhady robené:
 
 ---
 
+## Zmena plánu 2026-10-03
+
+### Čo sa stalo
+
+**Zarovnanie z viacerých značiek v pláne nebolo.** Plán počítal s tým, že na zarovnanie stačí
+jedna značka. Meranie ukázalo, že kurz z natočenia jednej značky má σ 2,4°, čo je na 50 m
+okolo 2 m — nepoužiteľné. Solver z polôh viacerých značiek (0.3.0 – 0.3.2,
+[návrh](2026-09-09-navrh-kalibracie-viac-znaciek.md),
+[ADR 010](decisions/010-kurz-z-poloh-znaciek-sklon-z-gravitacie.md)) bol preto nutný.
+
+Plán sa vtedy ale neupravil: nepribudli k nemu hodiny a nič sa nevypustilo. **Hodiny sa
+nezapisovali**, takže dnes sa nedá povedať, koľko zobral a či semester stíha.
+
+Výsledok je dobrý ([predbežné výsledky](2026-10-03-predbezne-vysledky-0.3.1.md)): fit z dvoch
+značiek dáva pri značke 2 – 3 cm a kurz s opakovateľnosťou okolo 0,1°. Popri tom vyšlo prvé
+číslo zhody modelu s budovou: západná stena break roomu je v modeli o 6,7 cm kratšia (−0,68 %).
+
+### Rozhodnutia
+
+1. **Zarovnanie zo značiek je po 0.3.2 zmrazené.** Je to pravítko, nie produkt. Jeho chyba je
+   o rád menšia než to, čo meria: drift ARCore 1,2° po ~45 m chôdze, chyba mierky ARCore
+   okolo −2 %, skoky mapy o metre. Tie sa v `MarkerAlignment` neriešia — sú predmetom korekcií
+   A – C.
+
+   **Znova sa otvára len vtedy**, keď terénny test ukáže chybu pri značke nad **5 cm** alebo
+   opakovateľnosť kurzu fitu z dvoch značiek horšiu než **0,5°**. Nie na základe dojmu.
+
+2. **Malá časť replayu (2.1) sa presúva zo semestra 2 do teraz.** Každá hypotéza doteraz stála
+   cestu na fakultu (terénne dni 4. 9., 9. 9., 3. 10.; 0.3.0 čakala na prvé dáta 16 dní).
+   Od 0.3.2 appka nahráva reláciu ARCore do mp4 a ukladá surový záznam polôh značiek po snímkach.
+   Zostáva doplniť prehrávanie nahrávky v appke. Z balíka 2.1 sa tým presúva odhadom 7 h
+   z 12; zvyšok — deterministický replay celého lokalizačného reťazca — ostáva v semestri 2.
+
+3. **Každá cesta na fakultu má vopred 2 – 3 otázky** a ku každej číslo, ktoré ju uzavrie,
+   a celá sa nahráva. Beh bez otázky je prieskum: do výsledkov ide označený ako predbežný
+   a nečaká sa od neho odpoveď.
+
+4. **Hodiny sa zapisujú po balíkoch**, pri každej uzavretej práci. Odhad pre doterajšie
+   zarovnanie dodá Robin.
+
+### Dôsledok pre semester 1
+
+Semester bol naplánovaný na 124 h z 125 a pribudla doň neplánovaná práca. Podľa pravidla
+nižšie („Ak sa nestíha“) by ako prvá išla do semestra 2 **korekcia A (1.5)**. Rozhodne sa, keď
+budú hodiny zapísané — nie odhadom.
+
+### Najbližšie kroky v poradí
+
+1. **Terénny test 0.3.2** s uzavretými otázkami:
+   - vzdialenosť `M1`↔`M2` pásmom → rozdelí `baseline` na chybu modelu a ARCore,
+   - šírka `ra000_corridor_3` pásmom proti 3,20 m → zhoda modelu mimo break roomu,
+   - chôdza 50 – 100 m chodbou a späť k značke → **prvé číslo driftu podľa vzdialenosti**,
+     teda prvý bod výskumnej otázky,
+   - celé nahraté ako dataset.
+2. Prehrávanie nahrávky v appke.
+3. Korekcia B (výška podlahy), potom A (kurz podľa chodieb), ladené na nahrávkach.
+4. Navigácia (1.7).
+
+---
+
 ## Semester 1 — Zhoda modelu s budovou a navigácia
 
 **Cieľ:** povedať **číslom**, ako presne navigačný model sedí na skutočnú fakultu, a na tom
@@ -213,7 +274,7 @@ nedostane do aplikácie, do práce sa nedostane vôbec.
 
 | # | Balík | Obsah | h |
 |---|---|---|---:|
-| 2.1 | **Offline replay** | prehratie zaznamenaného behu cez lokalizačný reťazec bez telefónu; ladenie filtra na dátach, nie v chodbe. **Násobí produktivitu všetkého ďalšieho** | 12 |
+| 2.1 | **Offline replay** | prehratie zaznamenaného behu cez lokalizačný reťazec bez telefónu; ladenie filtra na dátach, nie v chodbe. **Násobí produktivitu všetkého ďalšieho**. Nahrávanie a prehrávanie relácie ARCore (~7 h) presunuté do semestra 1, viď [zmenu plánu](#zmena-plánu-2026-10-03) | 12 |
 | 2.2 | **Korekcia C — časticový filter** | stovky hypotéz polohy, posun odometriou, zabíjanie tých, čo prešli stenou; jadro práce | 24 |
 | 2.3 | **Prezarovnanie na značkách za behu** | viac značiek po trase; automatické prezarovnanie pri uvidení; liek na 15-sekundový útes z baseline | 10 |
 | 2.4 | **Autorský pipeline** | definícia stanovišťa a questu ako asset; editorové okno; predvyplnenie z `Rooms.json`; validácia dosiahnuteľnosti po navmeshi | 16 |
