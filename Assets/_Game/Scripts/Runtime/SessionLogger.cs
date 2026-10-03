@@ -3,7 +3,9 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using UnityEngine;
+using UnityEngine.XR.ARCore;
 using UnityEngine.XR.ARFoundation;
+using UnityEngine.XR.ARSubsystems;
 
 namespace FriLens
 {
@@ -32,11 +34,33 @@ namespace FriLens
         [Tooltip("Rows per second while the app is running.")]
         [SerializeField, Range(0.5f, 20f)] float m_SamplesPerSecond = 4f;
 
+        [Tooltip("Riadkov za sekundu v surovom zázname značiek, pre každú sledovanú značku.")]
+        [SerializeField, Range(1f, 60f)] float m_TraceSamplesPerSecond = 15f;
+
         StreamWriter m_Writer;
         float m_NextSampleTime;
 
+        /// <summary>
+        /// Surový záznam značiek: póza každého sledovaného obrázka a kamery po snímkach.
+        ///
+        /// Hlavný log nesie len priemer burstu, takže bránu na prvé čítanie značky nebolo na
+        /// starých behoch ako overiť — každá zmena by stála cestu na fakultu. S týmto súborom sa
+        /// ďalšie brány dajú ladiť doma na nahratých dátach.
+        /// </summary>
+        StreamWriter m_Trace;
+        float m_NextTraceTime;
+        float m_NextTraceFlushTime;
+
+        int m_RecordingCount;
+
         /// <summary>Full path of the file being written, empty if logging failed to start.</summary>
         public string FilePath { get; private set; } = "";
+
+        /// <summary>Beží nahrávanie relácie ARCore do mp4.</summary>
+        public bool IsRecording { get; private set; }
+
+        /// <summary>Cesta k poslednej nahrávke, prázdna ak žiadna nebola.</summary>
+        public string RecordingPath { get; private set; } = "";
 
         public int RowsWritten { get; private set; }
 
@@ -73,6 +97,8 @@ namespace FriLens
                     + "; gyro " + SystemInfo.supportsGyroscope
                     + "; accel " + SystemInfo.supportsAccelerometer
                     + "; gfx " + SystemInfo.graphicsDeviceType).Replace(',', ' '));
+
+                OpenTrace();
             }
             catch (Exception exception)
             {
@@ -169,11 +195,133 @@ namespace FriLens
 
         void Update()
         {
+            WriteTrace();
+
             if (m_Writer == null || Time.time < m_NextSampleTime)
                 return;
 
             m_NextSampleTime = Time.time + 1f / m_SamplesPerSecond;
             Write("");
+        }
+
+        /// <summary>
+        /// Otvorí <c>frilens-…-markers.csv</c> vedľa hlavného logu, s tým istým časovým razítkom,
+        /// aby sa dali spárovať. Zlyhanie nezastaví hlavný log.
+        /// </summary>
+        void OpenTrace()
+        {
+            var path = Path.Combine(Application.persistentDataPath,
+                Path.GetFileNameWithoutExtension(FilePath) + "-markers.csv");
+            try
+            {
+                m_Trace = new StreamWriter(path, false, Encoding.UTF8);
+                // jump_gen oddeľuje mapy: polohy z dvoch rôznych úsekov sa nesmú porovnávať.
+                m_Trace.WriteLine("time_s,image,state,px,py,pz,qx,qy,qz,qw,"
+                    + "cam_x,cam_y,cam_z,cam_qx,cam_qy,cam_qz,cam_qw,jump_gen,settled,sweep_deg");
+                m_Trace.Flush();
+            }
+            catch (Exception exception)
+            {
+                m_Trace = null;
+                Debug.LogError($"{nameof(SessionLogger)}: could not open the marker trace. {exception.Message}", this);
+            }
+        }
+
+        void WriteTrace()
+        {
+            if (m_Trace == null || m_Alignment == null || m_Alignment.TrackedImageManager == null
+                || Time.time < m_NextTraceTime)
+                return;
+
+            m_NextTraceTime = Time.time + 1f / m_TraceSamplesPerSecond;
+
+            var culture = CultureInfo.InvariantCulture;
+            var camPosition = m_Camera != null ? m_Camera.position : Vector3.zero;
+            var camRotation = m_Camera != null ? m_Camera.rotation : Quaternion.identity;
+            var segment = m_Travel != null ? m_Travel.JumpGeneration : 0;
+
+            foreach (var image in m_Alignment.TrackedImageManager.trackables)
+            {
+                // Aj Limited sa píše: práve prechod Limited → Tracking a skok pózy pri ňom je to,
+                // čo sa z tohto súboru má dať vyčítať.
+                if (image.trackingState == TrackingState.None)
+                    continue;
+
+                var name = image.referenceImage.name;
+                var p = image.transform.position;
+                var q = image.transform.rotation;
+
+                m_Trace.WriteLine(string.Join(",",
+                    Time.time.ToString("F3", culture),
+                    MarkerAlignment.ShortName(name),
+                    image.trackingState.ToString(),
+                    p.x.ToString("F4", culture), p.y.ToString("F4", culture), p.z.ToString("F4", culture),
+                    q.x.ToString("F5", culture), q.y.ToString("F5", culture),
+                    q.z.ToString("F5", culture), q.w.ToString("F5", culture),
+                    camPosition.x.ToString("F4", culture), camPosition.y.ToString("F4", culture),
+                    camPosition.z.ToString("F4", culture),
+                    camRotation.x.ToString("F5", culture), camRotation.y.ToString("F5", culture),
+                    camRotation.z.ToString("F5", culture), camRotation.w.ToString("F5", culture),
+                    segment.ToString(culture),
+                    m_Alignment.IsSettled(name) ? "1" : "0",
+                    m_Alignment.SettleSweepDegrees(name).ToString("F1", culture)));
+            }
+
+            if (Time.time >= m_NextTraceFlushTime)
+            {
+                m_NextTraceFlushTime = Time.time + 1f;
+                m_Trace.Flush();
+            }
+        }
+
+        /// <summary>
+        /// Zapne alebo vypne nahrávanie relácie ARCore (kamera a senzory) do mp4 vedľa logu.
+        ///
+        /// Nahrávka sa dá doma prehrať v telefóne cez tú istú appku, takže jedna cesta na fakultu
+        /// dá dataset na opakované skúšanie namiesto jedného pokusu. ARCore pri štarte aj stope
+        /// reláciu na 0,5 – 1 s pozastaví, čo log zapíše ako krátku stratu trackingu a zahodí
+        /// observácie značiek — preto zapínať pred zarovnaním, nie po ňom.
+        /// </summary>
+        public bool SetRecording(bool on)
+        {
+            if (on == IsRecording)
+                return IsRecording;
+
+            var session = FindAnyObjectByType<ARSession>();
+            if (session == null || session.subsystem is not ARCoreSessionSubsystem arcore)
+            {
+                MarkEvent("rec-unavailable; no ARCore session");
+                return IsRecording;
+            }
+
+            if (!on)
+            {
+                var stopped = arcore.StopRecording();
+                IsRecording = false;
+                MarkEvent($"rec-stopped {stopped}; {Path.GetFileName(RecordingPath)}");
+                return IsRecording;
+            }
+
+            // Pomenovaná podľa logu, aby sa dala spárovať. Keď sa log neotvoril, aspoň časom.
+            m_RecordingCount++;
+            var stem = FilePath.Length > 0
+                ? Path.GetFileNameWithoutExtension(FilePath)
+                : $"frilens-{DateTime.Now:yyyyMMdd-HHmmss}";
+            var path = Path.Combine(Application.persistentDataPath, $"{stem}-rec{m_RecordingCount}.mp4");
+
+            ArStatus status;
+            using (var config = new ArRecordingConfig(arcore.session))
+            {
+                config.SetMp4DatasetUri(arcore.session, new Uri(path).AbsoluteUri);
+                status = arcore.StartRecording(config);
+            }
+
+            IsRecording = status == ArStatus.Success;
+            if (IsRecording)
+                RecordingPath = path;
+
+            MarkEvent($"rec-start {status}; {Path.GetFileName(path)}");
+            return IsRecording;
         }
 
         /// <summary>Writes a row tagged with a label. Used by the HUD buttons and by alignments.</summary>
@@ -268,20 +416,33 @@ namespace FriLens
         void OnApplicationPause(bool paused)
         {
             if (paused)
+            {
                 m_Writer?.Flush();
+                m_Trace?.Flush();
+            }
         }
 
         void OnApplicationFocus(bool focused)
         {
             if (!focused)
+            {
                 m_Writer?.Flush();
+                m_Trace?.Flush();
+            }
         }
 
         void OnDestroy()
         {
+            if (IsRecording)
+                SetRecording(false);
+
             m_Writer?.Flush();
             m_Writer?.Dispose();
             m_Writer = null;
+
+            m_Trace?.Flush();
+            m_Trace?.Dispose();
+            m_Trace = null;
         }
     }
 }
