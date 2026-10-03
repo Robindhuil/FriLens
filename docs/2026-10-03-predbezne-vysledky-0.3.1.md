@@ -1,7 +1,7 @@
 # Predbežné výsledky 0.3.1-alpha — voľný beh v break roome
 
 **Verzia:** 0.3.1-alpha · **Dátum:** 2026-10-03 · **Zariadenie:** Xiaomi Redmi Note 10 Pro (M2101K6G), Android 11
-**Log:** `frilens-20261003-131810.csv` · 570 s, 2171 riadkov · porovnanie: `frilens-20260909-134644.csv`, `frilens-20260909-135106.csv` (0.2.2-alpha)
+**Logy:** `frilens-20261003-131810.csv` (570 s), `frilens-20261003-134724.csv` (286 s, s videom) · porovnanie: `frilens-20260909-134644.csv`, `frilens-20260909-135106.csv` (0.2.2-alpha)
 
 **Toto nie je beh podľa [protokolu](2026-09-17-protokol-testu-viacerych-znaciek.md).** Cieľ bol
 celý čas `any`, `Mark` padol raz, pásmo `M1`↔`M2` sa nemeralo a k behu nie sú poznámky. Čísla
@@ -128,10 +128,78 @@ preto nič nehovorí.
 Jedno: v 29 s zahodených 9 vzoriek, značka bola na viac než 2 s mimo záberu. Brána kvality nič
 nezamietla a žiadny burst neprekročil rozptyl 2 cm.
 
+## Druhý beh — značky preložené, s videom
+
+**Log:** `frilens-20261003-134724.csv` · 286 s, 1164 riadkov, 44 zarovnaní, žiadny skok mapy
+a žiadna strata trackingu. **Video:** záznam obrazovky `Screenrecorder-2026-10-03-13-50-11-819.mp4`,
+115 s, pokrýva zhruba 167 – 282 s logu. Pred behom boli značky na stene preložené presnejšie;
+o koľko, nie je zapísané.
+
+Skenovalo sa z 50 – 75 cm. Overlay bol väčšinu videa skrytý a HUD v kompaktnom režime, takže riadok
+`Alignment` na videu nie je.
+
+### Postojačky: jedna značka proti dvom v tom istom behu
+
+| okno | čo | zarovnaní | rozpätie X | rozpätie Z | rozpätie kurzu |
+|---|---|---:|---:|---:|---:|
+| 12 – 30 s | len `M1`, Re-anchor bez pohybu | 11 | **3,19 m** | 1,64 m | **9,1°** |
+| 45 – 62 s | `M2` + uložená `M1` | 8 | **3,1 cm** | 1,7 cm | **0,09°** |
+| 241 – 252 s | `M1` + uložená `M2` | 6 | **2,1 cm** | 2,0 cm | **0,06°** |
+
+Prvý riadok je Test E na jednej značke — a vyšiel rovnako zle ako v 0.2.2. Pritom sa **poloha
+`M1` počas tých jedenástich burstov hýbala o menej než 1,5 cm**; celý rozptyl prekryvu robí
+natočenie značky. To je [ADR 010](decisions/010-kurz-z-poloh-znaciek-sklon-z-gravitacie.md)
+potvrdené na jednom behu: poloha značky je presná, natočenie nie.
+
+### Video sedí na zvyšky fitu
+
+- **Po fite z dvoch značiek** je nakreslená doska posunutá voči vytlačenej o **2 – 3 cm** — pri
+  `M2` (~186 s, zvyšok v logu 1,8 cm) aj pri `M1` (~247 s, zvyšok 3,4 cm). Fit rozdelí nesúlad
+  dĺžky spojnice medzi obe značky a presne to je na obraze vidieť.
+- **Po zarovnaní len z `M1` a prechode 6 m k `M2`** (~184 s, pred novým zarovnaním) je doska `M2`
+  vedľa asi o **20 cm**. Sedí to na chybu kurzu jednoznačkového zarovnania: 1,8° na 6,8 m je
+  21 cm.
+
+### Nové zistenie: prvé čítanie značky je skreslené a rozptyl to neodhalí
+
+Pole `img pos` v riadku zarovnania je priemerná poloha značky z burstu v session space. Keď sa
+sleduje v čase:
+
+| | prvé bursty po zbadaní | ustálené (zvyšok behu) |
+|---|---|---|
+| `M1` | 5,8 s a 8,9 s: o **12 cm vyššie**, rozptyl 7,4 a 13,3 cm — **zamietnuté** bránou rozptylu | od 12,3 s stabilná v rámci ~1,5 cm počas 260 s |
+| `M2` | 40,6 s a 42,5 s: o **44 cm** inde v Z a 18 cm vo výške, **rozptyl 0,2 – 0,3 cm — prijaté** | od 45,7 s, po prechodnom burste s rozptylom 30,9 cm |
+
+ARCore teda po prvom zbadaní značky ohlási pózu, ktorá je **vnútorne konzistentná, ale zlá**,
+a opraví ju až o niekoľko sekúnd, keď sa kamera pohne. Brána rozptylu chytila `M1`, `M2` nie.
+Dôsledok: fity v 40,6 a 42,5 s stáli na zlej polohe `M2` a nasledujúci fit preskočil o
+**1,53 m a 3,9°**. Brána kvality to nezachytila, lebo chyba bola kolmo na stenu a dĺžka spojnice
+sa takmer nezmenila (`baseline` −0,127 → −0,122).
+
+Ako to riešiť, je otvorené — napríklad neprijať observáciu, kým značka nie je sledovaná aspoň
+niekoľko sekúnd, alebo kým sa dva bursty z rôznych miest nezhodnú.
+
+### Drift v rámci miestnosti
+
+`M1` leží pri počiatku session space a jej nameraná poloha sa za 260 s nepohla o viac než
+~1,5 cm. `M2`, 7 m od počiatku, sa medzi ustálenými burstami túlala o **~13 cm** vo vodorovnej
+rovine a 11 cm vo výške. Fity z dvoch značiek preto medzi sebou kolíšu o desiatky centimetrov
+podľa toho, koľko sa medzi skenmi nachodilo: 187 s → 227 s, ~25 m chôdze, posun **0,41 m a 1,0°**.
+
+### `baseline` po preložení
+
+Bez fitov so skreslenou `M2` (40,6 – 44,5 s): priemer **−4,5 cm** (−2,5 až −6,8 cm, n = 15
+fitov z ustálených observácií). V prvom behu −9,3 cm. Ak značky teraz visia presne na 1,41 m od
+rohov, skutočná vzdialenosť je 6,86 m a ARCore ju podhodnocuje o ~1,7 %. Bez pásma medzi
+značkami ostáva toto predpoklad.
+
 ## Čo z toho plynie pre formálny test
 
 - Test E robiť **chôdzou medzi značkami**: 13× `Re-anchor` striedavo pri `M1` a `M2`. Na mieste
   ešte raz skúsiť, či sa dajú obe chytiť ako `Tracking` z jedného miesta.
+- **Prvý burst po príchode k značke zahodiť** — po zbadaní pár sekúnd počkať a trochu pohnúť
+  telefónom, až potom `Re-anchor`. Kým to nerieši kód, je to na človeku.
+- HUD prepnúť na `full`, aby bol riadok `Alignment` vidieť aj na videu.
 - **Test G zmerať aj tak** — dĺžka steny dáva vzdialenosť značiek len nepriamo, cez predpoklad, že visia presne na 1,41 m.
 - Pred `Drop` nastaviť výšku oka.
 - Keď mapa skáče, zapísať si, čo sa robilo a kam mierila kamera.
