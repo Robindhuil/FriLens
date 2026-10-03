@@ -423,14 +423,15 @@
 .btn-compact:hover { background-color: var(--paper); }
 .btn-compact:active { border-color: var(--ink); }
 
+/* Compact nechá riadok zarovnania a pätičku: počet značiek, rada „pohni do strany" a tlačidlá
+   cieľa a nahrávania sú to, čo sa pri teste číta a stláča. Bez nich sa test robil vo full,
+   ktorý zakryje kameru. */
 .hud--compact #row-tracking,
 .hud--compact #row-marker,
-.hud--compact #row-alignment,
 .hud--compact #row-from-marker,
 .hud--compact #row-device,
 .hud--compact .mode-title,
-.hud--compact .mode-reason,
-.hud--compact .footer-row { display: none; }
+.hud--compact .mode-reason { display: none; }
 
 .hud--compact .banner-body { padding: 8px 12px 8px 12px; }
 .hud--compact .row--walked { padding-top: 6px; padding-bottom: 6px; min-height: 34px; }
@@ -439,6 +440,6 @@
 .hud--compact .btn-text { font-size: 14px; }
 .hud--compact .btn-glyph { width: 15px; height: 15px; margin-right: 7px; }
 
-/* An untrustworthy reading outranks the tester's wish for a clear view. Compact hides the
-   alignment row; this puts it back the moment it has something to say. */
-.hud--compact.hud--alert #row-alignment { display: flex; }
+/* V compact je riadok zarovnania prvý viditeľný, takže nemá deliacu čiaru nad sebou. Varovanie
+   „unverified" nesie ten istý riadok, takže ho compact už neskryje. */
+.hud--compact #row-alignment { border-top-width: 0; }

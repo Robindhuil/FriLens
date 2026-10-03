@@ -87,11 +87,15 @@ namespace FriLens
                 m_View.OverlayToggled -= OnOverlayToggled;
                 m_View.CeilingToggled -= OnCeilingToggled;
                 m_View.TargetCycled -= OnTargetCycled;
+                m_View.RecordToggled -= OnRecordToggled;
                 m_View = null;
             }
 
             if (m_Alignment != null)
+            {
                 m_Alignment.Aligned -= OnAligned;
+                m_Alignment.MarkerSettled -= OnMarkerSettled;
+            }
         }
 
         /// <summary>
@@ -118,8 +122,14 @@ namespace FriLens
             m_View.OverlayToggled += OnOverlayToggled;
             m_View.CeilingToggled += OnCeilingToggled;
             m_View.TargetCycled += OnTargetCycled;
+            m_View.RecordToggled += OnRecordToggled;
 
             m_View.SetCeilingVisible(m_CeilingWanted);
+            m_View.SetRecording(m_Logger != null && m_Logger.IsRecording);
+
+            // Od 0.3.2 compact nesie riadok zarovnania aj pätičku, takže je to režim na test.
+            // Full zakrýva kameru a je na ladenie.
+            m_View.SetCompact(true);
             ShowTarget();
 
             if (m_FloorProbe != null)
@@ -129,7 +139,10 @@ namespace FriLens
                 m_View.SetOverlayVisible(m_Overlays[0].enabled);
 
             if (m_Alignment != null)
+            {
                 m_Alignment.Aligned += OnAligned;
+                m_Alignment.MarkerSettled += OnMarkerSettled;
+            }
 
             // A freshly built view shows whatever the UXML declared, so push the mode through
             // even if it has not changed since last frame.
@@ -277,6 +290,18 @@ namespace FriLens
                     var samplingOn = ShortName(m_Alignment.TrackedImageName);
                     if (samplingOn.Length == 0)
                         samplingOn = ShortName(m_Alignment.TargetImageName);
+
+                    // Čaká sa na ustálenie značky. Bez rady by „sampling 0/30" stál a vyzeral
+                    // ako zaseknutý — pomôže len pohyb telefónu do strany, nie čakanie.
+                    if (m_Alignment.WaitingForSettle)
+                    {
+                        m_View.SetRow(HudRow.Alignment,
+                            $"{samplingOn} · pohni do strany "
+                            + $"{m_Alignment.SettleSweepDegrees(m_Alignment.TrackedImageName):F0}/"
+                            + $"{m_Alignment.SettleMinSweepDegrees:F0}°",
+                            ValueState.Warn);
+                        break;
+                    }
 
                     m_View.SetRow(HudRow.Alignment,
                         samplingOn.Length > 0
@@ -474,6 +499,24 @@ namespace FriLens
         {
             var target = m_Alignment != null ? m_Alignment.TargetImageName : "";
             m_View.SetTargetLabel(target.Length > 0 ? ShortName(target) : "any", target.Length > 0);
+        }
+
+        void OnRecordToggled()
+        {
+            if (m_Logger == null)
+                return;
+
+            m_View.SetRecording(m_Logger.SetRecording(!m_Logger.IsRecording));
+        }
+
+        /// <summary>
+        /// Zapíše, kedy sa značka ustálila. V surovom zázname sa potom dá pozrieť, či póza pred
+        /// týmto okamihom naozaj ležala inde než po ňom — teda či brána robí to, čo má.
+        /// </summary>
+        void OnMarkerSettled(string imageName, float seconds, float sweepDegrees)
+        {
+            m_Logger?.MarkEvent(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "settled {0} after {1:F1} s; sweep {2:F0} deg", ShortName(imageName), seconds, sweepDegrees));
         }
 
         void OnReanchor()

@@ -65,6 +65,10 @@ namespace FriLens
         readonly Button m_CompactToggle;
         Button m_Ceiling;
         Button m_Target;
+        readonly Button m_Record;
+
+        /// <summary>Stlačené tlačidlo nahrávania relácie ARCore.</summary>
+        public event Action RecordToggled;
 
         public event Action Reanchor;
         public event Action Mark;
@@ -143,6 +147,9 @@ namespace FriLens
 
             m_Target = m_Root.Q<Button>("btn-target");
             m_Target.clicked += () => TargetCycled?.Invoke();
+
+            m_Record = m_Root.Q<Button>("btn-rec");
+            m_Record.clicked += () => RecordToggled?.Invoke();
 
             m_Ceiling = m_Root.Q<Button>("btn-ceiling");
             m_Ceiling.clicked += () =>
@@ -302,13 +309,10 @@ namespace FriLens
         }
 
         /// <summary>
-        /// Marks the readings as not to be trusted, which forces the row that says why back on
-        /// screen even in compact.
+        /// Marks the readings as not to be trusted.
         ///
-        /// Compact hides everything but the mode, the distance and the buttons — and the row it
-        /// hides first is the one carrying "unverified". That row exists because a failed
-        /// relocalisation is silent, and hiding it in the mode somebody actually walks around in
-        /// would put the warning exactly where it can never be seen.
+        /// Do 0.3.1 compact skrýval riadok zarovnania a táto trieda ho vracala. Od 0.3.2 ho
+        /// compact ukazuje vždy, takže trieda už len nesie stav pre štýl.
         /// </summary>
         public void SetAlert(bool alert)
         {
@@ -350,6 +354,13 @@ namespace FriLens
         {
             m_Target.text = text;
             m_Target.EnableInClassList("btn-step--on", restricted);
+        }
+
+        /// <summary>Či beží nahrávanie relácie. Zvýraznené, aby sa nedalo zabudnúť zapnuté.</summary>
+        public void SetRecording(bool recording)
+        {
+            m_Record.text = recording ? "REC" : "rec";
+            m_Record.EnableInClassList("btn-step--on", recording);
         }
 
         /// <summary>Shows the assumed height of the camera above the floor.</summary>
