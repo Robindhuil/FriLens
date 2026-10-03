@@ -160,7 +160,7 @@ class Run:
 
 def read_log(path):
     """Parses one CSV. Tolerates the two ways these files get malformed."""
-    with open(path, "r", encoding="utf-8", errors="replace") as handle:
+    with open(path, "r", encoding="utf-8-sig", errors="replace") as handle:
         lines = [line.rstrip("\n").rstrip("\r") for line in handle if line.strip()]
 
     if not lines:
